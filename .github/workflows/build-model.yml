@@ -11,11 +11,16 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -42,3 +47,12 @@ jobs:
             --title "Model build ${{ steps.tag.outputs.tag }}" \
             --notes "Weekly PRISM-US-MH artifacts. See docs/METHODOLOGY.md. Not investment advice." \
             || gh release upload "${{ steps.tag.outputs.tag }}" riskprism-artifacts.tar.gz --clobber
+      - name: Render explorer site
+        run: |
+          riskprism-site --artifacts artifacts --template site/template.html --out _site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Deploy to GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v4

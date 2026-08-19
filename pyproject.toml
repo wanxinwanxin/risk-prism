@@ -21,6 +21,7 @@ dev = ["pytest>=8", "mcp>=1.2"]
 [project.scripts]
 riskprism-build = "riskprism.build_cli:main"
 riskprism-mcp = "riskprism.mcp_server:main"
+riskprism-site = "riskprism.site_export:main"
 
 [build-system]
 requires = ["hatchling"]

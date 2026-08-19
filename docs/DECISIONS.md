@@ -28,7 +28,16 @@ must check their provider's terms for their own rebuilds.
 `pip install riskprism` for the math; `riskprism-mcp` for agents. A hosted REST
 API was deliberately deferred (hosting cost/ops without proven demand).
 
-## 4. Refresh: weekly GitHub Actions
+## 4. Frontend: static explorer, zero backend (added 2026-08-19)
+
+A single self-contained HTML page (`site/template.html`) with the model
+data embedded as JSON by `riskprism-site`; all risk math re-implemented
+client-side (~60 lines of JS). Published to GitHub Pages by the weekly
+build. Chosen over a hosted app because the entire model fits in ~100KB,
+which makes a server pure liability. Views: factor returns/vol/correlation,
+portfolio sandbox with stress sliders, per-stock profiles, agent onboarding.
+
+## 5. Refresh: weekly GitHub Actions
 
 Cron builds the model weekly and publishes the artifact directory. Weekly
 matches the medium-horizon design; daily refresh only matters for

@@ -58,6 +58,18 @@ riskprism-build --provider tiingo ...                        # licensed data, ne
 The weekly GitHub Action runs exactly this and publishes the artifact
 directory; see `.github/workflows/build-model.yml`.
 
+## The explorer
+
+A zero-backend static site (GitHub Pages, rendered from each weekly build)
+for exploring the model: cumulative factor returns, factor vol and
+correlations, a client-side portfolio risk sandbox with stress-test
+sliders, and per-stock factor profiles. All math runs in the browser on
+the embedded artifacts. Render it locally:
+
+```bash
+riskprism-site --artifacts artifacts --out site/index.html
+```
+
 ## Model summary
 
 | Component | Choice |

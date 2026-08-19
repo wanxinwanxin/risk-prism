@@ -1,0 +1,905 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>riskprism</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --border: rgba(11,11,11,.10);
+  --accent: #2a78d6;
+  --s-market: #2a78d6;
+  --s-size: #eb6834;
+  --s-value: #1baf7a;
+  --s-momentum: #eda100;
+  --s-volatility: #e87ba4;
+  --s-liquidity: #008300;
+  --s-quality: #4a3aa7;
+  --s-leverage: #e34948;
+  --s-industry: #898781;
+  --s-specific: #c3c2b7;
+  --heat-pos: #2a78d6;
+  --heat-neg: #e34948;
+  --heat-mid: #f0efec;
+  --delta-good: #006300;
+  --delta-bad: #d03b3b;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,.10);
+    --accent: #3987e5;
+    --s-market: #3987e5;
+    --s-size: #d95926;
+    --s-value: #199e70;
+    --s-momentum: #c98500;
+    --s-volatility: #d55181;
+    --s-liquidity: #008300;
+    --s-quality: #9085e9;
+    --s-leverage: #e66767;
+    --s-industry: #898781;
+    --s-specific: #52514e;
+    --heat-pos: #3987e5;
+    --heat-neg: #e66767;
+    --heat-mid: #383835;
+    --delta-good: #0ca30c;
+    --delta-bad: #d03b3b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --border: rgba(255,255,255,.10);
+  --accent: #3987e5;
+  --s-market: #3987e5;
+  --s-size: #d95926;
+  --s-value: #199e70;
+  --s-momentum: #c98500;
+  --s-volatility: #d55181;
+  --s-liquidity: #008300;
+  --s-quality: #9085e9;
+  --s-leverage: #e66767;
+  --s-industry: #898781;
+  --s-specific: #52514e;
+  --heat-pos: #3987e5;
+  --heat-neg: #e66767;
+  --heat-mid: #383835;
+  --delta-good: #0ca30c;
+  --delta-bad: #d03b3b;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.5 var(--sans);
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+header.top {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.top .wrap {
+  display: flex; align-items: center; gap: 14px;
+  padding-top: 14px; padding-bottom: 14px; flex-wrap: wrap;
+}
+.wordmark { display: flex; align-items: center; gap: 10px; }
+.wordmark svg { display: block; }
+.wordmark .name { font-weight: 700; font-size: 19px; letter-spacing: -0.01em; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.chip {
+  font: 500 12px/1 var(--mono);
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--page);
+}
+.chip b { color: var(--ink); font-weight: 600; }
+nav.tabs { border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+nav.tabs .wrap { display: flex; gap: 4px; padding-top: 0; padding-bottom: 0; }
+nav.tabs button {
+  appearance: none; background: none; border: none; cursor: pointer;
+  font: 600 14px var(--sans); color: var(--ink-2);
+  padding: 12px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+nav.tabs button:hover { color: var(--ink); }
+nav.tabs button:focus-visible, .preset:focus-visible, .copy:focus-visible,
+.legend-chip:focus-visible, th.sortable:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+main .wrap { padding-top: 24px; padding-bottom: 48px; }
+section.view { display: none; }
+section.view.active { display: block; }
+h2 { font-size: 16px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { color: var(--ink-2); font-size: 13px; margin: 0 0 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+@media (max-width: 820px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+.tile {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+}
+.tile .k { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tile .v { font: 600 24px/1.3 var(--sans); }
+.tile .v small { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+svg text { font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+.legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+.legend-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 500 12px var(--sans); color: var(--ink-2);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 4px 10px; cursor: pointer; background: none;
+}
+.legend-chip .dot { width: 9px; height: 9px; border-radius: 3px; }
+.legend-chip[aria-pressed="true"] { color: var(--ink); border-color: var(--ink-2); }
+.legend-chip[aria-pressed="false"] { opacity: .5; }
+.legend-chip.static { cursor: default; }
+textarea {
+  width: 100%; min-height: 132px; resize: vertical;
+  font: 13px/1.7 var(--mono); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px;
+}
+textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.preset, .copy {
+  font: 600 12px var(--sans); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 11px; cursor: pointer;
+}
+.preset:hover, .copy:hover { border-color: var(--ink-2); }
+.hint { font-size: 12px; color: var(--muted); }
+.warn { font-size: 13px; color: var(--delta-bad); margin-top: 8px; }
+.hero-vol { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 6px 0 14px; }
+.hero-vol .num { font: 600 44px/1 var(--sans); letter-spacing: -0.02em; }
+.hero-vol .split { font: 500 13px var(--mono); color: var(--ink-2); }
+.spectrum { display: flex; gap: 2px; height: 44px; border-radius: 6px; overflow: hidden; }
+.spectrum .slice {
+  position: relative; min-width: 3px;
+  display: flex; align-items: center; justify-content: center;
+}
+.spectrum .slice span {
+  font: 600 11px var(--mono); color: var(--ink);
+  background: var(--surface); border-radius: 4px; padding: 1px 5px;
+  white-space: nowrap;
+}
+.offset-note { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); }
+th {
+  font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+}
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--ink); }
+.tscroll { overflow-x: auto; }
+.dot-i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 7px; vertical-align: baseline; }
+input[type="search"], input[type="text"] {
+  font: 13px var(--mono); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 12px; width: 220px; max-width: 100%;
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
+.slider-row label { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
+.slider-row label b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.pnl { font: 600 30px/1.2 var(--sans); margin: 10px 0 2px; }
+.pnl.up { color: var(--delta-good); } .pnl.down { color: var(--delta-bad); }
+.pnl-note { font-size: 12px; color: var(--muted); }
+pre.code {
+  font: 12.5px/1.6 var(--mono); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; overflow-x: auto; margin: 8px 0;
+}
+.codehead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#tooltip {
+  position: fixed; z-index: 10; pointer-events: none; display: none;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  padding: 8px 10px; font: 12px/1.5 var(--sans); color: var(--ink);
+  max-width: 260px;
+}
+#tooltip .t { font-weight: 600; margin-bottom: 2px; }
+#tooltip .mono { font-family: var(--mono); }
+footer { border-top: 1px solid var(--border); }
+footer .wrap { padding-top: 18px; padding-bottom: 28px; font-size: 12px; color: var(--muted); }
+a { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .spectrum .slice { transition: flex-basis .25s ease; }
+}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="wordmark">
+    <svg width="30" height="26" viewBox="0 0 30 26" aria-hidden="true">
+      <line x1="0" y1="13" x2="9" y2="13" stroke="var(--ink-2)" stroke-width="1.6"/>
+      <path d="M15 3 L23 23 L7 23 Z" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/>
+      <line x1="19" y1="14" x2="30" y2="5"  stroke="var(--s-market)" stroke-width="1.8"/>
+      <line x1="19" y1="16" x2="30" y2="12" stroke="var(--s-size)" stroke-width="1.8"/>
+      <line x1="19" y1="18" x2="30" y2="19" stroke="var(--s-value)" stroke-width="1.8"/>
+      <line x1="19" y1="20" x2="30" y2="25" stroke="var(--s-momentum)" stroke-width="1.8"/>
+    </svg>
+    <span class="name">riskprism</span>
+  </div>
+  <div class="chips" id="meta-chips"></div>
+</div></header>
+
+<nav class="tabs" aria-label="Views"><div class="wrap">
+  <button data-view="overview" aria-selected="true">Overview</button>
+  <button data-view="portfolio" aria-selected="false">Portfolio</button>
+  <button data-view="stocks" aria-selected="false">Stocks</button>
+  <button data-view="agents" aria-selected="false">For agents</button>
+</div></nav>
+
+<main><div class="wrap">
+
+<section class="view active" id="view-overview">
+  <div class="tiles" id="tiles"></div>
+  <div class="card">
+    <h2>Cumulative factor returns</h2>
+    <p class="sub">Weekly cross-sectional regression factor returns, compounded. Toggle factors below.</p>
+    <div id="freturns-chart"></div>
+    <div class="legend" id="freturns-legend"></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Factor volatility</h2>
+      <p class="sub">Annualized, from the EWMA factor covariance.</p>
+      <div id="fvol-chart"></div>
+    </div>
+    <div class="card">
+      <h2>Factor correlation</h2>
+      <p class="sub">Market + styles. Blue = positive, red = negative.</p>
+      <div class="tscroll" id="corr-heatmap"></div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-portfolio">
+  <div class="card">
+    <h2>Portfolio risk</h2>
+    <p class="sub">One position per line: <span class="hint">TICKER&nbsp;WEIGHT</span> — weights in % or decimals, negative for shorts.</p>
+    <div class="grid2">
+      <div>
+        <textarea id="pf-input" spellcheck="false" aria-label="Portfolio weights"></textarea>
+        <div class="presets" id="pf-presets"></div>
+        <div class="warn" id="pf-warn" role="status"></div>
+      </div>
+      <div id="pf-hero"></div>
+    </div>
+  </div>
+  <div class="card" id="pf-spectrum-card" hidden>
+    <h2>The spectrum</h2>
+    <p class="sub">Share of portfolio variance by source. Hover a slice for detail.</p>
+    <div class="spectrum" id="pf-spectrum"></div>
+    <div class="offset-note" id="pf-offset"></div>
+    <div class="legend" id="pf-spectrum-legend"></div>
+  </div>
+  <div class="grid2" id="pf-detail" hidden>
+    <div class="card">
+      <h2>Factor exposures &amp; contributions</h2>
+      <p class="sub">Exposure in standard deviations; contribution as share of total variance.</p>
+      <div class="tscroll" id="pf-table"></div>
+    </div>
+    <div class="card">
+      <h2>Top asset risk contributions</h2>
+      <p class="sub">Weight × marginal contribution; sums to total volatility.</p>
+      <div id="pf-assets"></div>
+    </div>
+  </div>
+  <div class="card" id="pf-stress-card" hidden>
+    <h2>Stress test</h2>
+    <p class="sub">First-order P&amp;L: exposure × shock, ignoring specific returns.</p>
+    <div class="sliders" id="pf-sliders"></div>
+    <div class="pnl" id="pf-pnl">0.0%</div>
+    <div class="pnl-note" id="pf-pnl-note"></div>
+  </div>
+</section>
+
+<section class="view" id="view-stocks">
+  <div class="card">
+    <h2>Single stock</h2>
+    <div class="controls">
+      <input type="text" id="stock-pick" list="stock-list" placeholder="Type a ticker…" aria-label="Choose a stock">
+      <datalist id="stock-list"></datalist>
+    </div>
+    <div id="stock-card"></div>
+  </div>
+  <div class="card">
+    <h2>Coverage</h2>
+    <div class="controls">
+      <input type="search" id="stock-search" placeholder="Filter tickers…" aria-label="Filter coverage table">
+      <span class="hint" id="stock-count"></span>
+    </div>
+    <div class="tscroll" id="stock-table"></div>
+  </div>
+</section>
+
+<section class="view" id="view-agents">
+  <div class="card">
+    <h2>Point your agent at this model</h2>
+    <p class="sub">riskprism ships an MCP server. Install the package, download the latest artifacts, add the server — your agent can measure portfolio risk.</p>
+    <div class="codehead"><h2 style="font-size:13px">MCP configuration</h2><button class="copy" data-copy="mcp-snippet">Copy</button></div>
+    <pre class="code" id="mcp-snippet">{
+  "mcpServers": {
+    "riskprism": {
+      "command": "riskprism-mcp",
+      "env": { "RISKPRISM_ARTIFACTS": "/path/to/artifacts" }
+    }
+  }
+}</pre>
+    <div class="codehead"><h2 style="font-size:13px">Python</h2><button class="copy" data-copy="py-snippet">Copy</button></div>
+    <pre class="code" id="py-snippet">from riskprism import RiskModel
+
+model = RiskModel.load("artifacts")
+model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
+model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
+  </div>
+  <div class="card">
+    <h2>MCP tools</h2>
+    <div class="tscroll"><table>
+      <thead><tr><th>Tool</th><th>What it returns</th></tr></thead>
+      <tbody>
+        <tr><td><code>get_model_info</code></td><td>Model version, as-of date, factor list, coverage count</td></tr>
+        <tr><td><code>get_portfolio_risk</code></td><td>Total / factor / specific vol, exposures, top contributions</td></tr>
+        <tr><td><code>get_factor_exposures</code></td><td>Per-asset exposures and vol decomposition</td></tr>
+        <tr><td><code>stress_test</code></td><td>First-order P&amp;L under factor shocks</td></tr>
+        <tr><td><code>check_coverage</code></td><td>Which tickers the current build covers</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>The model in one paragraph</h2>
+    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives); specific risk is shrunk toward size buckets. Everything here is computed in your browser from the published artifacts — no server.</p>
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="wrap">
+  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT
+</div></footer>
+
+<div id="tooltip" role="tooltip"></div>
+
+<script>
+const DATA = __RISKPRISM_DATA__;
+
+// ---------- shared ----------
+const STYLES = DATA.styles;
+const MKT = DATA.market;
+const FACTORS = DATA.factors;
+const IND = FACTORS.filter(f => f.startsWith("ind_"));
+const COLOR = f => f === MKT ? "var(--s-market)"
+  : STYLES.includes(f) ? `var(--s-${f})`
+  : f.startsWith("ind_") ? "var(--s-industry)" : "var(--s-specific)";
+const T = DATA.assets.tickers;
+const TIDX = Object.fromEntries(T.map((t, i) => [t, i]));
+const X = DATA.assets.exposures, SPEC = DATA.assets.specific;
+const K = FACTORS.length, COV = DATA.cov;
+const pct = (v, d = 1) => {
+  let s = (v * 100).toFixed(d);
+  if (parseFloat(s) === 0) s = (0).toFixed(d); // no "-0.0%"
+  return s + "%";
+};
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const indName = f => f.replace("ind_", "");
+const label = f => f === MKT ? "market" : f.startsWith("ind_") ? indName(f) : f;
+
+const tip = document.getElementById("tooltip");
+function showTip(html, ev) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+function hover(el, htmlFn) {
+  el.addEventListener("mousemove", ev => showTip(htmlFn(), ev));
+  el.addEventListener("mouseleave", hideTip);
+}
+
+// ---------- tabs ----------
+const tabs = document.querySelectorAll("nav.tabs button");
+function setView(name) {
+  tabs.forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === name)));
+  document.querySelectorAll("section.view").forEach(s =>
+    s.classList.toggle("active", s.id === "view-" + name));
+  if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+}
+tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+const VIEWS = ["overview", "portfolio", "stocks", "agents"];
+const initial = location.hash.slice(1);
+if (VIEWS.includes(initial)) setView(initial);
+window.addEventListener("hashchange", () => {
+  const v = location.hash.slice(1);
+  if (VIEWS.includes(v)) setView(v);
+});
+
+// ---------- header ----------
+const m = DATA.meta;
+document.getElementById("meta-chips").innerHTML = [
+  `<span class="chip"><b>${esc(m.model_version || "")}</b></span>`,
+  `<span class="chip">as of <b>${esc(m.as_of || "")}</b></span>`,
+  `<span class="chip"><b>${m.n_assets}</b> stocks</span>`,
+].join("");
+document.getElementById("tiles").innerHTML = [
+  ["Assets covered", `${m.n_assets}`],
+  ["Factors", `${K} <small>1 mkt · ${STYLES.length} styles · ${IND.length} industries</small>`],
+  ["Regression weeks", `${m.n_periods}`],
+  ["Mean weekly R²", `${(m.mean_r2 ?? 0).toFixed(2)}`],
+].map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+// ---------- portfolio math ----------
+function parseWeights(text) {
+  const w = {}, bad = [];
+  for (const line of text.split("\n")) {
+    const s = line.trim(); if (!s || s.startsWith("#")) continue;
+    const mm = s.match(/^([A-Za-z.\-]{1,6})[\s,:]+(-?\d*\.?\d+)%?$/);
+    if (!mm) { bad.push(s); continue; }
+    w[mm[1].toUpperCase()] = (w[mm[1].toUpperCase()] || 0) + parseFloat(mm[2]);
+  }
+  const gross = Object.values(w).reduce((a, b) => a + Math.abs(b), 0);
+  if (gross > 3) for (const k in w) w[k] /= 100; // entered as percents
+  return { w, bad };
+}
+function computeRisk(weights) {
+  const wv = new Array(T.length).fill(0);
+  const uncovered = [];
+  let gross = 0;
+  for (const [t, v] of Object.entries(weights)) {
+    gross += Math.abs(v);
+    if (t in TIDX) wv[TIDX[t]] = v; else uncovered.push(t);
+  }
+  const x = new Array(K).fill(0);
+  for (let i = 0; i < T.length; i++) if (wv[i]) for (let k = 0; k < K; k++) x[k] += wv[i] * X[i][k];
+  const Fx = new Array(K).fill(0);
+  for (let k = 0; k < K; k++) for (let l = 0; l < K; l++) Fx[k] += COV[k][l] * x[l];
+  let fvar = 0; const contrib = new Array(K);
+  for (let k = 0; k < K; k++) { contrib[k] = x[k] * Fx[k]; fvar += contrib[k]; }
+  let svar = 0;
+  for (let i = 0; i < T.length; i++) if (wv[i]) svar += wv[i] * wv[i] * SPEC[i] * SPEC[i];
+  const tvar = fvar + svar, tvol = Math.sqrt(Math.max(tvar, 0));
+  const ctr = [];
+  if (tvol > 0) for (let i = 0; i < T.length; i++) if (wv[i]) {
+    let xf = 0; for (let k = 0; k < K; k++) xf += X[i][k] * Fx[k];
+    ctr.push([T[i], wv[i] * (xf + SPEC[i] * SPEC[i] * wv[i]) / tvol]);
+  }
+  ctr.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  return { x, contrib, fvar, svar, tvar, tvol, ctr, uncovered, gross };
+}
+
+// ---------- charts ----------
+function hbarChart(rows, { fmt = v => pct(v), max = null } = {}) {
+  // rows: [{name, value, color, tipHtml}]
+  const W = 480, rh = 24, lw = 92, vw = 56, gap = 6;
+  const H = rows.length * (rh + gap);
+  const mx = max ?? Math.max(...rows.map(r => Math.abs(r.value)), 1e-9);
+  const bw = W - lw - vw - 10;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  rows.forEach((r, i) => {
+    const y = i * (rh + gap), w = Math.max(Math.abs(r.value) / mx * bw, 1.5);
+    s += `<text x="${lw - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)">${esc(r.name)}</text>`;
+    s += `<rect data-i="${i}" x="${lw}" y="${y + 3}" width="${w}" height="${rh - 6}" rx="4" style="fill:${r.color}"/>`;
+    s += `<text class="mono" x="${lw + w + 8}" y="${y + rh / 2 + 4}" font-size="11.5" fill="var(--ink)">${fmt(r.value)}</text>`;
+  });
+  s += `</svg>`;
+  const div = document.createElement("div");
+  div.innerHTML = s;
+  div.querySelectorAll("rect").forEach(rc => {
+    const r = rows[+rc.dataset.i];
+    if (r.tipHtml) hover(rc, () => r.tipHtml);
+  });
+  return div;
+}
+
+function divergingBars(rows, { fmt = v => v.toFixed(2) } = {}) {
+  // rows: [{name, value, color, tipHtml}] — bars from a zero baseline
+  const W = 480, rh = 22, lw = 92, gap = 6;
+  const H = rows.length * (rh + gap);
+  const mx = Math.max(...rows.map(r => Math.abs(r.value)), 1e-9);
+  const half = (W - lw - 50) / 2, x0 = lw + half;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  s += `<line x1="${x0}" y1="0" x2="${x0}" y2="${H}" stroke="var(--grid)" stroke-width="1"/>`;
+  rows.forEach((r, i) => {
+    const y = i * (rh + gap), w = Math.max(Math.abs(r.value) / mx * half, 1.5);
+    const bx = r.value >= 0 ? x0 : x0 - w;
+    s += `<text x="${lw - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)">${esc(r.name)}</text>`;
+    s += `<rect data-i="${i}" x="${bx}" y="${y + 3}" width="${w}" height="${rh - 6}" rx="4" style="fill:${r.color}"/>`;
+    const tx = r.value >= 0 ? x0 + w + 6 : x0 - w - 6;
+    s += `<text class="mono" x="${tx}" y="${y + rh / 2 + 4}" text-anchor="${r.value >= 0 ? "start" : "end"}" font-size="11.5" fill="var(--ink)">${fmt(r.value)}</text>`;
+  });
+  s += `</svg>`;
+  const div = document.createElement("div");
+  div.innerHTML = s;
+  div.querySelectorAll("rect").forEach(rc => {
+    const r = rows[+rc.dataset.i];
+    if (r.tipHtml) hover(rc, () => r.tipHtml);
+  });
+  return div;
+}
+
+// ---------- overview: factor returns line chart ----------
+const FR = DATA.factor_returns;
+const lineState = Object.fromEntries(Object.keys(FR.cumulative).map(f =>
+  [f, [MKT, "size", "value", "momentum"].includes(f)]));
+function renderLines() {
+  const holder = document.getElementById("freturns-chart");
+  const on = Object.keys(lineState).filter(f => lineState[f]);
+  const W = 960, H = 300, ml = 52, mr = 70, mt = 12, mb = 26;
+  const n = FR.dates.length;
+  let lo = 0, hi = 0;
+  on.forEach(f => FR.cumulative[f].forEach(v => { lo = Math.min(lo, v); hi = Math.max(hi, v); }));
+  const pad = (hi - lo) * 0.06 + 1e-6; lo -= pad; hi += pad;
+  const xp = i => ml + i / (n - 1) * (W - ml - mr);
+  const yp = v => mt + (hi - v) / (hi - lo) * (H - mt - mb);
+  let s = `<svg id="fr-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  const ticks = 4;
+  for (let g = 0; g <= ticks; g++) {
+    const v = lo + (hi - lo) * g / ticks, y = yp(v);
+    s += `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>`;
+    s += `<text class="mono" x="${ml - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${pct(v, 0)}</text>`;
+  }
+  const xstep = Math.max(1, Math.floor(n / 6));
+  for (let i = 0; i < n; i += xstep)
+    s += `<text class="mono" x="${xp(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${FR.dates[i].slice(0, 7)}</text>`;
+  if (lo < 0 && hi > 0)
+    s += `<line x1="${ml}" y1="${yp(0)}" x2="${W - mr}" y2="${yp(0)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  on.forEach(f => {
+    const pts = FR.cumulative[f].map((v, i) => `${xp(i).toFixed(1)},${yp(v).toFixed(1)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" style="stroke:${COLOR(f)}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  if (on.length <= 4) on.forEach(f => {
+    const v = FR.cumulative[f][n - 1];
+    s += `<text x="${W - mr + 6}" y="${yp(v) + 4}" font-size="11.5" font-weight="600" style="fill:${COLOR(f)}">${label(f)}</text>`;
+  });
+  s += `<line id="fr-cross" x1="0" y1="${mt}" x2="0" y2="${H - mb}" stroke="var(--ink-2)" stroke-width="1" opacity="0"/>`;
+  s += `<rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent" id="fr-hit"/>`;
+  s += `</svg>`;
+  holder.innerHTML = s;
+  const svg = document.getElementById("fr-svg"), hit = document.getElementById("fr-hit"),
+        cross = document.getElementById("fr-cross");
+  hit.addEventListener("mousemove", ev => {
+    const r = svg.getBoundingClientRect(), sx = W / r.width;
+    const px = (ev.clientX - r.left) * sx;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - ml) / (W - ml - mr) * (n - 1))));
+    cross.setAttribute("x1", xp(i)); cross.setAttribute("x2", xp(i));
+    cross.setAttribute("opacity", "1");
+    const rowsHtml = on.map(f =>
+      `<div><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)} <span class="mono">${pct(FR.cumulative[f][i])}</span></div>`).join("");
+    showTip(`<div class="t mono">${FR.dates[i]}</div>${rowsHtml}`, ev);
+  });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("opacity", "0"); hideTip(); });
+}
+const frLegend = document.getElementById("freturns-legend");
+Object.keys(FR.cumulative).forEach(f => {
+  const b = document.createElement("button");
+  b.className = "legend-chip"; b.setAttribute("aria-pressed", String(lineState[f]));
+  b.innerHTML = `<span class="dot" style="background:${COLOR(f)}"></span>${label(f)}`;
+  b.addEventListener("click", () => {
+    lineState[f] = !lineState[f];
+    b.setAttribute("aria-pressed", String(lineState[f]));
+    renderLines();
+  });
+  frLegend.appendChild(b);
+});
+renderLines();
+
+// ---------- overview: factor vol bars ----------
+{
+  const rows = [MKT, ...STYLES, ...IND]
+    .map(f => ({ f, v: DATA.factor_vol[f] }))
+    .filter(r => r.v != null);
+  rows.sort((a, b) => {
+    const ai = a.f.startsWith("ind_"), bi = b.f.startsWith("ind_");
+    return ai !== bi ? ai - bi : ai ? b.v - a.v : 0;
+  });
+  document.getElementById("fvol-chart").appendChild(hbarChart(
+    rows.map(r => ({
+      name: label(r.f), value: r.v, color: COLOR(r.f),
+      tipHtml: `<div class="t">${label(r.f)}</div><span class="mono">${pct(r.v)}</span> annualized factor vol`,
+    }))));
+}
+
+// ---------- overview: correlation heatmap ----------
+{
+  const fs = [MKT, ...STYLES];
+  const idx = fs.map(f => FACTORS.indexOf(f));
+  const cell = 40, lw2 = 84, W = lw2 + fs.length * cell, H = fs.length * cell + 26;
+  let html = `<div style="min-width:${W}px">`;
+  html += `<div style="display:grid;grid-template-columns:${lw2}px repeat(${fs.length},${cell}px)">`;
+  html += `<div></div>` + fs.map(f =>
+    `<div style="font-size:10.5px;color:var(--muted);text-align:center;padding-bottom:4px">${label(f).slice(0, 5)}</div>`).join("");
+  fs.forEach((fr, r) => {
+    html += `<div style="font-size:12px;color:var(--ink-2);display:flex;align-items:center">${label(fr)}</div>`;
+    fs.forEach((fc, c) => {
+      const i = idx[r], j = idx[c];
+      const corr = COV[i][j] / Math.sqrt(COV[i][i] * COV[j][j]);
+      const p = Math.round(Math.min(Math.abs(corr), 1) * 100);
+      const pole = corr >= 0 ? "var(--heat-pos)" : "var(--heat-neg)";
+      html += `<div class="hm" data-r="${r}" data-c="${c}" tabindex="-1" style="height:${cell - 2}px;margin:1px;border-radius:4px;background:color-mix(in oklab, ${pole} ${p}%, var(--heat-mid))"></div>`;
+    });
+  });
+  html += `</div></div>`;
+  const holder = document.getElementById("corr-heatmap");
+  holder.innerHTML = html;
+  holder.querySelectorAll(".hm").forEach(d => {
+    const r = +d.dataset.r, c = +d.dataset.c;
+    const corr = COV[idx[r]][idx[c]] / Math.sqrt(COV[idx[r]][idx[r]] * COV[idx[c]][idx[c]]);
+    hover(d, () => `<div class="t">${label(fs[r])} × ${label(fs[c])}</div>corr <span class="mono">${corr.toFixed(2)}</span>`);
+  });
+}
+
+// ---------- portfolio ----------
+const PRESETS = {
+  "Mega-cap tech": "AAPL 20\nMSFT 20\nNVDA 20\nGOOGL 20\nAMZN 20",
+  "Defensive": "JNJ 15\nPG 15\nKO 15\nPEP 10\nUNH 15\nXOM 15\nT 15",
+  "Long/short": "NVDA 25\nMETA 25\nAAPL 25\nMSFT 25\nXOM -25\nCVX -25\nJNJ -25\nPG -25",
+};
+const presetHolder = document.getElementById("pf-presets");
+Object.entries(PRESETS).forEach(([name, text]) => {
+  const b = document.createElement("button");
+  b.className = "preset"; b.textContent = name;
+  b.addEventListener("click", () => { pfInput.value = text; renderPortfolio(); });
+  presetHolder.appendChild(b);
+});
+const pfInput = document.getElementById("pf-input");
+let debounce;
+pfInput.addEventListener("input", () => { clearTimeout(debounce); debounce = setTimeout(renderPortfolio, 250); });
+
+const CLASSES = [
+  { key: MKT, name: "market" },
+  ...STYLES.map(f => ({ key: f, name: f })),
+  { key: "__ind", name: "industries" },
+  { key: "__spec", name: "specific" },
+];
+let stressShocks = {};
+function renderPortfolio() {
+  const { w, bad } = parseWeights(pfInput.value);
+  const warnEl = document.getElementById("pf-warn");
+  const heroEl = document.getElementById("pf-hero");
+  const cards = ["pf-spectrum-card", "pf-detail", "pf-stress-card"].map(id => document.getElementById(id));
+  if (!Object.keys(w).length) {
+    heroEl.innerHTML = `<p class="hint">Enter positions or pick a preset to see the portfolio's risk spectrum.</p>`;
+    warnEl.textContent = bad.length ? `Couldn't parse: ${bad.join(" · ")}` : "";
+    cards.forEach(c => c.hidden = true);
+    return;
+  }
+  const r = computeRisk(w);
+  const warns = [];
+  if (bad.length) warns.push(`Couldn't parse: ${bad.join(" · ")}`);
+  if (r.uncovered.length) warns.push(`Not covered by this build: ${r.uncovered.join(", ")}`);
+  warnEl.textContent = warns.join(" — ");
+  if (r.tvol === 0) { cards.forEach(c => c.hidden = true); heroEl.innerHTML = ""; return; }
+  cards.forEach(c => c.hidden = false);
+
+  heroEl.innerHTML = `
+    <div class="hero-vol">
+      <span class="num">${pct(r.tvol)}</span>
+      <span class="split">factor ${pct(Math.sqrt(r.fvar))} · specific ${pct(Math.sqrt(r.svar))} · annualized</span>
+    </div>
+    <p class="hint">Gross weight ${pct(r.gross, 0)} · net ${pct(Object.values(w).reduce((a, b) => a + b, 0), 0)} · ${Object.keys(w).length - r.uncovered.length} positions priced</p>`;
+
+  // spectrum: positive variance contributions by class
+  const byClass = CLASSES.map(c => {
+    let v;
+    if (c.key === "__ind") v = FACTORS.reduce((a, f, k) => a + (f.startsWith("ind_") ? r.contrib[k] : 0), 0);
+    else if (c.key === "__spec") v = r.svar;
+    else v = r.contrib[FACTORS.indexOf(c.key)];
+    return { ...c, v };
+  });
+  const posSum = byClass.filter(c => c.v > 0).reduce((a, c) => a + c.v, 0);
+  const negSum = byClass.filter(c => c.v < 0).reduce((a, c) => a + c.v, 0);
+  const spec = document.getElementById("pf-spectrum");
+  spec.innerHTML = "";
+  byClass.filter(c => c.v > 0).forEach(c => {
+    const share = c.v / posSum;
+    const d = document.createElement("div");
+    d.className = "slice";
+    d.style.flex = `${Math.max(share, 0.004)} 1 0`;
+    d.style.background = c.key === "__ind" ? "var(--s-industry)"
+      : c.key === "__spec" ? "var(--s-specific)" : COLOR(c.key);
+    if (share > 0.09) d.innerHTML = `<span>${esc(c.name)} ${Math.round(c.v / r.tvar * 100)}%</span>`;
+    hover(d, () => `<div class="t">${c.name}</div><span class="mono">${pct(c.v / r.tvar, 1)}</span> of total variance`);
+    spec.appendChild(d);
+  });
+  document.getElementById("pf-offset").textContent = negSum < -1e-9
+    ? `Cross-factor hedging offsets ${pct(-negSum / r.tvar, 1)} of variance (negative contributions not drawn).`
+    : "";
+  document.getElementById("pf-spectrum-legend").innerHTML = byClass
+    .map(c => `<span class="legend-chip static"><span class="dot" style="background:${
+      c.key === "__ind" ? "var(--s-industry)" : c.key === "__spec" ? "var(--s-specific)" : COLOR(c.key)
+    }"></span>${esc(c.name)} <span class="mono">&nbsp;${pct(c.v / r.tvar, 1)}</span></span>`).join("");
+
+  // factor table (relief-rule table view of the spectrum)
+  let tbl = `<table><thead><tr><th>Factor</th><th class="num">Exposure</th><th class="num">Var share</th></tr></thead><tbody>`;
+  const order = [MKT, ...STYLES, ...IND];
+  order.forEach(f => {
+    const k = FACTORS.indexOf(f);
+    if (k < 0 || (f.startsWith("ind_") && Math.abs(r.x[k]) < 1e-6)) return;
+    tbl += `<tr><td><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)}</td>
+      <td class="num">${r.x[k].toFixed(2)}</td><td class="num">${pct(r.contrib[k] / r.tvar, 1)}</td></tr>`;
+  });
+  tbl += `<tr><td><span class="dot-i" style="background:var(--s-specific)"></span>specific</td>
+    <td class="num">—</td><td class="num">${pct(r.svar / r.tvar, 1)}</td></tr></tbody></table>`;
+  document.getElementById("pf-table").innerHTML = tbl;
+
+  // asset contributions
+  const holderA = document.getElementById("pf-assets");
+  holderA.innerHTML = "";
+  holderA.appendChild(divergingBars(
+    r.ctr.slice(0, 10).map(([t, v]) => ({
+      name: t, value: v, color: v >= 0 ? "var(--s-market)" : "var(--s-leverage)",
+      tipHtml: `<div class="t mono">${t}</div>contributes <span class="mono">${pct(v)}</span> of ${pct(r.tvol)} total vol`,
+    })), { fmt: v => pct(v) }));
+
+  renderStress(r);
+}
+function renderStress(r) {
+  const holder = document.getElementById("pf-sliders");
+  const stressFactors = [MKT, "size", "value", "momentum", "volatility"];
+  holder.innerHTML = "";
+  stressFactors.forEach(f => {
+    if (!(f in stressShocks)) stressShocks[f] = f === MKT ? -10 : 0;
+    const row = document.createElement("div");
+    row.className = "slider-row";
+    row.innerHTML = `<label><span><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)}</span><b id="sv-${f}">${stressShocks[f]}%</b></label>
+      <input type="range" min="-20" max="20" step="1" value="${stressShocks[f]}" aria-label="${label(f)} shock">`;
+    row.querySelector("input").addEventListener("input", ev => {
+      stressShocks[f] = +ev.target.value;
+      document.getElementById(`sv-${f}`).textContent = `${stressShocks[f]}%`;
+      updatePnl(r);
+    });
+    holder.appendChild(row);
+  });
+  updatePnl(r);
+}
+function updatePnl(r) {
+  let pnl = 0; const parts = [];
+  for (const [f, s] of Object.entries(stressShocks)) {
+    const k = FACTORS.indexOf(f);
+    const p = r.x[k] * s / 100;
+    pnl += p;
+    if (s !== 0) parts.push(`${label(f)} ${s}% → ${pct(p)}`);
+  }
+  const el = document.getElementById("pf-pnl");
+  el.textContent = (pnl >= 0 ? "+" : "") + pct(pnl);
+  el.className = "pnl " + (pnl >= 0 ? "up" : "down");
+  document.getElementById("pf-pnl-note").textContent =
+    parts.length ? parts.join(" · ") : "Move a slider to shock the portfolio.";
+}
+renderPortfolio();
+
+// ---------- stocks ----------
+const dl = document.getElementById("stock-list");
+T.forEach(t => { const o = document.createElement("option"); o.value = t; dl.appendChild(o); });
+function topTilt(i) {
+  let best = 0, bf = "";
+  STYLES.forEach(f => {
+    const v = X[i][FACTORS.indexOf(f)];
+    if (Math.abs(v) > Math.abs(best)) { best = v; bf = f; }
+  });
+  return { f: bf, v: best };
+}
+function renderStock(t) {
+  const holder = document.getElementById("stock-card");
+  const i = TIDX[t];
+  if (i == null) { holder.innerHTML = `<p class="hint">${t ? esc(t) + " is not covered by this build." : "Pick a ticker to see its factor profile."}</p>`; return; }
+  let fvar = 0;
+  const xi = X[i];
+  for (let k = 0; k < K; k++) for (let l = 0; l < K; l++) fvar += xi[k] * COV[k][l] * xi[l];
+  const tvol = Math.sqrt(Math.max(fvar, 0) + SPEC[i] * SPEC[i]);
+  holder.innerHTML = `
+    <div class="hero-vol">
+      <span class="num mono" style="font-size:34px">${esc(t)}</span>
+      <span class="num">${pct(tvol)}</span>
+      <span class="split">factor ${pct(Math.sqrt(fvar))} · specific ${pct(SPEC[i])} · ${esc(DATA.assets.industry[i])}</span>
+    </div>
+    <div id="stock-expo"></div>
+    <p class="hint">Exposures in cross-sectional standard deviations (cap-weighted mean 0). Hover for percentile.</p>`;
+  const rows = STYLES.map(f => {
+    const k = FACTORS.indexOf(f), v = xi[k];
+    const col = X.map(r2 => r2[k]).sort((a, b) => a - b);
+    let rank = col.findIndex(c => c >= v); if (rank < 0) rank = col.length - 1;
+    const pctl = Math.round(rank / (col.length - 1) * 100);
+    return {
+      name: f, value: v, color: COLOR(f),
+      tipHtml: `<div class="t">${f}</div><span class="mono">${v.toFixed(2)}</span> σ — ${pctl}th percentile of universe`,
+    };
+  });
+  document.getElementById("stock-expo").appendChild(divergingBars(rows));
+}
+document.getElementById("stock-pick").addEventListener("input", ev => renderStock(ev.target.value.toUpperCase()));
+renderStock(T.includes("AAPL") ? "AAPL" : T[0]);
+document.getElementById("stock-pick").value = T.includes("AAPL") ? "AAPL" : T[0];
+
+let sortKey = "total_vol", sortDir = -1;
+function renderStockTable() {
+  const q = document.getElementById("stock-search").value.toUpperCase();
+  const rows = T.map((t, i) => ({
+    t, i, ind: DATA.assets.industry[i],
+    tv: DATA.assets.total_vol[i], sv: SPEC[i], tilt: topTilt(i),
+  })).filter(r => !q || r.t.startsWith(q));
+  const keyFns = { ticker: r => r.t, industry: r => r.ind, total_vol: r => r.tv, specific: r => r.sv };
+  rows.sort((a, b) => {
+    const ka = keyFns[sortKey](a), kb = keyFns[sortKey](b);
+    return (ka < kb ? -1 : ka > kb ? 1 : 0) * sortDir;
+  });
+  document.getElementById("stock-count").textContent = `${rows.length} of ${T.length} names`;
+  const arrow = k => sortKey === k ? (sortDir > 0 ? " ↑" : " ↓") : "";
+  let html = `<table><thead><tr>
+    <th class="sortable" data-k="ticker" tabindex="0">Ticker${arrow("ticker")}</th>
+    <th class="sortable" data-k="industry" tabindex="0">Industry${arrow("industry")}</th>
+    <th class="sortable num" data-k="total_vol" tabindex="0">Total vol${arrow("total_vol")}</th>
+    <th class="sortable num" data-k="specific" tabindex="0">Specific${arrow("specific")}</th>
+    <th>Top style tilt</th></tr></thead><tbody>`;
+  rows.slice(0, 500).forEach(r => {
+    html += `<tr><td class="mono" style="font-family:var(--mono)">${esc(r.t)}</td><td>${esc(r.ind)}</td>
+      <td class="num">${pct(r.tv)}</td><td class="num">${pct(r.sv)}</td>
+      <td><span class="dot-i" style="background:${COLOR(r.tilt.f)}"></span>${r.tilt.f} <span class="num" style="font-family:var(--mono)">${r.tilt.v.toFixed(1)}</span></td></tr>`;
+  });
+  html += `</tbody></table>`;
+  const holder = document.getElementById("stock-table");
+  holder.innerHTML = html;
+  holder.querySelectorAll("th.sortable").forEach(th => {
+    const activate = () => {
+      const k = th.dataset.k;
+      if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = k === "ticker" || k === "industry" ? 1 : -1; }
+      renderStockTable();
+    };
+    th.addEventListener("click", activate);
+    th.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); activate(); } });
+  });
+}
+document.getElementById("stock-search").addEventListener("input", renderStockTable);
+renderStockTable();
+
+// ---------- agents: copy buttons ----------
+document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
+  await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+  const old = b.textContent; b.textContent = "Copied";
+  setTimeout(() => { b.textContent = old; }, 1200);
+}));
+</script>
+</body>
+</html>
