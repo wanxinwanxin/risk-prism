@@ -7,7 +7,7 @@ on:
     inputs:
       max_names:
         description: "Universe size cap"
-        default: "1500"
+        default: "3000"
 
 permissions:
   contents: write
@@ -22,6 +22,17 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -e .
+      - name: Fetch previous build (capture-forward history)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release download --pattern riskprism-artifacts.tar.gz --dir prev 2>/dev/null; then
+            mkdir -p artifacts_prev && tar xzf prev/riskprism-artifacts.tar.gz -C artifacts_prev
+            echo "PRIOR_FLAG=--prior artifacts_prev" >> "$GITHUB_ENV"
+            echo "prior build found; appending new weeks to its history"
+          else
+            echo "no prior release; cold build"
+          fi
       - name: Build model
         env:
           # Define RISKPRISM_EDGAR_UA as a repo variable, e.g.
@@ -29,7 +40,8 @@ jobs:
           # — SEC's fair-access policy requires a contact email.
           RISKPRISM_EDGAR_UA: ${{ vars.RISKPRISM_EDGAR_UA }}
         run: |
-          riskprism-build --max-names "${{ github.event.inputs.max_names || '1500' }}" --out artifacts
+          riskprism-build --max-names "${{ github.event.inputs.max_names || '3000' }}" \
+            $PRIOR_FLAG --out artifacts
       - name: Set release tag
         id: tag
         run: echo "tag=model-$(date +%F)" >> "$GITHUB_OUTPUT"

@@ -54,7 +54,8 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})
 ```bash
 pip install -e ".[dev]"
 export RISKPRISM_EDGAR_UA="your-project (you@example.com)"   # SEC fair-access policy
-riskprism-build --max-names 1500 --out artifacts             # yahoo prices, no key needed
+riskprism-build --max-names 3000 --out artifacts             # yahoo prices, no key needed
+riskprism-build --prior artifacts_prev --out artifacts       # append new weeks to a prior build
 riskprism-build --provider tiingo ...                        # licensed data, needs TIINGO_API_KEY
 ```
 
@@ -86,8 +87,9 @@ riskprism-site --artifacts artifacts --out site   # index.html + model.md + llms
 | Horizon | Medium (weekly returns, annualized outputs) |
 | Estimation | Cross-sectional WLS (√cap weights), cap-weighted industry constraint |
 | Factor covariance | EWMA — vol half-life 13w, correlation half-life 26w, PSD-repaired |
-| Specific risk | EWMA residual vol, shrunk 30% toward size-bucket mean |
-| Universe | EDGAR-registered US common stocks, price ≥ $2, ADV ≥ $1M |
+| Specific risk | EWMA residual vol blended with a structural (characteristic-based) prior by history length |
+| Universe | Estimation: price ≥ $2, ADV ≥ $1M, 26w+ history · Coverage: everything alive ≥ $1, priors fill the gaps |
+| History | Capture-forward: weekly builds append to the prior release; delistings imputed, survivorship bias decays out |
 
 Full methodology in [docs/METHODOLOGY.md](docs/METHODOLOGY.md); design
 decisions and their rationale in [docs/DECISIONS.md](docs/DECISIONS.md).

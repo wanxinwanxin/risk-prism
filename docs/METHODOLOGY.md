@@ -1,19 +1,43 @@
 # PRISM-US-MH methodology
 
-Version `PRISM-US-MH-0.1`. Weekly-frequency, medium-horizon US equity
+Version `PRISM-US-MH-0.2`. Weekly-frequency, medium-horizon US equity
 fundamental factor model. All parameters live in `riskprism.config.ModelConfig`.
 
-## Universe
+## Two universes
 
-EDGAR-registered US issuers, filtered to plain 1–5 letter tickers, one per
-CIK (shortest ticker = primary share class heuristic). Liquidity filters:
-last price ≥ $2, 21-day median dollar volume ≥ $1M, ≥ 26 weeks of history.
+Candidates are EDGAR-registered US issuers, filtered to 1–5 letter tickers
+(single-letter class suffixes allowed), one per CIK (first-listed = primary
+class).
 
-**Known limitation — survivorship bias**: the price panel is fetched as of
-build time, so names delisted before the build are absent from the
-regression history. Risk *forecasts* (the main product) are less affected
-than historical factor-return studies. Treat `factor_returns.parquet` as
-indicative, not research-grade, until a delisted-price source is added.
+- **Estimation universe** — participates in the factor-return regressions:
+  last price ≥ $2, 21-day median dollar volume ≥ $1M, ≥ 26 weeks of
+  history, each evaluated at the name's own last traded date (so a stock
+  that was liquid before delisting still contributes its history).
+- **Coverage universe** — gets exposures and risk: every name trading
+  within 10 days of the build date at ≥ $1. No history requirement — a
+  week-old IPO is covered. Risk comes through the factor structure
+  (x'Fx uses the covariance estimated from liquid names) plus the
+  structural specific-risk prior below. Exposure standardization
+  statistics are fit on the estimation universe and applied to everyone,
+  so illiquid tails can't distort the scale.
+
+## Capture-forward history & delistings
+
+Each build can append to a prior build's artifacts (`--prior`): only new
+weeks are regressed, and the prior factor-return and residual history is
+kept — including rows from names that have since delisted. A name whose
+prices stop gets an imputed final-week return: −30% if its last price was
+under $5 (performance delisting, per Shumway 1997), 0 otherwise (mergers —
+the last traded price already reflects deal terms). History is capped at a
+trailing 156 weeks.
+
+Consequence: history recorded after launch is survivorship-free by
+construction, and because the EWMA half-lives are 13/26 weeks, the biased
+cold-start history decays out of the live model within ~18–24 months.
+Weeks recorded before launch remain biased; factor-return *means* are
+affected more than the covariances the model ships. A methodology version
+bump discards prior history (cold rebuild) rather than appending across
+incompatible definitions.
 
 ## Style factors
 
@@ -59,9 +83,20 @@ risk adjustment are v2 candidates.
 
 ## Specific risk
 
-Per-asset EWMA (13-week half-life) of squared regression residuals,
-annualized, then shrunk 30% toward the asset's size-quintile mean. Assets
-with <13 residual observations receive the bucket mean outright.
+Two estimates, blended by history length:
+
+1. **Time-series**: per-asset EWMA (13-week half-life) of squared
+   regression residuals, annualized. Requires ≥ 13 observations.
+2. **Structural**: each week, ln(time-series vol) is regressed
+   cross-sectionally on characteristics — size, volatility, and liquidity
+   exposures plus industry — over assets that have good history. The fit
+   predicts specific vol for *every* asset (with a Duan smearing
+   correction for the exp() retransformation).
+
+Final estimate: `σᵢ = wᵢ·TSᵢ + (1−wᵢ)·structuralᵢ` with
+`wᵢ = Tᵢ/(Tᵢ + 26)`. Assets with no residual history (IPOs, coverage-only
+names) get the pure structural prior. `asset_meta.parquet` records each
+asset's blend weight so consumers can distinguish measured from inferred.
 
 ## Portfolio analytics
 

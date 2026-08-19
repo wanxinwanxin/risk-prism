@@ -394,7 +394,8 @@ a { color: var(--accent); }
   <div class="card">
     <h2>Read this before trusting it</h2>
     <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
-      <li><b>Survivorship bias</b>: prices are fetched at build time, so names delisted before the build are missing from history. Risk <i>forecasts</i> are less affected than the factor-return charts — treat those as indicative.</li>
+      <li><b>Survivorship bias, decaying</b>: history recorded before this project launched excludes names that had already delisted. Each weekly build now appends to the prior build's history — names that stop trading get an imputed delisting return and keep their rows — and with 13/26-week half-lives the biased cold start washes out of the model within ~18–24 months.</li>
+      <li><b>Prior-driven names</b>: stocks outside the estimation universe (illiquid, recent IPOs) get specific risk from a structural model of their characteristics, not their own history — the stock page shows how much is prior.</li>
       <li><b>Crude universe heuristics</b>: ticker-pattern filters; some ADRs leak through; one share class per company.</li>
       <li><b>First-order stress tests</b>: exposure × shock, no convexity, no specific returns.</li>
       <li>Full methodology and every parameter: <a id="meth-repo-link" href="#">docs/METHODOLOGY.md on GitHub</a>.</li>
@@ -515,7 +516,7 @@ document.getElementById("meta-chips").innerHTML = [
   `<span class="chip"><b>${m.n_assets}</b> stocks</span>`,
 ].join("");
 document.getElementById("tiles").innerHTML = [
-  ["Assets covered", `${m.n_assets}`],
+  ["Assets covered", `${m.n_assets} <small>${m.n_estimation ?? m.n_assets} estimation</small>`],
   ["Factors", `${K} <small>1 mkt · ${STYLES.length} styles · ${IND.length} industries</small>`],
   ["Regression weeks", `${m.n_periods}`],
   ["Mean weekly R²", `${(m.mean_r2 ?? 0).toFixed(2)}`],
@@ -597,8 +598,10 @@ function divergingBars(rows, { fmt = v => v.toFixed(2) } = {}) {
     const bx = r.value >= 0 ? x0 : x0 - w;
     s += `<text x="${lw - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)">${esc(r.name)}</text>`;
     s += `<rect data-i="${i}" x="${bx}" y="${y + 3}" width="${w}" height="${rh - 6}" rx="4" style="fill:${r.color}"/>`;
-    const tx = r.value >= 0 ? x0 + w + 6 : x0 - w - 6;
-    s += `<text class="mono" x="${tx}" y="${y + rh / 2 + 4}" text-anchor="${r.value >= 0 ? "start" : "end"}" font-size="11.5" fill="var(--ink)">${fmt(r.value)}</text>`;
+    let tx = r.value >= 0 ? x0 + w + 6 : x0 - w - 6;
+    let anchor = r.value >= 0 ? "start" : "end";
+    if (r.value < 0 && tx < lw + 46) { tx = x0 + 6; anchor = "start"; } // long bar: flip label
+    s += `<text class="mono" x="${tx}" y="${y + rh / 2 + 4}" text-anchor="${anchor}" font-size="11.5" fill="var(--ink)">${fmt(r.value)}</text>`;
   });
   s += `</svg>`;
   const div = document.createElement("div");
@@ -880,11 +883,18 @@ function renderStock(t) {
   const xi = X[i];
   for (let k = 0; k < K; k++) for (let l = 0; l < K; l++) fvar += xi[k] * COV[k][l] * xi[l];
   const tvol = Math.sqrt(Math.max(fvar, 0) + SPEC[i] * SPEC[i]);
+  const A = DATA.assets;
+  const quality = A.estu
+    ? (A.estu[i]
+        ? `<span class="chip">estimation universe · ${A.weeks[i]}w history</span>`
+        : `<span class="chip">extended coverage · specific risk ${Math.round((1 - (A.blend?.[i] ?? 0)) * 100)}% structural prior</span>`)
+    : "";
   holder.innerHTML = `
     <div class="hero-vol">
       <span class="num mono" style="font-size:34px">${esc(t)}</span>
       <span class="num">${pct(tvol)}</span>
       <span class="split">factor ${pct(Math.sqrt(fvar))} · specific ${pct(SPEC[i])} · ${esc(DATA.assets.industry[i])}</span>
+      ${quality}
     </div>
     <div id="stock-expo"></div>
     <p class="hint">Exposures in cross-sectional standard deviations (cap-weighted mean 0). Hover for percentile.</p>`;

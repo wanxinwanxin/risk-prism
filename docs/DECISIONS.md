@@ -47,7 +47,24 @@ Agent endpoint: every build also renders `/model.md` (llms.txt-style
 markdown mirror — model card, factor definitions, correlations, coverage)
 because a JS-rendered page is hostile to text-only agents.
 
-## 5. Refresh: weekly GitHub Actions
+## 5. Coverage via priors + capture-forward history (v0.2, 2026-08-19)
+
+Split the estimation universe (liquid names that estimate factor returns)
+from the coverage universe (everything alive at build date). Coverage
+names get risk through the factor structure plus a structural specific-risk
+model (ln vol regressed on size/volatility/liquidity/industry), blended
+with their own EWMA by w = T/(T+26w) — so IPOs and illiquid names are
+covered with explicit, inspectable priors (`asset_meta.parquet`).
+
+Survivorship: rejected buying delisted-price data (CRSP/Sharadar/Norgate —
+paid, redistribution-restricted; free sources only provide delisting
+*lists*, not prices). Instead: capture-forward. Weekly builds append to the
+prior release's factor-return/residual history; disappearing names get a
+Shumway-style imputed delisting return (−30% under $5, else 0) and keep
+their rows. With 13/26-week half-lives the biased cold start decays out
+within ~18–24 months — the bias is documented and self-liquidating.
+
+## 6. Refresh: weekly GitHub Actions
 
 Cron builds the model weekly and publishes the artifact directory. Weekly
 matches the medium-horizon design; daily refresh only matters for
