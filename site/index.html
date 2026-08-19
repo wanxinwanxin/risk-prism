@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>riskprism</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --border: rgba(11,11,11,.10);
+  --accent: #2a78d6;
+  --s-market: #2a78d6;
+  --s-size: #eb6834;
+  --s-value: #1baf7a;
+  --s-momentum: #eda100;
+  --s-volatility: #e87ba4;
+  --s-liquidity: #008300;
+  --s-quality: #4a3aa7;
+  --s-leverage: #e34948;
+  --s-industry: #898781;
+  --s-specific: #c3c2b7;
+  --heat-pos: #2a78d6;
+  --heat-neg: #e34948;
+  --heat-mid: #f0efec;
+  --delta-good: #006300;
+  --delta-bad: #d03b3b;
+  --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --border: rgba(255,255,255,.10);
+    --accent: #3987e5;
+    --s-market: #3987e5;
+    --s-size: #d95926;
+    --s-value: #199e70;
+    --s-momentum: #c98500;
+    --s-volatility: #d55181;
+    --s-liquidity: #008300;
+    --s-quality: #9085e9;
+    --s-leverage: #e66767;
+    --s-industry: #898781;
+    --s-specific: #52514e;
+    --heat-pos: #3987e5;
+    --heat-neg: #e66767;
+    --heat-mid: #383835;
+    --delta-good: #0ca30c;
+    --delta-bad: #d03b3b;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #ffffff;
+  --ink-2: #c3c2b7;
+  --muted: #898781;
+  --grid: #2c2c2a;
+  --border: rgba(255,255,255,.10);
+  --accent: #3987e5;
+  --s-market: #3987e5;
+  --s-size: #d95926;
+  --s-value: #199e70;
+  --s-momentum: #c98500;
+  --s-volatility: #d55181;
+  --s-liquidity: #008300;
+  --s-quality: #9085e9;
+  --s-leverage: #e66767;
+  --s-industry: #898781;
+  --s-specific: #52514e;
+  --heat-pos: #3987e5;
+  --heat-neg: #e66767;
+  --heat-mid: #383835;
+  --delta-good: #0ca30c;
+  --delta-bad: #d03b3b;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.5 var(--sans);
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+header.top {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.top .wrap {
+  display: flex; align-items: center; gap: 14px;
+  padding-top: 14px; padding-bottom: 14px; flex-wrap: wrap;
+}
+.wordmark { display: flex; align-items: center; gap: 10px; }
+.wordmark svg { display: block; }
+.wordmark .name { font-weight: 700; font-size: 19px; letter-spacing: -0.01em; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+.chip {
+  font: 500 12px/1 var(--mono);
+  color: var(--ink-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: var(--page);
+}
+.chip b { color: var(--ink); font-weight: 600; }
+nav.tabs { border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 5; }
+nav.tabs .wrap { display: flex; gap: 4px; padding-top: 0; padding-bottom: 0; }
+nav.tabs button {
+  appearance: none; background: none; border: none; cursor: pointer;
+  font: 600 14px var(--sans); color: var(--ink-2);
+  padding: 12px 14px; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+nav.tabs button:hover { color: var(--ink); }
+nav.tabs button:focus-visible, .preset:focus-visible, .copy:focus-visible,
+.legend-chip:focus-visible, th.sortable:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+main .wrap { padding-top: 24px; padding-bottom: 48px; }
+section.view { display: none; }
+section.view.active { display: block; }
+h2 { font-size: 16px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
+.sub { color: var(--ink-2); font-size: 13px; margin: 0 0 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 16px;
+}
+.tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+@media (max-width: 820px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+.tile {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+}
+.tile .k { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tile .v { font: 600 24px/1.3 var(--sans); }
+.tile .v small { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+svg text { font-family: var(--sans); }
+svg .mono { font-family: var(--mono); }
+.legend { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 4px; }
+.legend-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font: 500 12px var(--sans); color: var(--ink-2);
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 4px 10px; cursor: pointer; background: none;
+}
+.legend-chip .dot { width: 9px; height: 9px; border-radius: 3px; }
+.legend-chip[aria-pressed="true"] { color: var(--ink); border-color: var(--ink-2); }
+.legend-chip[aria-pressed="false"] { opacity: .5; }
+.legend-chip.static { cursor: default; }
+textarea {
+  width: 100%; min-height: 132px; resize: vertical;
+  font: 13px/1.7 var(--mono); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px;
+}
+textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.presets { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.preset, .copy {
+  font: 600 12px var(--sans); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 7px 11px; cursor: pointer;
+}
+.preset:hover, .copy:hover { border-color: var(--ink-2); }
+.hint { font-size: 12px; color: var(--muted); }
+.warn { font-size: 13px; color: var(--delta-bad); margin-top: 8px; }
+.hero-vol { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 6px 0 14px; }
+.hero-vol .num { font: 600 44px/1 var(--sans); letter-spacing: -0.02em; }
+.hero-vol .split { font: 500 13px var(--mono); color: var(--ink-2); }
+.spectrum { display: flex; gap: 2px; height: 44px; border-radius: 6px; overflow: hidden; }
+.spectrum .slice {
+  position: relative; min-width: 3px;
+  display: flex; align-items: center; justify-content: center;
+}
+.spectrum .slice span {
+  font: 600 11px var(--mono); color: var(--ink);
+  background: var(--surface); border-radius: 4px; padding: 1px 5px;
+  white-space: nowrap;
+}
+.offset-note { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); }
+th {
+  font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+}
+td.num, th.num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+th.sortable { cursor: pointer; }
+th.sortable:hover { color: var(--ink); }
+.tscroll { overflow-x: auto; }
+.dot-i { display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 7px; vertical-align: baseline; }
+input[type="search"], input[type="text"] {
+  font: 13px var(--mono); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 12px; width: 220px; max-width: 100%;
+}
+input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.sliders { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
+.slider-row label { display: flex; justify-content: space-between; font-size: 13px; color: var(--ink-2); }
+.slider-row label b { font-family: var(--mono); color: var(--ink); font-weight: 600; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.pnl { font: 600 30px/1.2 var(--sans); margin: 10px 0 2px; }
+.pnl.up { color: var(--delta-good); } .pnl.down { color: var(--delta-bad); }
+.pnl-note { font-size: 12px; color: var(--muted); }
+pre.code {
+  font: 12.5px/1.6 var(--mono); color: var(--ink);
+  background: var(--page); border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; overflow-x: auto; margin: 8px 0;
+}
+.codehead { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#tooltip {
+  position: fixed; z-index: 10; pointer-events: none; display: none;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  padding: 8px 10px; font: 12px/1.5 var(--sans); color: var(--ink);
+  max-width: 260px;
+}
+#tooltip .t { font-weight: 600; margin-bottom: 2px; }
+#tooltip .mono { font-family: var(--mono); }
+footer { border-top: 1px solid var(--border); }
+footer .wrap { padding-top: 18px; padding-bottom: 28px; font-size: 12px; color: var(--muted); }
+.pipe-svg { display: block; min-width: 900px; max-width: 100%; height: auto; color: var(--ink-2); }
+.pipe-svg .box { fill: var(--page); stroke: currentColor; stroke-width: 1.2; rx: 8; }
+.pipe-svg .box-hot { stroke: var(--accent); stroke-width: 1.6; }
+.pipe-svg .t1 { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.pipe-svg .t2 { fill: var(--ink-2); font-size: 11px; }
+.pipe-svg .t3 { fill: var(--muted); font-size: 10.5px; font-family: var(--mono); }
+.pipe-svg .alabel { fill: var(--muted); font-size: 10.5px; }
+a { color: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .spectrum .slice { transition: flex-basis .25s ease; }
+}
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <div class="wordmark">
+    <svg width="30" height="26" viewBox="0 0 30 26" aria-hidden="true">
+      <line x1="0" y1="13" x2="9" y2="13" stroke="var(--ink-2)" stroke-width="1.6"/>
+      <path d="M15 3 L23 23 L7 23 Z" fill="none" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/>
+      <line x1="19" y1="14" x2="30" y2="5"  stroke="var(--s-market)" stroke-width="1.8"/>
+      <line x1="19" y1="16" x2="30" y2="12" stroke="var(--s-size)" stroke-width="1.8"/>
+      <line x1="19" y1="18" x2="30" y2="19" stroke="var(--s-value)" stroke-width="1.8"/>
+      <line x1="19" y1="20" x2="30" y2="25" stroke="var(--s-momentum)" stroke-width="1.8"/>
+    </svg>
+    <span class="name">riskprism</span>
+  </div>
+  <div class="chips" id="meta-chips"></div>
+</div></header>
+
+<nav class="tabs" aria-label="Views"><div class="wrap">
+  <button data-view="overview" aria-selected="true">Overview</button>
+  <button data-view="portfolio" aria-selected="false">Portfolio</button>
+  <button data-view="stocks" aria-selected="false">Stocks</button>
+  <button data-view="methodology" aria-selected="false">Methodology</button>
+  <button data-view="agents" aria-selected="false">For agents</button>
+</div></nav>
+
+<main><div class="wrap">
+
+<section class="view active" id="view-overview">
+  <div class="tiles" id="tiles"></div>
+  <div class="card">
+    <h2>Cumulative factor returns</h2>
+    <p class="sub">Weekly cross-sectional regression factor returns, compounded. Toggle factors below.</p>
+    <div id="freturns-chart"></div>
+    <div class="legend" id="freturns-legend"></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Factor volatility</h2>
+      <p class="sub">Annualized, from the EWMA factor covariance.</p>
+      <div id="fvol-chart"></div>
+    </div>
+    <div class="card">
+      <h2>Factor correlation</h2>
+      <p class="sub">Market + styles. Blue = positive, red = negative.</p>
+      <div class="tscroll" id="corr-heatmap"></div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-portfolio">
+  <div class="card">
+    <h2>Portfolio risk</h2>
+    <p class="sub">One position per line: <span class="hint">TICKER&nbsp;WEIGHT</span> — weights in % or decimals, negative for shorts.</p>
+    <div class="grid2">
+      <div>
+        <textarea id="pf-input" spellcheck="false" aria-label="Portfolio weights"></textarea>
+        <div class="presets" id="pf-presets"></div>
+        <div class="warn" id="pf-warn" role="status"></div>
+      </div>
+      <div id="pf-hero"></div>
+    </div>
+  </div>
+  <div class="card" id="pf-spectrum-card" hidden>
+    <h2>The spectrum</h2>
+    <p class="sub">Share of portfolio variance by source. Hover a slice for detail.</p>
+    <div class="spectrum" id="pf-spectrum"></div>
+    <div class="offset-note" id="pf-offset"></div>
+    <div class="legend" id="pf-spectrum-legend"></div>
+  </div>
+  <div class="grid2" id="pf-detail" hidden>
+    <div class="card">
+      <h2>Factor exposures &amp; contributions</h2>
+      <p class="sub">Exposure in standard deviations; contribution as share of total variance.</p>
+      <div class="tscroll" id="pf-table"></div>
+    </div>
+    <div class="card">
+      <h2>Top asset risk contributions</h2>
+      <p class="sub">Weight × marginal contribution; sums to total volatility.</p>
+      <div id="pf-assets"></div>
+    </div>
+  </div>
+  <div class="card" id="pf-stress-card" hidden>
+    <h2>Stress test</h2>
+    <p class="sub">First-order P&amp;L: exposure × shock, ignoring specific returns.</p>
+    <div class="sliders" id="pf-sliders"></div>
+    <div class="pnl" id="pf-pnl">0.0%</div>
+    <div class="pnl-note" id="pf-pnl-note"></div>
+  </div>
+</section>
+
+<section class="view" id="view-stocks">
+  <div class="card">
+    <h2>Single stock</h2>
+    <div class="controls">
+      <input type="text" id="stock-pick" list="stock-list" placeholder="Type a ticker…" aria-label="Choose a stock">
+      <datalist id="stock-list"></datalist>
+    </div>
+    <div id="stock-card"></div>
+  </div>
+  <div class="card">
+    <h2>Coverage</h2>
+    <div class="controls">
+      <input type="search" id="stock-search" placeholder="Filter tickers…" aria-label="Filter coverage table">
+      <span class="hint" id="stock-count"></span>
+    </div>
+    <div class="tscroll" id="stock-table"></div>
+  </div>
+</section>
+
+<section class="view" id="view-methodology">
+  <div class="card">
+    <h2>How a portfolio becomes a spectrum</h2>
+    <p class="sub">The full pipeline, run weekly. Numbers below are from the current build.</p>
+    <div class="tscroll" id="pipeline-diagram"></div>
+  </div>
+  <div class="card">
+    <h2>One week of the model</h2>
+    <p class="sub">Every Friday, that week's stock returns are regressed on the exposures known at the start of the week:</p>
+    <pre class="code" style="font-size:14px;text-align:center">r<sub>i</sub> &nbsp;=&nbsp; f<sub>mkt</sub> &nbsp;+&nbsp; Σ<sub>s</sub> X<sub>is</sub>·f<sub>s</sub> &nbsp;+&nbsp; Σ<sub>j</sub> I<sub>ij</sub>·f<sub>j</sub> &nbsp;+&nbsp; ε<sub>i</sub></pre>
+    <ul class="sub" style="margin:10px 0 0;padding-left:18px;line-height:1.8">
+      <li><b>Weighted least squares</b> with √(market cap) weights — large caps have less noisy returns, so they anchor the fit.</li>
+      <li><b>Identification constraint</b>: cap-weighted industry factor returns sum to zero, so the intercept f<sub>mkt</sub> <i>is</i> the cap-weighted market return, and styles/industries are deltas around it.</li>
+      <li>The regression's coefficients are that week's <b>factor returns</b>; what it can't explain (ε) becomes each stock's <b>specific return</b>.</li>
+      <li id="meth-r2" class="sub"></li>
+    </ul>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>The seven styles</h2>
+      <p class="sub">Raw descriptors from prices + SEC EDGAR fundamentals, winsorized at ±3σ, standardized to cap-weighted mean 0 / std 1. A stock's exposure answers: <i>how many standard deviations from the market is it on this dimension?</i></p>
+      <div class="tscroll" id="style-defs"></div>
+    </div>
+    <div class="card">
+      <h2>From weekly returns to annual risk</h2>
+      <p class="sub">Factor covariance is an exponentially weighted average of factor-return history. Volatilities react fast (13-week half-life); correlations move slowly (26 weeks):</p>
+      <div id="decay-chart"></div>
+      <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, shrunk 30% toward its size-quintile mean). F is repaired to positive semi-definite by eigenvalue flooring.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Read this before trusting it</h2>
+    <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
+      <li><b>Survivorship bias</b>: prices are fetched at build time, so names delisted before the build are missing from history. Risk <i>forecasts</i> are less affected than the factor-return charts — treat those as indicative.</li>
+      <li><b>Crude universe heuristics</b>: ticker-pattern filters; some ADRs leak through; one share class per company.</li>
+      <li><b>First-order stress tests</b>: exposure × shock, no convexity, no specific returns.</li>
+      <li>Full methodology and every parameter: <a id="meth-repo-link" href="#">docs/METHODOLOGY.md on GitHub</a>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="view" id="view-agents">
+  <div class="card">
+    <h2>Point your agent at this model</h2>
+    <p class="sub">Reading this as an agent? The plain-markdown mirror of this build lives at <a href="model.md">/model.md</a> (indexed by <a href="llms.txt">/llms.txt</a>) — model card, factor definitions, correlations, and full coverage list, no DOM required.</p>
+    <p class="sub">riskprism ships an MCP server. Install the package, download the latest artifacts, add the server — your agent can measure portfolio risk.</p>
+    <div class="codehead"><h2 style="font-size:13px">MCP configuration</h2><button class="copy" data-copy="mcp-snippet">Copy</button></div>
+    <pre class="code" id="mcp-snippet">{
+  "mcpServers": {
+    "riskprism": {
+      "command": "riskprism-mcp",
+      "env": { "RISKPRISM_ARTIFACTS": "/path/to/artifacts" }
+    }
+  }
+}</pre>
+    <div class="codehead"><h2 style="font-size:13px">Python</h2><button class="copy" data-copy="py-snippet">Copy</button></div>
+    <pre class="code" id="py-snippet"># pip install git+https://github.com/wanxinwanxin/risk-prism
+from riskprism import RiskModel
+
+model = RiskModel.load("artifacts")
+model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
+model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
+  </div>
+  <div class="card">
+    <h2>MCP tools</h2>
+    <div class="tscroll"><table>
+      <thead><tr><th>Tool</th><th>What it returns</th></tr></thead>
+      <tbody>
+        <tr><td><code>get_model_info</code></td><td>Model version, as-of date, factor list, coverage count</td></tr>
+        <tr><td><code>get_portfolio_risk</code></td><td>Total / factor / specific vol, exposures, top contributions</td></tr>
+        <tr><td><code>get_factor_exposures</code></td><td>Per-asset exposures and vol decomposition</td></tr>
+        <tr><td><code>stress_test</code></td><td>First-order P&amp;L under factor shocks</td></tr>
+        <tr><td><code>check_coverage</code></td><td>Which tickers the current build covers</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+  <div class="card">
+    <h2>The model in one paragraph</h2>
+    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives); specific risk is shrunk toward size buckets. Everything here is computed in your browser from the published artifacts — no server.</p>
+  </div>
+</section>
+
+</div></main>
+
+<footer><div class="wrap">
+  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT · <a href="https://github.com/wanxinwanxin/risk-prism">source</a> · <a href="model.md">model.md</a>
+</div></footer>
+
+<div id="tooltip" role="tooltip"></div>
+
+<script>
+const DATA = {"meta":{"model_version":"PRISM-US-MH-0.1","as_of":"2026-08-21","n_assets":294,"n_periods":149,"mean_r2":0.2994770794471191,"price_provider":"yahoo","config":{"version":"PRISM-US-MH-0.1","frequency":"W-FRI","ann_factor":52.0,"corr_half_life":26,"vol_half_life":13,"specific_half_life":13,"eig_floor":1e-10,"winsor_z":3.0,"momentum_skip_days":21,"momentum_window_days":252,"volatility_window_days":252,"liquidity_window_days":63,"specific_shrinkage":0.3,"n_size_buckets":5,"min_specific_obs":13,"min_price":2.0,"min_dollar_adv":1000000.0,"min_weekly_obs":26,"min_assets_per_regression":50}},"factors":["market","size","value","momentum","volatility","liquidity","quality","leverage","ind_BusEq","ind_Chems","ind_Durbl","ind_Enrgy","ind_Hlth","ind_Manuf","ind_Money","ind_NoDur","ind_Other","ind_Shops","ind_Telcm","ind_Utils"],"styles":["size","value","momentum","volatility","liquidity","quality","leverage"],"market":"market","repo":"https://github.com/wanxinwanxin/risk-prism","cov":[[0.01839773,0.00104878,0.00056199,0.00114978,0.01118562,-0.00074072,-0.00022249,-0.00051531,0.00481427,-0.00228004,-0.001514,-0.02084657,-0.00988562,0.00256226,0.00206252,-0.00749655,-0.00027737,0.00052947,-0.01242209,-0.01143187],[0.00104878,0.00141758,0.00011566,-0.00059846,0.00105043,0.00054978,6.696e-05,-0.00030198,0.00084322,-0.00038517,-0.00088078,-0.00235434,-0.00247256,-0.00080101,0.00055385,-0.00014084,0.00069035,-0.00026928,-0.00276335,-0.00071639],[0.00056199,0.00011566,0.00101958,0.00065491,2.256e-05,0.00018689,0.00027226,-0.0002457,3.668e-05,-0.00047483,0.00010337,0.00048642,-0.00073486,0.00047357,0.00024273,-0.00020727,-0.00012616,-0.00018416,-0.00084504,0.00054285],[0.00114978,-0.00059846,0.00065491,0.01490391,-0.0008958,0.00017324,0.00087841,0.00048127,-0.00427813,0.00606086,0.0004967,0.0022141,-0.00039797,0.00519103,0.00469454,0.00518274,-0.00113909,0.00240598,0.00541971,0.00826561],[0.01118562,0.00105043,2.256e-05,-0.0008958,0.01312707,-0.00045158,-0.00081777,-0.00093124,0.00510876,-0.00018964,-0.00423243,-0.01716932,-0.01010085,0.00268877,0.00031901,-0.00677431,-0.00151255,0.00027414,-0.01008533,-0.00526843],[-0.00074072,0.00054978,0.00018689,0.00017324,-0.00045158,0.00204103,0.00028803,-0.00023404,0.00050071,-0.00117677,-2.629e-05,0.0028165,-0.00100543,-0.00154662,0.00094683,-0.00147022,-0.00065024,-0.00178756,6.98e-05,0.00189826],[-0.00022249,6.696e-05,0.00027226,0.00087841,-0.00081777,0.00028803,0.00090407,-0.00017012,-0.00086968,0.00033275,0.00116939,0.00050812,0.00048394,5.827e-05,0.0009866,0.00043787,0.00050277,-0.00099131,0.00135169,0.00116412],[-0.00051531,-0.00030198,-0.0002457,0.00048127,-0.00093124,-0.00023404,-0.00017012,0.00139101,0.00032143,-0.00055868,-1.707e-05,0.00060256,0.00057171,0.00034053,-3.262e-05,-0.000613,-0.00110146,-0.00064345,-0.00063075,-0.00050963],[0.00481427,0.00084322,3.668e-05,-0.00427813,0.00510876,0.00050071,-0.00086968,0.00032143,0.00833181,-0.0057246,-0.00630708,-0.00801606,-0.00830676,-0.00239794,-0.00275127,-0.00705355,-0.00378983,-0.00307022,-0.01114103,-0.00794582],[-0.00228004,-0.00038517,-0.00047483,0.00606086,-0.00018964,-0.00117677,0.00033275,-0.00055868,-0.0057246,0.01805011,-0.0006431,-0.00688906,0.00575941,0.00643811,0.00067863,0.0129444,0.00214513,0.00517046,0.00455629,0.0088629],[-0.001514,-0.00088078,0.00010337,0.0004967,-0.00423243,-2.629e-05,0.00116939,-1.707e-05,-0.00630708,-0.0006431,0.02639992,0.00038793,0.0033581,-0.0033404,-6.62e-05,-2.998e-05,0.00045992,0.00043647,0.00843597,-0.00128533],[-0.02084657,-0.00235434,0.00048642,0.0022141,-0.01716932,0.0028165,0.00050812,0.00060256,-0.00801606,-0.00688906,0.00038793,0.09490219,0.00823128,-0.00987646,-0.00411458,0.00678381,-0.00045287,-0.00563337,0.02905083,0.02456609],[-0.00988562,-0.00247256,-0.00073486,-0.00039797,-0.01010085,-0.00100543,0.00048394,0.00057171,-0.00830676,0.00575941,0.0033581,0.00823128,0.03324069,-0.00085776,-0.00277206,0.00928294,0.00401506,-0.00116968,0.01145065,0.00686199],[0.00256226,-0.00080101,0.00047357,0.00519103,0.00268877,-0.00154662,5.827e-05,0.00034053,-0.00239794,0.00643811,-0.0033404,-0.00987646,-0.00085776,0.01458445,0.00254292,6.665e-05,0.00055184,0.00279364,-0.00355123,0.00275159],[0.00206252,0.00055385,0.00024273,0.00469454,0.00031901,0.00094683,0.0009866,-3.262e-05,-0.00275127,0.00067863,-6.62e-05,-0.00411458,-0.00277206,0.00254292,0.00914744,-0.00177868,-1.798e-05,-0.00053722,-8.577e-05,0.00158828],[-0.00749655,-0.00014084,-0.00020727,0.00518274,-0.00677431,-0.00147022,0.00043787,-0.000613,-0.00705355,0.0129444,-2.998e-05,0.00678381,0.00928294,6.665e-05,-0.00177868,0.02756104,0.00310364,0.00687401,0.00938174,0.01091707],[-0.00027737,0.00069035,-0.00012616,-0.00113909,-0.00151255,-0.00065024,0.00050277,-0.00110146,-0.00378983,0.00214513,0.00045992,-0.00045287,0.00401506,0.00055184,-1.798e-05,0.00310364,0.00853087,0.00143004,0.00201432,-0.0002765],[0.00052947,-0.00026928,-0.00018416,0.00240598,0.00027414,-0.00178756,-0.00099131,-0.00064345,-0.00307022,0.00517046,0.00043647,-0.00563337,-0.00116968,0.00279364,-0.00053722,0.00687401,0.00143004,0.01177224,0.00065629,-0.00075498],[-0.01242209,-0.00276335,-0.00084504,0.00541971,-0.01008533,6.98e-05,0.00135169,-0.00063075,-0.01114103,0.00455629,0.00843597,0.02905083,0.01145065,-0.00355123,-8.577e-05,0.00938174,0.00201432,0.00065629,0.04373309,0.02061471],[-0.01143187,-0.00071639,0.00054285,0.00826561,-0.00526843,0.00189826,0.00116412,-0.00050963,-0.00794582,0.0088629,-0.00128533,0.02456609,0.00686199,0.00275159,0.00158828,0.01091707,-0.0002765,-0.00075498,0.02061471,0.03120773]],"factor_vol":{"market":0.13564,"size":0.03765,"value":0.03193,"momentum":0.12208,"volatility":0.11457,"liquidity":0.04518,"quality":0.03007,"leverage":0.0373,"ind_BusEq":0.09128,"ind_Chems":0.13435,"ind_Durbl":0.16248,"ind_Enrgy":0.30806,"ind_Hlth":0.18232,"ind_Manuf":0.12077,"ind_Money":0.09564,"ind_NoDur":0.16602,"ind_Other":0.09236,"ind_Shops":0.1085,"ind_Telcm":0.20912,"ind_Utils":0.17666},"assets":{"tickers":["NVDA","AAPL","GOOGL","MSFT","AMZN","AVGO","META","TSLA","MU","BRK-B","LLY","JPM","WMT","AMD","ASML","V","XOM","JNJ","INTC","MA","BAC","CSCO","ABBV","LRCX","AMAT","ORCL","COST","PLTR","CAT","CVX","GE","KO","HSBC","UNH","MS","HD","MRK","PG","NFLX","DELL","PANW","GS","RY","RTX","BABA","ARM","GEV","NVS","PM","KLAC","WFC","MUFG","SNDK","TXN","ANET","SHEL","AZN","SAP","C","AXP","STX","AMGN","TM","BHP","CRWD","LIN","TMO","IBM","KXIAY","APH","MRVL","SAN","TD","VZ","TTE","NVO","SHOP","TMUS","SCHW","ADI","ABT","PEP","MCD","BLK","WDC","DIS","BA","NEE","UNP","ETN","UBS","GILD","ATEYY","QCOM","WELL","T","BX","TJX","SMFG","DE","SCCO","SMERY","IBKR","DTEGY","BBVA","RIO","HTHIY","CRM","UBER","BKNG","COP","PFE","BUD","GLW","DHR","ISRG","SONY","LMT","COF","PLD","PH","UL","CB","MFG","BMY","VRTX","BMO","SYK","NEM","PDD","SBUX","NOW","SPGI","LOW","CVS","BTI","HDB","PGR","PBR","MDT","SNOW","HWM","FTNT","CM","VRT","BNY","BNS","ENB","BP","NET","EQIX","PWR","ABNB","MO","CVNA","SO","SNY","ADP","GD","IBN","TT","ACN","APP","ASX","PNC","SPOT","ING","MPC","CNQ","USB","ADBE","GSK","MCK","VLO","EQNR","KKR","CEG","CME","DUK","PSX","FCX","BN","AEM","CSX","BCS","IFNNY","DASH","MMM","MAR","JCI","INTU","CMCSA","WMB","EMR","MELI","DDOG","CDNS","WM","TKOMY","LYG","MNST","CMI","BAESY","MRSH","HCA","UPS","ICE","LITE","HOOD","SHW","ELV","BAM","SPG","EPD","REGN","MCO","CP","ITW","NGG","NOC","ITUB","RCL","AMT","E","NTES","APO","SLB","MDLZ","CTAS","SNPS","FDX","SU","ECL","HPE","CNI","NSC","GM","TRV","EOG","ROST","NWG","MSI","DLR","BSX","AON","NBIS","HLT","SE","MFC","RACE","ORLY","CI","URI","HON","KMI","CL","ET","NU","DB","AMX","MPWR","B","WBD","COHR","TER","PCAR","TGT","TDG","BE","APD","IMO","TRP","FIX","RSG","ALL","TFC","BKR","CIEN","CRH","AJG","TEL","WPM","GWW","KEYS","MET","NUE","ARGX","AFL","NOK","PSA","D","CRWV","OKE","MPLX"],"exposures":[[1.0,1.5339,-0.0718,-0.3757,0.1175,0.4447,1.1267,-1.1969,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,1.5339,-0.0726,0.1457,-0.6373,0.027,2.8171,0.7082,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,1.5339,-0.0637,0.6259,-0.1418,-0.2824,-0.4861,-0.9605,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,1.5339,-0.0659,-0.9431,-0.1812,0.1535,-0.1066,-0.5119,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,1.5339,-0.0607,-0.5288,-0.0294,0.0938,-0.7453,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,1.3537,-0.0734,-0.2043,0.8326,0.3281,-0.3675,-0.1336,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.7538,0.2207,0.0,-0.3869,-0.5006,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.9882,-0.0698,-0.3189,0.7301,1.1707,-1.1293,-0.5357,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.7532,-0.0679,3.9987,2.9411,2.3283,-0.9668,-1.1876,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-4.6084,7.7858,-0.6037,-1.2984,3.3976,-0.948,-0.5546,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.767,-0.0722,0.0446,0.0539,-0.1266,1.1069,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.6077,-0.0471,-0.3705,-0.8095,-0.169,-0.6999,1.5376,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.5512,-0.0671,-0.3777,-0.6701,-0.1429,-0.3843,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,0.4515,-0.0687,2.3474,2.3426,1.5244,-1.047,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.2636,-0.0724,0.9421,0.7147,0.2396,0.6353,0.2758,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3428,-0.0635,-0.5879,-0.8346,1.4211,1.6979,0.3268,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.17,-0.0466,-0.2163,-0.6127,0.0181,0.0,-0.4699,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.123,-0.0648,0.2153,-1.0643,-0.0858,-0.0547,0.1357,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.0951,-0.0625,3.7236,2.8338,1.8724,-1.3141,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3526,-0.0687,-0.6588,-0.8158,1.8661,0.8938,1.447,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-0.2491,-0.0276,-0.1788,-0.8728,0.1819,-0.9014,1.4919,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.2764,-0.0665,0.2356,-0.0531,0.5647,-0.4782,0.2704,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.2748,0.0,-0.1165,-0.5667,-0.1132,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.3404,-0.0722,2.3121,1.8277,0.8473,1.0015,-0.297,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.3768,-0.0702,1.8254,1.6219,1.12,-0.1447,-0.5528,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.2935,-0.0675,-1.303,2.0682,1.1592,0.2874,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.3127,-0.0688,-0.6938,-0.9735,0.3682,-0.3463,0.2764,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-0.3341,-0.0727,-0.7996,1.6317,1.2035,-0.6446,-1.5719,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.4021,-0.0709,0.9496,0.283,0.6392,-0.7515,1.077,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.398,-0.0407,-0.3014,-0.7318,0.1592,-1.0459,-0.5482,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.4355,-0.0711,-0.2447,-0.1809,0.1446,0.649,1.2747,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.4499,-0.0681,-0.318,-1.0452,0.0705,0.2389,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,1.2999,0.0,0.2895,-0.4885,-2.7259,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.5012,-0.0679,-0.0036,0.1562,0.5736,0.1416,0.4602,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.5629,-0.0505,0.1178,-0.4564,0.0253,-0.7289,1.5561,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.5745,-0.0714,-0.6754,-0.5985,0.2225,2.7324,1.3205,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-0.5837,-0.0656,0.1701,-0.4786,0.0739,0.4192,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.5808,-0.063,-0.6419,-0.9742,0.0673,-0.1338,0.1089,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.6167,-0.0678,-1.2278,0.0146,0.9703,0.138,-0.24,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-0.6409,0.0,2.2686,2.3541,0.9464,0.0,1.8878,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.6601,-0.0681,0.4738,0.4157,0.6648,-1.14,-0.571,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.6986,-0.0459,0.1331,-0.2245,0.6847,-0.7487,1.6061,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.6961,0.0,0.2537,-1.2116,-1.116,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.7066,-0.0589,-0.2241,-0.5842,-0.0344,-0.901,0.2603,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0078,0.2483,-0.6516,0.6529,0.4468,-0.9159,-0.5379,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-0.7186,-0.0723,0.3919,2.6083,0.8192,-0.8878,-1.2673,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.7736,-0.0714,0.4947,1.0824,0.9812,0.3131,1.1845,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.7549,0.0,-0.2417,-0.8909,-1.2056,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.7208,0.0,-0.5515,-0.4465,-0.1171,0.0,2.2315,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-0.8446,-0.0726,1.1757,1.5941,0.9524,1.7061,0.4133,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.8332,-0.0274,-0.4781,-0.5425,0.2823,-0.8338,1.5167,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.8121,4.9293,0.204,-0.5702,-2.3947,-0.9527,1.6413,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.9459,-0.0703,3.9987,3.2052,2.9902,-1.773,-1.4125,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.8902,-0.0694,-0.1656,0.4595,0.9252,-0.2039,-0.1835,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.9106,-0.0702,0.1047,1.2226,0.4825,-0.3638,-0.6751,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.1,0.0,-0.3235,-0.8039,-1.0423,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.3646,-0.4906,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.8895,0.0,-1.2885,0.2082,-0.4943,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.9426,-0.0134,-0.0111,-0.3779,0.5604,-1.0356,1.5143,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0017,-0.0639,-0.4304,-0.5111,0.194,-0.0525,1.3904,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0549,-0.0736,3.9987,2.4242,1.5738,3.1262,0.963,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0354,-0.0707,-0.2507,-0.482,0.1565,1.3066,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,1.5339,0.4891,-0.5923,-0.5424,-2.7259,-0.8928,0.2139,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.2756,0.0,0.1918,-0.0937,-1.7611,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.6158,-0.0684,0.3117,0.8483,2.0824,-1.4407,0.167,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0452,-0.062,-0.4718,-1.0199,0.3933,-0.6041,-0.0144,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0709,-0.0574,-0.2565,-0.2905,0.3384,-0.7988,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0542,-0.0634,-0.9494,0.8452,0.9869,-0.0863,0.9235,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0,3.2052,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.1319,-0.069,0.0784,0.5995,0.5744,-0.2121,0.4337,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.1985,-0.0677,1.5136,2.8067,2.0388,-0.7224,-0.8855,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0745,0.0,0.2262,-0.1106,-1.6309,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.1099,0.0,0.2973,-1.0944,-0.897,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.1575,-0.0378,-0.4851,-0.6337,0.4746,-0.6565,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-1.1946,0.0,-0.2292,-0.6778,-1.5775,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.9383,0.6934,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.5519,1.4415,0.0,-0.9183,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.189,-0.0542,-0.8479,-0.3676,0.3187,-0.5296,-1.997,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-1.2108,-0.056,-0.4848,-0.6278,0.3283,-0.6041,1.4479,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2253,-0.0619,0.1511,0.0434,0.9549,-1.0363,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2011,-0.0555,-0.9843,-0.5425,0.4443,-0.8065,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2105,-0.0663,-0.557,-0.881,0.572,0.1724,1.0387,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-1.2053,0.0,-0.7588,-1.0822,0.5653,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.2728,-0.0521,-0.5875,-0.5132,0.2006,-0.9209,0.3599,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2629,-0.0709,3.9987,2.804,1.7614,2.9018,-0.7382,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2564,-0.0326,-0.8739,-0.588,0.4316,-0.8563,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.265,-0.072,-0.7628,-0.0817,0.6721,0.1467,1.69,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2859,-0.0528,-0.3564,-0.8356,0.4729,-0.8126,0.626,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-1.3194,-0.066,-0.2285,-0.8182,0.2588,0.0632,0.6688,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.3136,-0.0662,-0.5247,0.1632,0.4306,-0.5041,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.2892,0.0,0.0775,-0.5792,-1.6777,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3384,-0.0695,-0.2863,-0.5691,0.4287,1.5426,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.97,0.1701,0.9895,2.5473,-1.9226,-0.9388,-0.2413,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3219,-0.0723,-0.4948,1.1038,1.5451,3.1262,-0.1041,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3738,-0.0559,0.0977,-0.7696,0.2297,-1.2824,-0.8546,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.345,-0.0224,-0.8717,-0.6298,0.738,-0.6155,0.4339,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-1.8596,-0.0685,-0.8927,0.0922,0.4886,0.0223,0.0268,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3618,-0.07,-0.2799,-0.9652,0.4062,0.7862,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.9384,0.0,0.3612,-0.3849,-1.8382,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3867,-0.0626,-0.392,-0.2329,0.2344,-0.5767,0.8045,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.4599,-0.0686,0.5709,1.0024,-0.724,-0.5707,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.09,1.0366,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-4.6084,0.0319,0.0824,0.2214,3.1827,-1.2722,1.4761,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.8099,-0.6098,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-1.3902,0.0,0.4598,-0.1117,-2.4379,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7396,0.0,0.1902,-0.3188,-0.4337,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.3933,0.5422,-0.6022,0.3926,-2.7259,-0.6461,0.7676,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.4121,-0.0594,-1.1107,0.4126,1.3337,-0.4408,0.5455,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.4518,-0.062,-0.9382,0.0342,0.878,0.1532,0.0996,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.4217,0.0,-0.9149,0.0716,0.752,0.0,3.3023,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.48,-0.0441,-0.3171,-0.2862,0.3862,-0.8187,-0.2805,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.4697,-0.0353,-0.5439,-0.7433,0.6326,-0.9413,0.1259,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.5413,0.0,-0.3509,-0.7561,-1.0781,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-1.5447,-0.0685,2.1157,2.197,1.3772,-0.7678,0.2465,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.549,-0.0485,-0.5739,-0.2452,0.4242,-1.0303,-1.8224,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.5726,-0.0652,-0.962,0.1106,0.7874,-0.6805,-1.693,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-3.2894,7.7858,-0.8221,-0.2962,0.1157,-0.4711,0.9779,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.5636,-0.0699,-0.5046,-0.4849,0.2235,0.9604,1.2728,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.5597,-0.0186,-0.672,-0.182,0.5507,-1.2156,1.1762,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6382,-0.0458,-0.0906,-0.816,0.1572,-1.0561,-0.5408,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6242,-0.0666,-0.1751,-0.56,0.2843,-0.5322,-0.0812,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.605,0.0,-0.7295,-0.7091,-0.5944,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6229,-0.0356,-0.3244,-1.025,0.1962,-0.7495,0.6696,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-3.4197,7.7858,0.5308,-0.1763,-0.8195,-0.8804,1.6817,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6477,-0.0623,-0.1728,-0.4933,0.3786,-0.0523,0.8124,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6668,-0.0633,-0.6063,-0.4359,0.3996,-0.53,-1.1365,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6362,0.0,0.217,-0.9517,-1.2456,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.65,-0.068,-0.8652,-0.481,0.5763,-0.2078,-0.178,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7035,-0.0544,0.1465,0.8694,0.5983,-0.5071,-0.637,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-0.1723,-0.0144,-0.9081,-0.0583,-0.8743,-0.3662,-0.8052,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.7155,0.0,-0.3945,-0.4506,0.5127,0.0,2.9304,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.6666,-0.0675,-1.291,1.2562,1.6315,-0.7498,0.246,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7046,-0.0567,-0.7607,-0.2879,0.6941,-0.7349,-0.5611,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.718,0.0,-0.636,-0.4996,0.414,0.0,2.5184,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.7019,-0.0294,0.3177,-0.2543,0.5494,-1.2143,0.5699,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.6342,0.0,-0.2655,-0.644,-0.5517,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-1.2916,2.9289,-1.0673,-0.4586,-0.9407,-0.9551,1.1175,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7239,-0.0546,-0.7995,-0.5971,0.372,0.0003,0.7312,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.6247,0.0173,-0.0643,-0.1964,-0.4695,-0.8599,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7714,-0.0447,-0.7151,-0.7191,0.5571,-0.9182,-0.3302,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.799,-0.0731,-0.3045,1.9703,1.225,-3.7786,0.9249,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.786,-0.0708,-0.0287,-0.268,0.455,-0.2618,0.0956,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7659,-0.0734,0.0536,0.314,0.6699,3.1262,1.263,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.7925,0.0,0.2832,-0.9409,-1.0707,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8077,-0.0714,1.1134,1.9286,1.3887,-0.1943,0.633,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8315,-0.0461,0.3118,-0.8759,0.2403,-0.8108,1.4905,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8073,0.0,0.2274,-1.0547,-0.6427,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8271,-0.0332,-0.2645,-1.1412,-0.5563,-0.8488,0.6411,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.1821,-0.4102,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.0485,1.6991,0.0,-1.5516,0.8303,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8522,-0.0651,-0.1833,-0.6776,0.4311,-0.9309,0.4262,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9123,-0.0678,0.1917,0.5188,0.7035,-0.8801,0.4511,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.5581,-0.0534,0.0,-0.029,0.7457,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.8423,0.0,-0.2167,-0.6178,0.3513,0.0,2.1546,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.6511,1.651,0.0,0.0791,0.4159,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.9051,-0.05,-0.5711,-1.1501,0.3769,-0.8254,0.8144,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.6556,0.0,-0.7114,-0.6194,-0.334,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8554,-0.0704,-0.8275,-0.5208,0.4496,1.5914,1.454,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8701,-0.0573,-0.3336,-0.8352,0.1461,-0.6637,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.8093,-0.86,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8847,-0.0686,-0.5395,-0.4132,0.4483,0.0363,0.3826,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8121,-0.0545,-1.303,0.5335,0.8973,-0.35,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-1.8835,-0.0722,-0.3561,2.5353,1.8144,2.8654,0.2973,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3106,0.0,3.2488,1.2668,-0.3629,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9187,-0.0306,-0.1793,-0.8522,0.2441,-0.8698,1.4196,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8858,0.0,-1.1188,0.545,0.8194,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-1.9067,0.0,0.0202,-0.4903,-1.297,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9488,-0.0609,0.3845,-0.0555,0.5804,-0.4632,0.7397,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9484,0.0,-0.1304,-0.2625,0.0386,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9252,-0.028,-0.049,-0.8118,0.2768,-0.8581,1.4617,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.8923,-0.0666,-1.1514,0.2452,1.2059,1.1456,0.2881,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.0908,0.0,-0.0616,-0.5242,-1.1723,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.932,0.0,-0.414,-0.2528,0.9034,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-1.9652,-0.0565,0.7841,0.0753,0.7865,-0.9307,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9251,0.0,-0.0426,0.2266,-0.8621,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9206,-0.0531,-1.0049,0.234,0.1736,-1.0001,1.0564,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9474,-0.0519,-0.9477,0.7606,0.8671,-1.0153,0.5131,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-3.8806,0.0289,-0.7649,-0.7436,2.3222,-0.6949,1.2897,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9856,-0.0349,-0.5144,-1.2152,0.3116,-0.9413,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.0319,-0.0505,0.1774,-0.2593,0.4105,-0.7494,0.2279,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.9988,-0.0596,-0.2058,0.957,0.935,-0.4856,-0.3352,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.5947,-0.4374,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0256,-0.0718,-0.4473,0.7244,0.2774,-1.7734,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.0295,-0.0679,0.0661,-0.764,0.5561,0.0489,0.5694,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-0.4122,0.0,0.0893,-0.2514,-2.1438,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.2718,1.1237,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.9597,0.755,0.0,-0.9294,-0.2073,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.0141,-0.0721,-0.5989,-0.5316,0.475,3.0512,1.4919,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0282,0.0,-0.1779,-0.4644,0.5906,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.0196,-0.0642,-0.2076,-0.352,0.5016,-0.3394,-1.4314,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0099,-0.059,-1.4866,0.8172,1.3685,-0.5604,-0.2749,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.6409,0.042,-0.9741,-0.2781,1.3482,-0.4211,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-2.0409,-0.0643,-0.2339,-0.7471,0.3871,-0.5172,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.0528,-0.0586,-0.6541,-0.1986,0.2768,-0.8571,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0223,-0.0684,-0.9732,0.3936,0.8381,-0.2941,1.2239,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.5077,2.1509,0.0,-1.2045,-0.4928,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0706,-0.0692,-0.4709,0.2887,0.8314,-0.6338,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0685,-0.0666,-0.548,-0.9377,0.403,-0.2232,0.9774,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.4104,0.1178,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.2831,0.0,0.0555,-0.3715,-2.3914,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.8253,-0.06,0.2757,-0.5789,1.0655,-0.4974,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-2.1049,-0.064,0.5875,0.0942,0.7018,-0.9819,0.266,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.6782,-0.1692,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.0701,0.0,-0.8331,-0.5839,0.2859,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.0683,0.0,-0.6097,-0.2918,0.6641,0.0,0.8008,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2947,-0.06,-0.319,-0.3573,0.7105,0.1602,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.1054,-0.0505,-0.9441,-0.6682,0.7004,-0.8585,1.1529,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3161,-0.0714,3.9987,3.2052,2.6077,-1.2676,0.1338,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.5817,2.2394,0.0,-0.4329,1.1587,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.1014,-0.0712,-0.6612,-0.4932,0.8445,1.3327,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-2.106,-0.0381,-0.4903,0.0321,0.6211,-0.8032,0.4038,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.7983,-0.2967,0.0,-0.1814,-0.5429,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,0.0,0.0,0.0051,-1.0185,0.0,3.1262,1.2453,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.1432,0.0,-0.2787,-1.134,-0.8618,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.2649,-0.0449,-0.3359,-0.0908,0.8402,-0.7403,-1.2233,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.1433,-0.0718,-0.5931,-0.4548,0.4084,1.9122,0.9693,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.1677,-0.0346,-0.4625,-0.7746,-0.11,-0.9509,-0.31,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.1591,-0.0673,-0.4912,-0.8449,0.2106,0.1688,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.3256,0.0,-0.3851,-0.8659,-2.6845,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.1536,-0.0593,-0.644,-0.5516,0.4839,-0.3774,0.419,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-3.0767,0.0718,-0.0114,-0.2244,0.3356,-0.7309,1.3544,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.1763,-0.0655,-0.8388,0.7954,0.8409,0.3466,0.8944,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.1731,-0.0713,-0.9402,-0.5608,0.6144,0.5956,1.1917,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-1.3228,0.0,-0.0023,-0.5644,-2.7259,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-0.386,-0.0462,-0.6663,-0.2013,-2.2893,-1.0158,-1.166,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.155,-0.0566,-0.8606,0.1205,0.5473,-0.6447,1.5002,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.201,-0.0515,-0.1547,0.0455,0.8203,-0.7904,-0.1389,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.1751,-0.0522,-0.7351,-0.7554,0.5867,-0.9257,0.3767,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-2.2007,-0.0701,-0.7023,-0.7396,0.3839,0.1945,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[1.0,-2.1883,-0.0479,-1.0336,1.3955,0.9868,-1.1292,-0.7804,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.21,-0.0463,0.3433,-0.402,0.6805,-0.7482,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.2187,0.0,0.0934,-0.5296,-0.0314,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2354,-0.0652,-0.5993,-0.8394,0.3393,-0.4859,0.4808,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2304,-0.0516,1.059,1.1156,1.1693,-1.2931,-1.4673,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2277,-0.0549,-0.3065,-0.8387,-0.327,-0.4367,0.3544,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.2693,-0.0592,-0.2256,-0.9276,0.3308,-0.6031,0.3872,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.254,-0.0173,-0.0067,-0.0656,0.7952,-1.13,0.9316,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2377,-0.0443,-0.1679,-0.9015,0.7266,-0.5514,0.9091,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2739,-0.0445,-0.4012,-0.4161,0.51,-0.684,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2166,-0.0687,0.4727,-0.5947,0.8109,0.0432,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,0.0,0.0,-0.0747,-0.209,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2383,-0.0719,-0.6365,-0.5832,0.4509,1.8855,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3433,-0.0511,-0.6108,-0.5049,0.6606,-1.0806,-0.2558,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2692,-0.0511,-1.4437,0.0904,1.1773,-0.8433,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2637,-0.0654,-0.6008,-0.6264,0.5939,0.2202,1.1052,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3445,-0.0697,2.3334,3.2052,2.6059,-1.231,0.3494,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2915,0.0,-0.4247,-0.7165,0.814,0.0,3.331,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,-1.1173,0.9984,0.0,-0.8039,0.1034,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,0.0,0.0,-0.0427,-0.958,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2465,0.0,-0.9497,0.0305,-0.2563,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2913,0.0,-0.7439,-0.5999,0.8212,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-2.276,-0.0344,-0.7257,-0.1568,0.5006,-0.7494,0.7379,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3125,-0.0656,-0.1887,0.5113,0.6813,-0.2024,0.6296,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.2838,-0.0568,-0.6779,-0.5288,1.2675,-0.2933,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3001,-0.044,-0.3807,-0.9637,0.1525,-0.92,0.0498,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.2968,-0.0741,-0.5422,-0.7883,0.5274,3.1262,1.7027,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3094,-0.0263,-0.3476,-1.1802,-0.2854,-0.9496,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,0.0,0.0,-0.6451,0.216,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.2956,0.0,-0.3031,-0.1315,-1.0614,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,1.0382,0.0,0.048,-0.4917,-2.7259,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-2.3666,-0.0704,0.4613,1.1588,1.5258,-0.6712,-1.5108,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3536,-0.0552,0.2742,0.8242,0.5082,-0.623,-0.6686,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.3443,-0.0416,1.0547,0.5447,0.7891,-1.2145,0.43,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[1.0,-2.4531,-0.0624,1.8901,3.2039,2.0696,-1.0101,-0.6359,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.424,-0.0706,2.693,2.5399,1.6752,-0.6647,-1.0027,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3675,-0.0537,-0.1735,-0.461,0.4469,-0.8397,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3461,-0.058,-0.083,-0.2755,0.8525,-0.4085,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-2.3571,0.0,-0.8944,-0.4939,0.691,0.0,3.3023,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4252,-0.0733,3.9987,3.2052,2.4544,-2.5984,1.0197,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.3681,-0.0602,-0.5821,-0.5307,0.3504,-1.4144,0.1852,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4417,-0.0477,0.0005,-0.4267,-1.1093,-0.7755,-0.2276,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4042,-0.0457,-0.0365,-1.0674,-0.2579,-0.7922,0.5866,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.4776,-0.0707,2.2192,1.3027,1.2662,-0.0453,0.3113,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.4193,-0.0615,-0.7532,-1.0209,0.377,-0.599,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.4133,-0.0386,-0.2865,-0.6362,0.513,-0.0956,0.7508,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4345,-0.0052,-0.3242,-0.6975,0.5306,-0.9746,1.3741,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4436,-0.0527,-0.0241,-0.1485,0.7193,-0.788,-2.1908,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.5095,-0.071,3.9987,2.4384,1.5077,-1.1334,-0.091,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4386,-0.0483,-0.4947,-0.2146,0.6535,-0.6846,0.0813,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4429,-0.0485,-0.8876,-0.3142,0.5128,-1.0529,0.6689,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4746,-0.0604,-0.4434,-0.0672,0.7969,-0.717,-0.2314,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-2.505,0.0,-0.4607,0.8398,0.0502,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[1.0,-2.4801,-0.0697,-0.1798,-0.7237,0.5271,0.3309,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[1.0,-2.501,-0.0671,0.5959,0.5357,0.7475,-0.7712,-0.3347,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4844,-0.0434,-0.3079,-0.7269,0.4028,-0.8151,1.6902,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.5036,-0.049,0.3168,-0.2649,0.4911,-0.9901,-0.6983,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.6691,0.0,0.0685,-0.373,0.3704,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.5059,-0.0395,-0.332,-1.1612,0.2278,-0.8264,0.7853,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.4894,0.0,0.9747,1.5935,1.6149,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.5755,-0.0631,-0.4113,-0.7565,0.3946,-0.5343,-0.0213,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.5134,-0.0406,-0.23,-0.9191,0.5339,-0.8953,0.6932,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,0.0,0.0,-1.3248,3.2052,0.0,-2.2205,1.5759,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[1.0,-2.5247,-0.0475,-0.3609,-0.5401,0.4024,-0.7171,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[1.0,-2.5167,-0.0631,-0.3716,-1.1735,-0.7672,0.3046,0.5021,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0]],"specific":[0.2425,0.2219,0.2809,0.2956,0.265,0.3127,0.0,0.2401,0.4331,0.3558,0.2631,0.1805,0.2439,0.3945,0.2619,0.2245,0.2713,0.1854,0.4961,0.2408,0.1745,0.3268,0.2356,0.2884,0.3896,0.3801,0.1991,0.5343,0.2281,0.1622,0.2182,0.2091,0.1844,0.3386,0.1921,0.247,0.2459,0.1502,0.3152,0.4994,0.4156,0.2017,0.1861,0.2478,0.3285,0.6309,0.3563,0.1653,0.2287,0.4243,0.2157,0.1859,0.6365,0.3403,0.4,0.1798,0.0,0.2821,0.2124,0.2205,0.4058,0.2087,0.1719,0.2417,0.4167,0.1949,0.3134,0.4251,0.0,0.3122,0.5168,0.1989,0.199,0.2168,0.1938,0.0,0.0,0.2171,0.2112,0.2732,0.2283,0.22,0.1953,0.2286,0.5193,0.2443,0.2707,0.1808,0.2249,0.2311,0.2013,0.2227,0.4519,0.4225,0.2716,0.2545,0.2582,0.2179,0.2302,0.2574,0.2987,0.0,0.3193,0.0,0.2289,0.2295,0.2999,0.3096,0.2894,0.3093,0.1697,0.2426,0.2071,0.4379,0.3035,0.3176,0.2874,0.3064,0.2279,0.2154,0.2169,0.2035,0.2014,0.2177,0.2212,0.2368,0.1962,0.2502,0.3495,0.2717,0.2594,0.366,0.2977,0.2499,0.3294,0.2109,0.2794,0.2807,0.2543,0.2219,0.4968,0.2471,0.401,0.2022,0.4121,0.1716,0.1955,0.2657,0.0,0.0,0.2811,0.2997,0.0,0.2374,0.0,0.164,0.2448,0.2382,0.2523,0.0,0.2829,0.3713,0.5654,0.3182,0.1713,0.3845,0.2096,0.2834,0.1763,0.1687,0.3186,0.2119,0.2581,0.2811,0.2675,0.2923,0.3458,0.3444,0.1743,0.2396,0.3136,0.0,0.3924,0.2044,0.1868,0.0,0.0,0.2695,0.2439,0.2337,0.4245,0.3057,0.199,0.2253,0.3102,0.0,0.2908,0.2101,0.0,0.1995,0.6281,0.2418,0.0,0.1948,0.2846,0.3025,0.2626,0.6328,0.0,0.2418,0.2854,0.0,0.0,0.1867,0.2994,0.2602,0.2325,0.1536,0.2032,0.2898,0.3237,0.3474,0.2664,0.194,0.2759,0.3247,0.3094,0.2124,0.2588,0.3449,0.2386,0.1794,0.1823,0.394,0.2148,0.1943,0.2884,0.2271,0.1879,0.2616,0.0,0.2518,0.3474,0.3352,0.2015,0.7314,0.2274,0.0,0.0,0.2731,0.2104,0.254,0.3965,0.2748,0.2016,0.2149,0.2106,0.0,0.2571,0.1946,0.3766,0.3771,0.3996,0.6602,0.4406,0.3052,0.289,0.2924,0.7392,0.2698,0.2279,0.2051,0.324,0.2278,0.2484,0.2106,0.3683,0.5078,0.2959,0.282,0.3108,0.3886,0.277,0.3502,0.2122,0.3374,0.3775,0.2097,0.4697,0.2501,0.2174,0.0,0.2832,0.2419],"total_vol":[0.3432,0.2859,0.3494,0.3864,0.332,0.4302,0.2457,0.3531,0.8024,0.4967,0.3195,0.2347,0.2873,0.6367,0.3958,0.2768,0.3946,0.2829,0.805,0.2909,0.2292,0.3757,0.3031,0.562,0.5557,0.5806,0.2474,0.662,0.3511,0.3379,0.2831,0.2777,0.2755,0.3861,0.254,0.2863,0.3139,0.2034,0.381,0.6959,0.4758,0.2673,0.2534,0.2961,0.3983,0.7829,0.4623,0.2815,0.288,0.5521,0.2617,0.3167,0.9397,0.4111,0.5033,0.3445,0.1873,0.3926,0.2672,0.2657,0.751,0.2915,0.2964,0.3073,0.4976,0.2386,0.3585,0.5175,0.4725,0.3919,0.7182,0.2783,0.264,0.2995,0.3585,0.2293,0.3548,0.3131,0.2573,0.3348,0.3215,0.2801,0.2468,0.268,0.839,0.2951,0.3294,0.238,0.2631,0.3051,0.266,0.3076,0.6535,0.5142,0.3081,0.3323,0.3134,0.2604,0.308,0.314,0.3915,0.2459,0.4014,0.1977,0.3223,0.2773,0.3957,0.4121,0.3423,0.3642,0.3356,0.3254,0.2869,0.6572,0.3654,0.3923,0.4418,0.3521,0.2796,0.2567,0.2733,0.2591,0.2477,0.4087,0.306,0.3184,0.2641,0.3344,0.4143,0.3453,0.3135,0.5115,0.3414,0.3032,0.3767,0.2809,0.337,0.3171,0.3833,0.3168,0.6501,0.3074,0.4537,0.2711,0.5626,0.2521,0.2619,0.3125,0.279,0.3722,0.3158,0.3518,0.1674,0.303,0.3251,0.2411,0.3496,0.3046,0.3009,0.1437,0.3325,0.4425,0.7082,0.5741,0.2339,0.4471,0.2717,0.4153,0.3426,0.2355,0.4045,0.3047,0.2999,0.4219,0.3874,0.353,0.3996,0.3951,0.249,0.3856,0.386,0.1482,0.4512,0.2484,0.2663,0.2973,0.26,0.3666,0.2799,0.2943,0.5387,0.383,0.2597,0.2931,0.3692,0.4184,0.3674,0.2606,0.1799,0.2748,0.6591,0.3389,0.1735,0.245,0.358,0.3344,0.3072,0.9288,0.3827,0.2826,0.3309,0.1635,0.2064,0.2657,0.3649,0.3053,0.2799,0.226,0.2648,0.341,0.3736,0.4102,0.3119,0.3662,0.3669,0.3739,0.4253,0.2765,0.3139,0.4992,0.2801,0.3606,0.2387,0.5041,0.2654,0.2436,0.3595,0.2766,0.3595,0.3181,0.1631,0.3035,0.377,0.4248,0.2538,0.9256,0.2888,0.286,0.1454,0.3635,0.2622,0.3019,0.4356,0.3192,0.2658,0.2857,0.2809,0.1902,0.3117,0.2987,0.4828,0.4373,0.4927,0.8571,0.6877,0.3707,0.332,0.3653,1.0329,0.3142,0.3848,0.2861,0.4917,0.2838,0.2925,0.2647,0.4216,0.8024,0.3486,0.3263,0.3576,0.4481,0.3188,0.4242,0.2704,0.3971,0.44,0.2659,0.5829,0.2902,0.2862,0.58,0.328,0.3042],"industry":["BusEq","BusEq","BusEq","BusEq","Shops","BusEq","BusEq","Durbl","BusEq","Money","Hlth","Money","Shops","BusEq","Manuf","Other","Enrgy","Hlth","BusEq","Other","Money","BusEq","Hlth","Manuf","BusEq","BusEq","Shops","BusEq","Manuf","Enrgy","Manuf","NoDur","Money","Money","Money","Shops","Hlth","Chems","Other","BusEq","BusEq","Money","Money","Manuf","Other","BusEq","Manuf","Hlth","NoDur","BusEq","Money","Money","BusEq","BusEq","BusEq","Enrgy","Hlth","BusEq","Money","Money","BusEq","Hlth","Durbl","Other","BusEq","Chems","BusEq","BusEq","Other","BusEq","BusEq","Money","Money","Telcm","Enrgy","Hlth","BusEq","Telcm","Money","BusEq","Hlth","NoDur","Shops","Money","BusEq","Other","Manuf","Utils","Other","Manuf","Money","Hlth","BusEq","BusEq","Money","Telcm","Money","Shops","Money","Manuf","Other","Other","Money","Telcm","Money","Other","Other","BusEq","Other","Other","Enrgy","Hlth","NoDur","Manuf","BusEq","Hlth","Durbl","Manuf","Money","Money","Manuf","Chems","Money","Money","Hlth","Hlth","Money","Hlth","Other","Other","Shops","BusEq","Other","Shops","Shops","NoDur","Money","Money","Enrgy","Hlth","BusEq","Manuf","BusEq","Money","BusEq","Money","Money","Other","Enrgy","BusEq","Money","Other","Other","NoDur","Shops","Utils","Hlth","BusEq","Manuf","Money","BusEq","Other","BusEq","BusEq","Money","Telcm","Money","Enrgy","Enrgy","Money","BusEq","Hlth","Shops","Enrgy","Enrgy","Money","Utils","Money","Utils","Enrgy","Other","Money","Other","Other","Money","BusEq","Other","Hlth","Other","Manuf","BusEq","Telcm","Utils","Manuf","Other","BusEq","BusEq","Other","Money","Money","NoDur","Manuf","Other","Money","Hlth","Other","Money","BusEq","Money","Shops","Money","Money","Money","Utils","Hlth","Other","Other","Manuf","Utils","BusEq","Money","Other","Money","Enrgy","BusEq","Money","Enrgy","NoDur","NoDur","BusEq","Other","Enrgy","Chems","BusEq","Other","Other","Durbl","Money","Enrgy","Shops","Money","BusEq","Money","Hlth","Money","BusEq","Other","Other","Money","Durbl","Shops","Money","Other","Manuf","Utils","Chems","Utils","Money","Money","Telcm","BusEq","Other","Telcm","BusEq","BusEq","Durbl","Shops","Manuf","Manuf","Chems","Enrgy","Utils","Other","Other","Money","Money","Manuf","BusEq","Manuf","Money","Shops","Other","Shops","BusEq","Money","Manuf","Hlth","Money","BusEq","Money","Utils","BusEq","Utils","Other"]},"factor_returns":{"dates":["2023-10-20","2023-10-27","2023-11-03","2023-11-10","2023-11-17","2023-11-24","2023-12-01","2023-12-08","2023-12-15","2023-12-22","2023-12-29","2024-01-05","2024-01-12","2024-01-19","2024-01-26","2024-02-02","2024-02-09","2024-02-16","2024-02-23","2024-03-01","2024-03-08","2024-03-15","2024-03-22","2024-03-29","2024-04-05","2024-04-12","2024-04-19","2024-04-26","2024-05-03","2024-05-10","2024-05-17","2024-05-24","2024-05-31","2024-06-07","2024-06-14","2024-06-21","2024-06-28","2024-07-05","2024-07-12","2024-07-19","2024-07-26","2024-08-02","2024-08-09","2024-08-16","2024-08-23","2024-08-30","2024-09-06","2024-09-13","2024-09-20","2024-09-27","2024-10-04","2024-10-11","2024-10-18","2024-10-25","2024-11-01","2024-11-08","2024-11-15","2024-11-22","2024-11-29","2024-12-06","2024-12-13","2024-12-20","2024-12-27","2025-01-03","2025-01-10","2025-01-17","2025-01-24","2025-01-31","2025-02-07","2025-02-14","2025-02-21","2025-02-28","2025-03-07","2025-03-14","2025-03-21","2025-03-28","2025-04-04","2025-04-11","2025-04-18","2025-04-25","2025-05-02","2025-05-09","2025-05-16","2025-05-23","2025-05-30","2025-06-06","2025-06-13","2025-06-20","2025-06-27","2025-07-04","2025-07-11","2025-07-18","2025-07-25","2025-08-01","2025-08-08","2025-08-15","2025-08-22","2025-08-29","2025-09-05","2025-09-12","2025-09-19","2025-09-26","2025-10-03","2025-10-10","2025-10-17","2025-10-24","2025-10-31","2025-11-07","2025-11-14","2025-11-21","2025-11-28","2025-12-05","2025-12-12","2025-12-19","2025-12-26","2026-01-02","2026-01-09","2026-01-16","2026-01-23","2026-01-30","2026-02-06","2026-02-13","2026-02-20","2026-02-27","2026-03-06","2026-03-13","2026-03-20","2026-03-27","2026-04-03","2026-04-10","2026-04-17","2026-04-24","2026-05-01","2026-05-08","2026-05-15","2026-05-22","2026-05-29","2026-06-05","2026-06-12","2026-06-19","2026-06-26","2026-07-03","2026-07-10","2026-07-17","2026-07-24","2026-07-31","2026-08-07","2026-08-14","2026-08-21"],"cumulative":{"market":[-0.0257,-0.0431,0.0102,0.0199,0.0422,0.052,0.0633,0.0615,0.0799,0.0878,0.095,0.0806,0.0953,0.1017,0.1142,0.1196,0.1401,0.1381,0.1534,0.1646,0.1544,0.1526,0.1782,0.1831,0.1713,0.1569,0.1265,0.1598,0.1743,0.1868,0.2112,0.2004,0.1906,0.1934,0.1977,0.2066,0.2133,0.2424,0.2561,0.2254,0.2164,0.1824,0.1864,0.2307,0.245,0.2451,0.1916,0.2397,0.2567,0.2805,0.2874,0.293,0.2938,0.2817,0.2639,0.3134,0.285,0.2993,0.3109,0.33,0.3279,0.3008,0.3184,0.3113,0.2845,0.3222,0.3506,0.3448,0.3457,0.3789,0.3593,0.3373,0.3137,0.2875,0.2942,0.2709,0.1541,0.2116,0.2069,0.2696,0.3047,0.2967,0.3586,0.3341,0.3513,0.3692,0.3668,0.3585,0.4042,0.4221,0.4162,0.4314,0.4607,0.4191,0.4636,0.4786,0.4868,0.4873,0.4973,0.5372,0.5631,0.5638,0.5881,0.5392,0.5765,0.6074,0.6273,0.6008,0.5982,0.5597,0.6189,0.6261,0.6186,0.6229,0.6464,0.638,0.6578,0.6646,0.6627,0.6651,0.6669,0.6537,0.6668,0.665,0.6105,0.5914,0.5546,0.5343,0.5859,0.6461,0.7172,0.7153,0.7347,0.7819,0.7771,0.8005,0.8298,0.7804,0.8058,0.8224,0.7797,0.8053,0.829,0.7989,0.7885,0.8162,0.8729,0.8788,0.8647],"size":[-0.0011,-0.0014,-0.0063,-0.0017,-0.0087,-0.0085,-0.0135,-0.0106,-0.0165,-0.0172,-0.0175,-0.0185,-0.0183,-0.0198,-0.0183,-0.0226,-0.0213,-0.0223,-0.0254,-0.0339,-0.0442,-0.0409,-0.0442,-0.0454,-0.0467,-0.0393,-0.0401,-0.0365,-0.0299,-0.0346,-0.0319,-0.0334,-0.0339,-0.0298,-0.0274,-0.0296,-0.0297,-0.0205,-0.0268,-0.0327,-0.0391,-0.0386,-0.0419,-0.0431,-0.0484,-0.0564,-0.0567,-0.0566,-0.058,-0.0538,-0.0501,-0.054,-0.0571,-0.0505,-0.0522,-0.0574,-0.056,-0.0663,-0.062,-0.0586,-0.0515,-0.044,-0.0418,-0.0448,-0.0505,-0.0542,-0.0581,-0.0516,-0.0588,-0.0527,-0.0454,-0.0519,-0.0544,-0.0561,-0.057,-0.0574,-0.0567,-0.0579,-0.0696,-0.0666,-0.0672,-0.0706,-0.07,-0.074,-0.0721,-0.0764,-0.0749,-0.0748,-0.0738,-0.0768,-0.0743,-0.0695,-0.0729,-0.0734,-0.0731,-0.0726,-0.0767,-0.0748,-0.0764,-0.0735,-0.0742,-0.074,-0.0781,-0.0767,-0.0774,-0.0786,-0.0786,-0.085,-0.0857,-0.0848,-0.0875,-0.0922,-0.0952,-0.0963,-0.0948,-0.0974,-0.1005,-0.105,-0.1084,-0.1088,-0.1223,-0.1349,-0.1331,-0.14,-0.1354,-0.1326,-0.1372,-0.1415,-0.1416,-0.1366,-0.1345,-0.1332,-0.1295,-0.1223,-0.1231,-0.1312,-0.1306,-0.1406,-0.1453,-0.1411,-0.1488,-0.1453,-0.1444,-0.145,-0.1505,-0.1509,-0.15,-0.1536,-0.1508],"value":[0.003,0.0067,0.0038,-0.0034,-0.0047,-0.0057,-0.0096,-0.0096,-0.0193,-0.0192,-0.0179,-0.0154,-0.0143,-0.0166,-0.0132,-0.0129,-0.0148,-0.0164,-0.016,-0.0169,-0.0105,-0.0151,-0.0152,-0.0192,-0.0186,-0.0134,-0.0154,-0.0162,-0.0104,-0.0144,-0.0127,-0.0131,-0.0122,-0.0129,-0.0146,-0.0181,-0.0101,-0.0067,-0.0103,-0.0097,-0.0157,-0.0183,-0.0237,-0.02,-0.0214,-0.0239,-0.0248,-0.0236,-0.0272,-0.0318,-0.0284,-0.0247,-0.0241,-0.028,-0.0231,-0.0162,-0.0184,-0.0196,-0.0164,-0.0153,-0.013,-0.0139,-0.0146,-0.0133,-0.0149,-0.0203,-0.0236,-0.0185,-0.0184,-0.0144,-0.01,-0.0119,-0.011,-0.0034,0.005,0.0007,-0.0096,-0.0061,-0.0075,-0.012,-0.015,-0.0168,-0.0156,-0.0134,-0.0101,-0.0105,-0.0115,-0.0146,-0.0143,-0.0166,-0.0173,-0.0216,-0.0143,-0.0142,-0.0093,-0.0009,-0.0084,-0.0119,-0.0136,-0.0144,-0.0157,-0.0144,-0.0171,-0.0165,-0.0167,-0.0213,-0.0184,-0.0228,-0.0132,-0.0157,-0.0188,-0.0202,-0.0285,-0.0323,-0.0319,-0.0319,-0.0291,-0.0241,-0.0284,-0.0301,-0.0276,-0.0235,-0.0281,-0.0297,-0.0321,-0.0308,-0.0343,-0.038,-0.0354,-0.0354,-0.0376,-0.0424,-0.0415,-0.0359,-0.0273,-0.0295,-0.0379,-0.0329,-0.0385,-0.0325,-0.0411,-0.0412,-0.0353,-0.0385,-0.0346,-0.0356,-0.0347,-0.0327,-0.0359],"momentum":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0021,0.0049,0.0188,0.0149,0.0115,0.0204,0.013,0.0218,0.0185,0.0058,0.0094,0.0023,0.0076,-0.0029,0.0143,0.0107,0.0098,0.0172,0.016,0.0087,0.0049,-0.0002,-0.0125,-0.0211,-0.0297,-0.0141,-0.0082,-0.008,-0.0102,-0.0211,-0.012,-0.0098,-0.021,-0.0199,-0.0057,0.0019,-0.0008,-0.007,0.0054,0.0024,0.0036,-0.0004,0.0091,0.002,0.0046,0.0022,0.01,0.005,0.0064,0.0139,0.0048,0.0211,0.0169,-0.0053,-0.0038,-0.0265,-0.025,-0.0227,-0.0234,-0.0297,-0.0275,-0.0236,-0.0202,-0.0169,-0.0166,-0.0217,-0.0104,-0.0048,-0.0098,-0.014,-0.0134,-0.0166,-0.021,-0.0244,-0.0119,-0.016,-0.006,0.0023,-0.0112,-0.0183,-0.012,-0.0118,0.0019,0.0014,-0.0034,-0.0186,-0.0205,-0.022,-0.0254,-0.0201,-0.0138,-0.0149,-0.018,-0.003,-0.0078,-0.0032,0.0058,0.0076,0.0081,0.0088,0.0266,0.0271,0.0347,0.0421,0.0426,0.0543,0.055,0.0259,0.0435,0.0434,0.0447,0.056,0.0941,0.0695,0.0734,0.0842,0.0998,0.1085,0.0936,0.0814,0.0847,0.1256,0.1493,0.1533,0.1236,0.1296,0.1139,0.1355,0.0999,0.0736,0.0942,0.081],"volatility":[-0.0114,-0.0025,0.0041,0.0044,0.0118,0.0101,0.019,0.0183,0.0308,0.0273,0.0267,0.0211,0.0183,0.0156,0.0179,0.0133,0.0221,0.0277,0.0173,0.0267,0.0188,0.0174,0.0197,0.0188,0.0217,0.0209,0.0098,0.031,0.0463,0.0374,0.0518,0.0541,0.0511,0.0507,0.0525,0.0498,0.0555,0.0719,0.0786,0.0605,0.0521,0.0304,0.0399,0.0584,0.0559,0.0365,0.019,0.0435,0.0501,0.0822,0.0935,0.0907,0.0761,0.0834,0.0811,0.0906,0.0871,0.0887,0.0832,0.0964,0.102,0.0941,0.0965,0.1024,0.1021,0.1125,0.1178,0.1072,0.1167,0.1328,0.1279,0.0983,0.0953,0.1113,0.112,0.093,0.0665,0.0856,0.0872,0.1246,0.1255,0.1322,0.1556,0.1542,0.1465,0.1575,0.1654,0.1728,0.1895,0.1831,0.1901,0.2012,0.2045,0.1969,0.2078,0.2163,0.2129,0.2108,0.2182,0.2542,0.2702,0.2713,0.2986,0.2895,0.3063,0.3169,0.3351,0.3213,0.2983,0.275,0.2982,0.3161,0.3023,0.3025,0.3041,0.312,0.3171,0.3146,0.3197,0.314,0.3055,0.3118,0.3072,0.3011,0.2953,0.3063,0.3096,0.3077,0.313,0.3352,0.3793,0.3982,0.4004,0.4346,0.4118,0.4405,0.48,0.4485,0.4461,0.4667,0.4315,0.4215,0.4184,0.3745,0.3586,0.3754,0.4171,0.4208,0.4061],"liquidity":[-0.0028,-0.0116,-0.0078,-0.0051,-0.0059,-0.0039,-0.0045,0.0,0.0088,0.0077,0.0049,0.0021,0.0018,0.0077,0.001,0.0042,0.0028,0.0018,-0.0014,-0.0038,-0.0116,-0.0112,-0.0139,-0.0101,-0.016,-0.0143,-0.0177,-0.0157,-0.0202,-0.0195,-0.0205,-0.0166,-0.0144,-0.0065,0.0021,0.0052,0.0017,0.0054,0.0027,0.009,0.0043,0.0116,0.0036,0.003,0.0024,0.0045,0.0069,0.0085,0.0057,-0.002,-0.0023,0.0026,0.0059,0.0166,0.0147,0.0363,0.0366,0.0434,0.0472,0.0388,0.0372,0.0396,0.035,0.035,0.0306,0.0337,0.0239,0.0226,0.0146,0.0101,0.0197,0.0155,-0.0051,-0.0061,-0.0039,-0.0004,-0.0024,0.0042,-0.0158,-0.0202,-0.0173,-0.0156,-0.0091,-0.0223,-0.0161,-0.0221,-0.0197,-0.0171,-0.0204,-0.0164,-0.0147,-0.0184,-0.0282,-0.0278,-0.029,-0.0276,-0.0314,-0.0288,-0.0329,-0.0363,-0.0353,-0.0345,-0.0456,-0.0372,-0.0462,-0.0487,-0.0529,-0.0575,-0.0553,-0.0516,-0.054,-0.0528,-0.0548,-0.054,-0.0528,-0.0616,-0.056,-0.063,-0.0649,-0.0683,-0.0781,-0.0823,-0.0777,-0.082,-0.0668,-0.0619,-0.0591,-0.0676,-0.0705,-0.076,-0.0733,-0.0673,-0.063,-0.0586,-0.0519,-0.0575,-0.0604,-0.0584,-0.062,-0.0625,-0.0616,-0.0628,-0.0603,-0.0625,-0.0649,-0.0781,-0.0724,-0.0615,-0.0584],"quality":[-0.0039,-0.0039,-0.009,-0.0093,-0.0078,-0.0084,-0.0066,-0.0061,-0.0054,-0.0069,-0.0094,-0.0104,-0.015,-0.0173,-0.0202,-0.0266,-0.027,-0.0299,-0.0314,-0.0325,-0.036,-0.0298,-0.031,-0.0347,-0.0361,-0.0343,-0.0383,-0.036,-0.0274,-0.0276,-0.0267,-0.0229,-0.0191,-0.0174,-0.0065,-0.0083,-0.0104,-0.0054,-0.0019,-0.0008,-0.0049,0.0039,0.0017,0.0016,0.0034,-0.0009,0.0022,0.0025,-0.001,0.0009,0.0015,0.0013,0.0006,0.0023,-0.002,-0.0008,-0.0063,-0.0079,-0.0089,-0.0119,-0.012,-0.01,-0.0117,-0.0142,-0.0143,-0.0193,-0.0242,-0.0217,-0.0183,-0.0157,-0.0142,-0.0128,-0.0082,-0.0115,-0.0121,-0.0097,-0.0078,-0.004,-0.0048,-0.0066,-0.0143,-0.0157,-0.0138,-0.0187,-0.019,-0.0191,-0.0217,-0.0277,-0.0285,-0.0237,-0.0221,-0.0258,-0.0276,-0.0278,-0.0182,-0.0175,-0.017,-0.0212,-0.0204,-0.0191,-0.0213,-0.0191,-0.0206,-0.0289,-0.0327,-0.0365,-0.0353,-0.0365,-0.0336,-0.0332,-0.0389,-0.0359,-0.0331,-0.0301,-0.0297,-0.0334,-0.0379,-0.0421,-0.0429,-0.0418,-0.0375,-0.0381,-0.0327,-0.0296,-0.0302,-0.0356,-0.0372,-0.0375,-0.0369,-0.0375,-0.0404,-0.0456,-0.0425,-0.0365,-0.0332,-0.0307,-0.0354,-0.0326,-0.0326,-0.0303,-0.035,-0.032,-0.0301,-0.0299,-0.0292,-0.0421,-0.046,-0.0454,-0.0435],"leverage":[0.0052,0.008,0.0111,0.0166,0.0195,0.0176,0.0215,0.0266,0.0284,0.0217,0.0225,0.0253,0.0269,0.0315,0.0335,0.0371,0.0346,0.0378,0.034,0.0407,0.0422,0.0378,0.0421,0.0435,0.0433,0.0387,0.0474,0.0381,0.0371,0.0386,0.032,0.0307,0.0313,0.025,0.0216,0.0228,0.023,0.0169,0.0184,0.0205,0.0268,0.0188,0.0231,0.0292,0.0279,0.0382,0.0376,0.0305,0.039,0.0315,0.0332,0.0375,0.0386,0.0362,0.0386,0.0348,0.0447,0.0517,0.0511,0.0511,0.0441,0.05,0.0523,0.0485,0.0468,0.0465,0.0491,0.0564,0.0531,0.0521,0.0417,0.0477,0.0367,0.0328,0.0408,0.0388,0.0311,0.0296,0.0361,0.0395,0.0414,0.045,0.0456,0.045,0.0529,0.0518,0.0473,0.0548,0.0579,0.061,0.0589,0.0578,0.0536,0.0523,0.0439,0.0471,0.05,0.0516,0.05,0.0446,0.0488,0.0494,0.0443,0.0469,0.0505,0.0529,0.0455,0.0476,0.0434,0.0425,0.0489,0.0449,0.0512,0.0458,0.0428,0.0434,0.042,0.0454,0.0369,0.0443,0.0547,0.0456,0.0429,0.0389,0.0401,0.0371,0.0388,0.0421,0.0417,0.0433,0.042,0.0405,0.0465,0.0416,0.0445,0.0478,0.0597,0.0605,0.0561,0.0591,0.0708,0.075,0.0694,0.0709,0.077,0.0762,0.0655,0.0654,0.0594]}}};
+
+// ---------- shared ----------
+const STYLES = DATA.styles;
+const MKT = DATA.market;
+const FACTORS = DATA.factors;
+const IND = FACTORS.filter(f => f.startsWith("ind_"));
+const COLOR = f => f === MKT ? "var(--s-market)"
+  : STYLES.includes(f) ? `var(--s-${f})`
+  : f.startsWith("ind_") ? "var(--s-industry)" : "var(--s-specific)";
+const T = DATA.assets.tickers;
+const TIDX = Object.fromEntries(T.map((t, i) => [t, i]));
+const X = DATA.assets.exposures, SPEC = DATA.assets.specific;
+const K = FACTORS.length, COV = DATA.cov;
+const pct = (v, d = 1) => {
+  let s = (v * 100).toFixed(d);
+  if (parseFloat(s) === 0) s = (0).toFixed(d); // no "-0.0%"
+  return s + "%";
+};
+const esc = s => s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const indName = f => f.replace("ind_", "");
+const label = f => f === MKT ? "market" : f.startsWith("ind_") ? indName(f) : f;
+
+const tip = document.getElementById("tooltip");
+function showTip(html, ev) {
+  tip.innerHTML = html; tip.style.display = "block";
+  const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + w > innerWidth - 8) x = ev.clientX - w - pad;
+  if (y + h > innerHeight - 8) y = ev.clientY - h - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip() { tip.style.display = "none"; }
+function hover(el, htmlFn) {
+  el.addEventListener("mousemove", ev => showTip(htmlFn(), ev));
+  el.addEventListener("mouseleave", hideTip);
+}
+
+// ---------- tabs ----------
+const tabs = document.querySelectorAll("nav.tabs button");
+function setView(name) {
+  tabs.forEach(b => b.setAttribute("aria-selected", String(b.dataset.view === name)));
+  document.querySelectorAll("section.view").forEach(s =>
+    s.classList.toggle("active", s.id === "view-" + name));
+  if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+}
+tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
+const VIEWS = ["overview", "portfolio", "stocks", "methodology", "agents"];
+const initial = location.hash.slice(1);
+if (VIEWS.includes(initial)) setView(initial);
+window.addEventListener("hashchange", () => {
+  const v = location.hash.slice(1);
+  if (VIEWS.includes(v)) setView(v);
+});
+
+// ---------- header ----------
+const m = DATA.meta;
+document.getElementById("meta-chips").innerHTML = [
+  `<span class="chip"><b>${esc(m.model_version || "")}</b></span>`,
+  `<span class="chip">as of <b>${esc(m.as_of || "")}</b></span>`,
+  `<span class="chip"><b>${m.n_assets}</b> stocks</span>`,
+].join("");
+document.getElementById("tiles").innerHTML = [
+  ["Assets covered", `${m.n_assets}`],
+  ["Factors", `${K} <small>1 mkt · ${STYLES.length} styles · ${IND.length} industries</small>`],
+  ["Regression weeks", `${m.n_periods}`],
+  ["Mean weekly R²", `${(m.mean_r2 ?? 0).toFixed(2)}`],
+].map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+// ---------- portfolio math ----------
+function parseWeights(text) {
+  const w = {}, bad = [];
+  for (const line of text.split("\n")) {
+    const s = line.trim(); if (!s || s.startsWith("#")) continue;
+    const mm = s.match(/^([A-Za-z.\-]{1,6})[\s,:]+(-?\d*\.?\d+)%?$/);
+    if (!mm) { bad.push(s); continue; }
+    w[mm[1].toUpperCase()] = (w[mm[1].toUpperCase()] || 0) + parseFloat(mm[2]);
+  }
+  const gross = Object.values(w).reduce((a, b) => a + Math.abs(b), 0);
+  if (gross > 3) for (const k in w) w[k] /= 100; // entered as percents
+  return { w, bad };
+}
+function computeRisk(weights) {
+  const wv = new Array(T.length).fill(0);
+  const uncovered = [];
+  let gross = 0;
+  for (const [t, v] of Object.entries(weights)) {
+    gross += Math.abs(v);
+    if (t in TIDX) wv[TIDX[t]] = v; else uncovered.push(t);
+  }
+  const x = new Array(K).fill(0);
+  for (let i = 0; i < T.length; i++) if (wv[i]) for (let k = 0; k < K; k++) x[k] += wv[i] * X[i][k];
+  const Fx = new Array(K).fill(0);
+  for (let k = 0; k < K; k++) for (let l = 0; l < K; l++) Fx[k] += COV[k][l] * x[l];
+  let fvar = 0; const contrib = new Array(K);
+  for (let k = 0; k < K; k++) { contrib[k] = x[k] * Fx[k]; fvar += contrib[k]; }
+  let svar = 0;
+  for (let i = 0; i < T.length; i++) if (wv[i]) svar += wv[i] * wv[i] * SPEC[i] * SPEC[i];
+  const tvar = fvar + svar, tvol = Math.sqrt(Math.max(tvar, 0));
+  const ctr = [];
+  if (tvol > 0) for (let i = 0; i < T.length; i++) if (wv[i]) {
+    let xf = 0; for (let k = 0; k < K; k++) xf += X[i][k] * Fx[k];
+    ctr.push([T[i], wv[i] * (xf + SPEC[i] * SPEC[i] * wv[i]) / tvol]);
+  }
+  ctr.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  return { x, contrib, fvar, svar, tvar, tvol, ctr, uncovered, gross };
+}
+
+// ---------- charts ----------
+function hbarChart(rows, { fmt = v => pct(v), max = null } = {}) {
+  // rows: [{name, value, color, tipHtml}]
+  const W = 480, rh = 24, lw = 92, vw = 56, gap = 6;
+  const H = rows.length * (rh + gap);
+  const mx = max ?? Math.max(...rows.map(r => Math.abs(r.value)), 1e-9);
+  const bw = W - lw - vw - 10;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  rows.forEach((r, i) => {
+    const y = i * (rh + gap), w = Math.max(Math.abs(r.value) / mx * bw, 1.5);
+    s += `<text x="${lw - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)">${esc(r.name)}</text>`;
+    s += `<rect data-i="${i}" x="${lw}" y="${y + 3}" width="${w}" height="${rh - 6}" rx="4" style="fill:${r.color}"/>`;
+    s += `<text class="mono" x="${lw + w + 8}" y="${y + rh / 2 + 4}" font-size="11.5" fill="var(--ink)">${fmt(r.value)}</text>`;
+  });
+  s += `</svg>`;
+  const div = document.createElement("div");
+  div.innerHTML = s;
+  div.querySelectorAll("rect").forEach(rc => {
+    const r = rows[+rc.dataset.i];
+    if (r.tipHtml) hover(rc, () => r.tipHtml);
+  });
+  return div;
+}
+
+function divergingBars(rows, { fmt = v => v.toFixed(2) } = {}) {
+  // rows: [{name, value, color, tipHtml}] — bars from a zero baseline
+  const W = 480, rh = 22, lw = 92, gap = 6;
+  const H = rows.length * (rh + gap);
+  const mx = Math.max(...rows.map(r => Math.abs(r.value)), 1e-9);
+  const half = (W - lw - 50) / 2, x0 = lw + half;
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  s += `<line x1="${x0}" y1="0" x2="${x0}" y2="${H}" stroke="var(--grid)" stroke-width="1"/>`;
+  rows.forEach((r, i) => {
+    const y = i * (rh + gap), w = Math.max(Math.abs(r.value) / mx * half, 1.5);
+    const bx = r.value >= 0 ? x0 : x0 - w;
+    s += `<text x="${lw - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)">${esc(r.name)}</text>`;
+    s += `<rect data-i="${i}" x="${bx}" y="${y + 3}" width="${w}" height="${rh - 6}" rx="4" style="fill:${r.color}"/>`;
+    const tx = r.value >= 0 ? x0 + w + 6 : x0 - w - 6;
+    s += `<text class="mono" x="${tx}" y="${y + rh / 2 + 4}" text-anchor="${r.value >= 0 ? "start" : "end"}" font-size="11.5" fill="var(--ink)">${fmt(r.value)}</text>`;
+  });
+  s += `</svg>`;
+  const div = document.createElement("div");
+  div.innerHTML = s;
+  div.querySelectorAll("rect").forEach(rc => {
+    const r = rows[+rc.dataset.i];
+    if (r.tipHtml) hover(rc, () => r.tipHtml);
+  });
+  return div;
+}
+
+// ---------- overview: factor returns line chart ----------
+const FR = DATA.factor_returns;
+const lineState = Object.fromEntries(Object.keys(FR.cumulative).map(f =>
+  [f, [MKT, "size", "value", "momentum"].includes(f)]));
+function renderLines() {
+  const holder = document.getElementById("freturns-chart");
+  const on = Object.keys(lineState).filter(f => lineState[f]);
+  const W = 960, H = 300, ml = 52, mr = 70, mt = 12, mb = 26;
+  const n = FR.dates.length;
+  let lo = 0, hi = 0;
+  on.forEach(f => FR.cumulative[f].forEach(v => { lo = Math.min(lo, v); hi = Math.max(hi, v); }));
+  const pad = (hi - lo) * 0.06 + 1e-6; lo -= pad; hi += pad;
+  const xp = i => ml + i / (n - 1) * (W - ml - mr);
+  const yp = v => mt + (hi - v) / (hi - lo) * (H - mt - mb);
+  let s = `<svg id="fr-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img">`;
+  const ticks = 4;
+  for (let g = 0; g <= ticks; g++) {
+    const v = lo + (hi - lo) * g / ticks, y = yp(v);
+    s += `<line x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}" stroke="var(--grid)" stroke-width="1"/>`;
+    s += `<text class="mono" x="${ml - 8}" y="${y + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${pct(v, 0)}</text>`;
+  }
+  const xstep = Math.max(1, Math.floor(n / 6));
+  for (let i = 0; i < n; i += xstep)
+    s += `<text class="mono" x="${xp(i)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">${FR.dates[i].slice(0, 7)}</text>`;
+  if (lo < 0 && hi > 0)
+    s += `<line x1="${ml}" y1="${yp(0)}" x2="${W - mr}" y2="${yp(0)}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3"/>`;
+  on.forEach(f => {
+    const pts = FR.cumulative[f].map((v, i) => `${xp(i).toFixed(1)},${yp(v).toFixed(1)}`).join(" ");
+    s += `<polyline points="${pts}" fill="none" style="stroke:${COLOR(f)}" stroke-width="2" stroke-linejoin="round"/>`;
+  });
+  if (on.length <= 4) on.forEach(f => {
+    const v = FR.cumulative[f][n - 1];
+    s += `<text x="${W - mr + 6}" y="${yp(v) + 4}" font-size="11.5" font-weight="600" style="fill:${COLOR(f)}">${label(f)}</text>`;
+  });
+  s += `<line id="fr-cross" x1="0" y1="${mt}" x2="0" y2="${H - mb}" stroke="var(--ink-2)" stroke-width="1" opacity="0"/>`;
+  s += `<rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent" id="fr-hit"/>`;
+  s += `</svg>`;
+  holder.innerHTML = s;
+  const svg = document.getElementById("fr-svg"), hit = document.getElementById("fr-hit"),
+        cross = document.getElementById("fr-cross");
+  hit.addEventListener("mousemove", ev => {
+    const r = svg.getBoundingClientRect(), sx = W / r.width;
+    const px = (ev.clientX - r.left) * sx;
+    const i = Math.max(0, Math.min(n - 1, Math.round((px - ml) / (W - ml - mr) * (n - 1))));
+    cross.setAttribute("x1", xp(i)); cross.setAttribute("x2", xp(i));
+    cross.setAttribute("opacity", "1");
+    const rowsHtml = on.map(f =>
+      `<div><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)} <span class="mono">${pct(FR.cumulative[f][i])}</span></div>`).join("");
+    showTip(`<div class="t mono">${FR.dates[i]}</div>${rowsHtml}`, ev);
+  });
+  hit.addEventListener("mouseleave", () => { cross.setAttribute("opacity", "0"); hideTip(); });
+}
+const frLegend = document.getElementById("freturns-legend");
+Object.keys(FR.cumulative).forEach(f => {
+  const b = document.createElement("button");
+  b.className = "legend-chip"; b.setAttribute("aria-pressed", String(lineState[f]));
+  b.innerHTML = `<span class="dot" style="background:${COLOR(f)}"></span>${label(f)}`;
+  b.addEventListener("click", () => {
+    lineState[f] = !lineState[f];
+    b.setAttribute("aria-pressed", String(lineState[f]));
+    renderLines();
+  });
+  frLegend.appendChild(b);
+});
+renderLines();
+
+// ---------- overview: factor vol bars ----------
+{
+  const rows = [MKT, ...STYLES, ...IND]
+    .map(f => ({ f, v: DATA.factor_vol[f] }))
+    .filter(r => r.v != null);
+  rows.sort((a, b) => {
+    const ai = a.f.startsWith("ind_"), bi = b.f.startsWith("ind_");
+    return ai !== bi ? ai - bi : ai ? b.v - a.v : 0;
+  });
+  document.getElementById("fvol-chart").appendChild(hbarChart(
+    rows.map(r => ({
+      name: label(r.f), value: r.v, color: COLOR(r.f),
+      tipHtml: `<div class="t">${label(r.f)}</div><span class="mono">${pct(r.v)}</span> annualized factor vol`,
+    }))));
+}
+
+// ---------- overview: correlation heatmap ----------
+{
+  const fs = [MKT, ...STYLES];
+  const idx = fs.map(f => FACTORS.indexOf(f));
+  const cell = 40, lw2 = 84, W = lw2 + fs.length * cell, H = fs.length * cell + 26;
+  let html = `<div style="min-width:${W}px">`;
+  html += `<div style="display:grid;grid-template-columns:${lw2}px repeat(${fs.length},${cell}px)">`;
+  html += `<div></div>` + fs.map(f =>
+    `<div style="font-size:10.5px;color:var(--muted);text-align:center;padding-bottom:4px">${label(f).slice(0, 5)}</div>`).join("");
+  fs.forEach((fr, r) => {
+    html += `<div style="font-size:12px;color:var(--ink-2);display:flex;align-items:center">${label(fr)}</div>`;
+    fs.forEach((fc, c) => {
+      const i = idx[r], j = idx[c];
+      const corr = COV[i][j] / Math.sqrt(COV[i][i] * COV[j][j]);
+      const p = Math.round(Math.min(Math.abs(corr), 1) * 100);
+      const pole = corr >= 0 ? "var(--heat-pos)" : "var(--heat-neg)";
+      html += `<div class="hm" data-r="${r}" data-c="${c}" tabindex="-1" style="height:${cell - 2}px;margin:1px;border-radius:4px;background:color-mix(in oklab, ${pole} ${p}%, var(--heat-mid))"></div>`;
+    });
+  });
+  html += `</div></div>`;
+  const holder = document.getElementById("corr-heatmap");
+  holder.innerHTML = html;
+  holder.querySelectorAll(".hm").forEach(d => {
+    const r = +d.dataset.r, c = +d.dataset.c;
+    const corr = COV[idx[r]][idx[c]] / Math.sqrt(COV[idx[r]][idx[r]] * COV[idx[c]][idx[c]]);
+    hover(d, () => `<div class="t">${label(fs[r])} × ${label(fs[c])}</div>corr <span class="mono">${corr.toFixed(2)}</span>`);
+  });
+}
+
+// ---------- portfolio ----------
+const PRESETS = {
+  "Mega-cap tech": "AAPL 20\nMSFT 20\nNVDA 20\nGOOGL 20\nAMZN 20",
+  "Defensive": "JNJ 15\nPG 15\nKO 15\nPEP 10\nUNH 15\nXOM 15\nT 15",
+  "Long/short": "NVDA 25\nMETA 25\nAAPL 25\nMSFT 25\nXOM -25\nCVX -25\nJNJ -25\nPG -25",
+};
+const presetHolder = document.getElementById("pf-presets");
+Object.entries(PRESETS).forEach(([name, text]) => {
+  const b = document.createElement("button");
+  b.className = "preset"; b.textContent = name;
+  b.addEventListener("click", () => { pfInput.value = text; renderPortfolio(); });
+  presetHolder.appendChild(b);
+});
+const pfInput = document.getElementById("pf-input");
+let debounce;
+pfInput.addEventListener("input", () => { clearTimeout(debounce); debounce = setTimeout(renderPortfolio, 250); });
+
+const CLASSES = [
+  { key: MKT, name: "market" },
+  ...STYLES.map(f => ({ key: f, name: f })),
+  { key: "__ind", name: "industries" },
+  { key: "__spec", name: "specific" },
+];
+let stressShocks = {};
+function renderPortfolio() {
+  const { w, bad } = parseWeights(pfInput.value);
+  const warnEl = document.getElementById("pf-warn");
+  const heroEl = document.getElementById("pf-hero");
+  const cards = ["pf-spectrum-card", "pf-detail", "pf-stress-card"].map(id => document.getElementById(id));
+  if (!Object.keys(w).length) {
+    heroEl.innerHTML = `<p class="hint">Enter positions or pick a preset to see the portfolio's risk spectrum.</p>`;
+    warnEl.textContent = bad.length ? `Couldn't parse: ${bad.join(" · ")}` : "";
+    cards.forEach(c => c.hidden = true);
+    return;
+  }
+  const r = computeRisk(w);
+  const warns = [];
+  if (bad.length) warns.push(`Couldn't parse: ${bad.join(" · ")}`);
+  if (r.uncovered.length) warns.push(`Not covered by this build: ${r.uncovered.join(", ")}`);
+  warnEl.textContent = warns.join(" — ");
+  if (r.tvol === 0) { cards.forEach(c => c.hidden = true); heroEl.innerHTML = ""; return; }
+  cards.forEach(c => c.hidden = false);
+
+  heroEl.innerHTML = `
+    <div class="hero-vol">
+      <span class="num">${pct(r.tvol)}</span>
+      <span class="split">factor ${pct(Math.sqrt(r.fvar))} · specific ${pct(Math.sqrt(r.svar))} · annualized</span>
+    </div>
+    <p class="hint">Gross weight ${pct(r.gross, 0)} · net ${pct(Object.values(w).reduce((a, b) => a + b, 0), 0)} · ${Object.keys(w).length - r.uncovered.length} positions priced</p>`;
+
+  // spectrum: positive variance contributions by class
+  const byClass = CLASSES.map(c => {
+    let v;
+    if (c.key === "__ind") v = FACTORS.reduce((a, f, k) => a + (f.startsWith("ind_") ? r.contrib[k] : 0), 0);
+    else if (c.key === "__spec") v = r.svar;
+    else v = r.contrib[FACTORS.indexOf(c.key)];
+    return { ...c, v };
+  });
+  const posSum = byClass.filter(c => c.v > 0).reduce((a, c) => a + c.v, 0);
+  const negSum = byClass.filter(c => c.v < 0).reduce((a, c) => a + c.v, 0);
+  const spec = document.getElementById("pf-spectrum");
+  spec.innerHTML = "";
+  byClass.filter(c => c.v > 0).forEach(c => {
+    const share = c.v / posSum;
+    const d = document.createElement("div");
+    d.className = "slice";
+    d.style.flex = `${Math.max(share, 0.004)} 1 0`;
+    d.style.background = c.key === "__ind" ? "var(--s-industry)"
+      : c.key === "__spec" ? "var(--s-specific)" : COLOR(c.key);
+    if (share > 0.09) d.innerHTML = `<span>${esc(c.name)} ${Math.round(c.v / r.tvar * 100)}%</span>`;
+    hover(d, () => `<div class="t">${c.name}</div><span class="mono">${pct(c.v / r.tvar, 1)}</span> of total variance`);
+    spec.appendChild(d);
+  });
+  document.getElementById("pf-offset").textContent = negSum < -1e-9
+    ? `Cross-factor hedging offsets ${pct(-negSum / r.tvar, 1)} of variance (negative contributions not drawn).`
+    : "";
+  document.getElementById("pf-spectrum-legend").innerHTML = byClass
+    .map(c => `<span class="legend-chip static"><span class="dot" style="background:${
+      c.key === "__ind" ? "var(--s-industry)" : c.key === "__spec" ? "var(--s-specific)" : COLOR(c.key)
+    }"></span>${esc(c.name)} <span class="mono">&nbsp;${pct(c.v / r.tvar, 1)}</span></span>`).join("");
+
+  // factor table (relief-rule table view of the spectrum)
+  let tbl = `<table><thead><tr><th>Factor</th><th class="num">Exposure</th><th class="num">Var share</th></tr></thead><tbody>`;
+  const order = [MKT, ...STYLES, ...IND];
+  order.forEach(f => {
+    const k = FACTORS.indexOf(f);
+    if (k < 0 || (f.startsWith("ind_") && Math.abs(r.x[k]) < 1e-6)) return;
+    tbl += `<tr><td><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)}</td>
+      <td class="num">${r.x[k].toFixed(2)}</td><td class="num">${pct(r.contrib[k] / r.tvar, 1)}</td></tr>`;
+  });
+  tbl += `<tr><td><span class="dot-i" style="background:var(--s-specific)"></span>specific</td>
+    <td class="num">—</td><td class="num">${pct(r.svar / r.tvar, 1)}</td></tr></tbody></table>`;
+  document.getElementById("pf-table").innerHTML = tbl;
+
+  // asset contributions
+  const holderA = document.getElementById("pf-assets");
+  holderA.innerHTML = "";
+  holderA.appendChild(divergingBars(
+    r.ctr.slice(0, 10).map(([t, v]) => ({
+      name: t, value: v, color: v >= 0 ? "var(--s-market)" : "var(--s-leverage)",
+      tipHtml: `<div class="t mono">${t}</div>contributes <span class="mono">${pct(v)}</span> of ${pct(r.tvol)} total vol`,
+    })), { fmt: v => pct(v) }));
+
+  renderStress(r);
+}
+function renderStress(r) {
+  const holder = document.getElementById("pf-sliders");
+  const stressFactors = [MKT, "size", "value", "momentum", "volatility"];
+  holder.innerHTML = "";
+  stressFactors.forEach(f => {
+    if (!(f in stressShocks)) stressShocks[f] = f === MKT ? -10 : 0;
+    const row = document.createElement("div");
+    row.className = "slider-row";
+    row.innerHTML = `<label><span><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)}</span><b id="sv-${f}">${stressShocks[f]}%</b></label>
+      <input type="range" min="-20" max="20" step="1" value="${stressShocks[f]}" aria-label="${label(f)} shock">`;
+    row.querySelector("input").addEventListener("input", ev => {
+      stressShocks[f] = +ev.target.value;
+      document.getElementById(`sv-${f}`).textContent = `${stressShocks[f]}%`;
+      updatePnl(r);
+    });
+    holder.appendChild(row);
+  });
+  updatePnl(r);
+}
+function updatePnl(r) {
+  let pnl = 0; const parts = [];
+  for (const [f, s] of Object.entries(stressShocks)) {
+    const k = FACTORS.indexOf(f);
+    const p = r.x[k] * s / 100;
+    pnl += p;
+    if (s !== 0) parts.push(`${label(f)} ${s}% → ${pct(p)}`);
+  }
+  const el = document.getElementById("pf-pnl");
+  el.textContent = (pnl >= 0 ? "+" : "") + pct(pnl);
+  el.className = "pnl " + (pnl >= 0 ? "up" : "down");
+  document.getElementById("pf-pnl-note").textContent =
+    parts.length ? parts.join(" · ") : "Move a slider to shock the portfolio.";
+}
+renderPortfolio();
+
+// ---------- stocks ----------
+const dl = document.getElementById("stock-list");
+T.forEach(t => { const o = document.createElement("option"); o.value = t; dl.appendChild(o); });
+function topTilt(i) {
+  let best = 0, bf = "";
+  STYLES.forEach(f => {
+    const v = X[i][FACTORS.indexOf(f)];
+    if (Math.abs(v) > Math.abs(best)) { best = v; bf = f; }
+  });
+  return { f: bf, v: best };
+}
+function renderStock(t) {
+  const holder = document.getElementById("stock-card");
+  const i = TIDX[t];
+  if (i == null) { holder.innerHTML = `<p class="hint">${t ? esc(t) + " is not covered by this build." : "Pick a ticker to see its factor profile."}</p>`; return; }
+  let fvar = 0;
+  const xi = X[i];
+  for (let k = 0; k < K; k++) for (let l = 0; l < K; l++) fvar += xi[k] * COV[k][l] * xi[l];
+  const tvol = Math.sqrt(Math.max(fvar, 0) + SPEC[i] * SPEC[i]);
+  holder.innerHTML = `
+    <div class="hero-vol">
+      <span class="num mono" style="font-size:34px">${esc(t)}</span>
+      <span class="num">${pct(tvol)}</span>
+      <span class="split">factor ${pct(Math.sqrt(fvar))} · specific ${pct(SPEC[i])} · ${esc(DATA.assets.industry[i])}</span>
+    </div>
+    <div id="stock-expo"></div>
+    <p class="hint">Exposures in cross-sectional standard deviations (cap-weighted mean 0). Hover for percentile.</p>`;
+  const rows = STYLES.map(f => {
+    const k = FACTORS.indexOf(f), v = xi[k];
+    const col = X.map(r2 => r2[k]).sort((a, b) => a - b);
+    let rank = col.findIndex(c => c >= v); if (rank < 0) rank = col.length - 1;
+    const pctl = Math.round(rank / (col.length - 1) * 100);
+    return {
+      name: f, value: v, color: COLOR(f),
+      tipHtml: `<div class="t">${f}</div><span class="mono">${v.toFixed(2)}</span> σ — ${pctl}th percentile of universe`,
+    };
+  });
+  document.getElementById("stock-expo").appendChild(divergingBars(rows));
+}
+document.getElementById("stock-pick").addEventListener("input", ev => renderStock(ev.target.value.toUpperCase()));
+renderStock(T.includes("AAPL") ? "AAPL" : T[0]);
+document.getElementById("stock-pick").value = T.includes("AAPL") ? "AAPL" : T[0];
+
+let sortKey = "total_vol", sortDir = -1;
+function renderStockTable() {
+  const q = document.getElementById("stock-search").value.toUpperCase();
+  const rows = T.map((t, i) => ({
+    t, i, ind: DATA.assets.industry[i],
+    tv: DATA.assets.total_vol[i], sv: SPEC[i], tilt: topTilt(i),
+  })).filter(r => !q || r.t.startsWith(q));
+  const keyFns = { ticker: r => r.t, industry: r => r.ind, total_vol: r => r.tv, specific: r => r.sv };
+  rows.sort((a, b) => {
+    const ka = keyFns[sortKey](a), kb = keyFns[sortKey](b);
+    return (ka < kb ? -1 : ka > kb ? 1 : 0) * sortDir;
+  });
+  document.getElementById("stock-count").textContent = `${rows.length} of ${T.length} names`;
+  const arrow = k => sortKey === k ? (sortDir > 0 ? " ↑" : " ↓") : "";
+  let html = `<table><thead><tr>
+    <th class="sortable" data-k="ticker" tabindex="0">Ticker${arrow("ticker")}</th>
+    <th class="sortable" data-k="industry" tabindex="0">Industry${arrow("industry")}</th>
+    <th class="sortable num" data-k="total_vol" tabindex="0">Total vol${arrow("total_vol")}</th>
+    <th class="sortable num" data-k="specific" tabindex="0">Specific${arrow("specific")}</th>
+    <th>Top style tilt</th></tr></thead><tbody>`;
+  rows.slice(0, 500).forEach(r => {
+    html += `<tr><td class="mono" style="font-family:var(--mono)">${esc(r.t)}</td><td>${esc(r.ind)}</td>
+      <td class="num">${pct(r.tv)}</td><td class="num">${pct(r.sv)}</td>
+      <td><span class="dot-i" style="background:${COLOR(r.tilt.f)}"></span>${r.tilt.f} <span class="num" style="font-family:var(--mono)">${r.tilt.v.toFixed(1)}</span></td></tr>`;
+  });
+  html += `</tbody></table>`;
+  const holder = document.getElementById("stock-table");
+  holder.innerHTML = html;
+  holder.querySelectorAll("th.sortable").forEach(th => {
+    const activate = () => {
+      const k = th.dataset.k;
+      if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = k === "ticker" || k === "industry" ? 1 : -1; }
+      renderStockTable();
+    };
+    th.addEventListener("click", activate);
+    th.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); activate(); } });
+  });
+}
+document.getElementById("stock-search").addEventListener("input", renderStockTable);
+renderStockTable();
+
+// ---------- methodology ----------
+{
+  const r2txt = (m.mean_r2 ?? 0).toFixed(2);
+  document.getElementById("meth-r2").innerHTML =
+    `In this build: <b>${m.n_periods}</b> weekly regressions over <b>${m.n_assets}</b> stocks, mean R² <b>${r2txt}</b> — factors explain about ${Math.round((m.mean_r2 ?? 0) * 100)}% of weekly cross-sectional return variance; the rest is stock-specific.`;
+  document.getElementById("meth-repo-link").href = (DATA.repo || "#") + "/blob/main/docs/METHODOLOGY.md";
+
+  // pipeline diagram
+  const box = (x, y, w, h, hot, lines3) => {
+    let s = `<rect class="box${hot ? " box-hot" : ""}" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/>`;
+    const cx = x + w / 2;
+    lines3.forEach((txt, i) => {
+      const cls = i === 0 ? "t1" : (txt.startsWith("`") ? "t3" : "t2");
+      s += `<text class="${cls}" x="${cx}" y="${y + 20 + i * 16}" text-anchor="middle">${txt.replace(/^\`/, "")}</text>`;
+    });
+    return s;
+  };
+  const arrow = (x1, y1, x2, y2, lbl, lx, ly) => {
+    let s = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="1.2" marker-end="url(#pArr)"/>`;
+    if (lbl) s += `<text class="alabel" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
+    return s;
+  };
+  let s = `<svg class="pipe-svg" viewBox="0 0 960 430" role="img" aria-label="Pipeline: EDGAR fundamentals and provider prices feed universe and exposures, a weekly constrained WLS regression produces factor returns and residuals, which become the factor covariance and specific risk shipped as model artifacts to agents and this explorer.">
+    <defs><marker id="pArr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="currentColor"/></marker></defs>`;
+  s += box(8, 40, 176, 70, false, ["SEC EDGAR", "fundamentals + SIC codes", "\`point-in-time (filed)"]);
+  s += box(8, 210, 176, 70, false, ["Price provider", "daily adjusted bars", "\`yahoo / tiingo / stooq"]);
+  s += box(264, 122, 190, 78, false, ["Universe & exposures", `${m.n_assets} stocks pass filters`, "\`7 styles + 12 industries"]);
+  s += box(524, 122, 196, 78, true, ["Weekly WLS regression", `${m.n_periods} weeks · mean R² ${r2txt}`, "\`cap-wtd industry sum = 0"]);
+  s += box(760, 30, 192, 64, false, ["Factor covariance F", "\`EWMA 13w vol · 26w corr"]);
+  s += box(760, 236, 192, 64, false, ["Specific risk s", "\`EWMA residuals + shrinkage"]);
+  s += box(492, 352, 300, 62, false, ["Model artifacts", "X, F, s + factor return history", "\`parquet · weekly release"]);
+  s += box(94, 352, 260, 62, false, ["Consumers", "MCP agents · Python · this page"]);
+  s += arrow(184, 75, 264, 140, "book equity, ROE, leverage, shares", 250, 116);
+  s += arrow(184, 245, 264, 182, "returns, momentum, vol, ADV", 248, 206);
+  s += arrow(454, 161, 524, 161, "X each Friday", 489, 116);
+  s += arrow(720, 140, 760, 78, "factor returns f", 706, 108);
+  s += arrow(720, 182, 760, 252, "residuals ε", 706, 228);
+  s += arrow(856, 94, 700, 355, "annualized ×52", 812, 200);
+  s += arrow(856, 300, 748, 352, "", 0, 0);
+  s += arrow(359, 200, 590, 352, "final exposures X", 420, 290);
+  s += arrow(492, 383, 354, 383, "load / query", 423, 374);
+  s += `</svg>`;
+  document.getElementById("pipeline-diagram").innerHTML = s;
+
+  // style definitions table
+  const DEFS = {
+    size: ["ln(market cap)", "small caps move together, and differently"],
+    value: ["book equity / market cap", "cheap vs. expensive is a shared bet"],
+    momentum: ["12-month return, skipping last month", "winners keep co-moving — until they crash"],
+    volatility: ["252-day return std", "high-beta names amplify every market move"],
+    liquidity: ["ln(dollar volume / market cap)", "heavily traded names share flow shocks"],
+    quality: ["ROE from annual filings", "profitability is a flight-to-safety axis"],
+    leverage: ["liabilities / assets", "balance-sheet risk concentrates in rate moves"],
+  };
+  let dt = `<table><thead><tr><th>Factor</th><th>Descriptor</th><th>Why it's a risk factor</th><th class="num">Ann. vol</th></tr></thead><tbody>`;
+  STYLES.forEach(f => {
+    dt += `<tr><td style="white-space:nowrap"><span class="dot-i" style="background:${COLOR(f)}"></span>${f}</td>
+      <td style="font-family:var(--mono);font-size:12px">${DEFS[f][0]}</td><td>${DEFS[f][1]}</td>
+      <td class="num">${pct(DATA.factor_vol[f])}</td></tr>`;
+  });
+  dt += `</tbody></table>`;
+  document.getElementById("style-defs").innerHTML = dt;
+
+  // EWMA decay chart
+  const W = 480, H = 200, ml = 46, mr = 78, mt = 12, mb = 30, weeks = 60;
+  const xp = t => ml + t / weeks * (W - ml - mr);
+  const yp = v => mt + (1 - v) * (H - mt - mb);
+  let dc = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Exponential decay of observation weights: the 13-week volatility half-life discards history quickly, the 26-week correlation half-life keeps it longer.">`;
+  [0, 0.5, 1].forEach(v => {
+    dc += `<line x1="${ml}" y1="${yp(v)}" x2="${W - mr}" y2="${yp(v)}" stroke="var(--grid)"/>`;
+    dc += `<text class="mono" x="${ml - 6}" y="${yp(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${v}</text>`;
+  });
+  [0, 13, 26, 39, 52].forEach(t => {
+    dc += `<text class="mono" x="${xp(t)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${t}w</text>`;
+  });
+  [["13w (vol)", 13, "var(--s-size)"], ["26w (corr)", 26, "var(--s-market)"]].forEach(([lbl, hl, col]) => {
+    const pts = [];
+    for (let t = 0; t <= weeks; t++) pts.push(`${xp(t).toFixed(1)},${yp(Math.pow(0.5, t / hl)).toFixed(1)}`);
+    dc += `<polyline points="${pts.join(" ")}" fill="none" style="stroke:${col}" stroke-width="2"/>`;
+    dc += `<line x1="${xp(hl)}" y1="${yp(0.5)}" x2="${xp(hl)}" y2="${yp(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+    dc += `<circle cx="${xp(hl)}" cy="${yp(0.5)}" r="3.5" style="fill:${col}"/>`;
+    dc += `<text x="${xp(weeks) + 6}" y="${yp(Math.pow(0.5, weeks / hl)) + 4}" font-size="11" font-weight="600" style="fill:${col}">${lbl}</text>`;
+  });
+  dc += `<text x="${ml}" y="${mt + 2}" font-size="10.5" fill="var(--muted)">weight on a week, by its age</text></svg>`;
+  document.getElementById("decay-chart").innerHTML = dc;
+}
+
+// ---------- agents: copy buttons ----------
+document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
+  await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+  const old = b.textContent; b.textContent = "Copied";
+  setTimeout(() => { b.textContent = old; }, 1200);
+}));
+</script>
+</body>
+</html>

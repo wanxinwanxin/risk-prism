@@ -239,6 +239,13 @@ pre.code {
 #tooltip .mono { font-family: var(--mono); }
 footer { border-top: 1px solid var(--border); }
 footer .wrap { padding-top: 18px; padding-bottom: 28px; font-size: 12px; color: var(--muted); }
+.pipe-svg { display: block; min-width: 900px; max-width: 100%; height: auto; color: var(--ink-2); }
+.pipe-svg .box { fill: var(--page); stroke: currentColor; stroke-width: 1.2; rx: 8; }
+.pipe-svg .box-hot { stroke: var(--accent); stroke-width: 1.6; }
+.pipe-svg .t1 { fill: var(--ink); font-size: 13px; font-weight: 600; }
+.pipe-svg .t2 { fill: var(--ink-2); font-size: 11px; }
+.pipe-svg .t3 { fill: var(--muted); font-size: 10.5px; font-family: var(--mono); }
+.pipe-svg .alabel { fill: var(--muted); font-size: 10.5px; }
 a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .spectrum .slice { transition: flex-basis .25s ease; }
@@ -266,6 +273,7 @@ a { color: var(--accent); }
   <button data-view="overview" aria-selected="true">Overview</button>
   <button data-view="portfolio" aria-selected="false">Portfolio</button>
   <button data-view="stocks" aria-selected="false">Stocks</button>
+  <button data-view="methodology" aria-selected="false">Methodology</button>
   <button data-view="agents" aria-selected="false">For agents</button>
 </div></nav>
 
@@ -353,9 +361,51 @@ a { color: var(--accent); }
   </div>
 </section>
 
+<section class="view" id="view-methodology">
+  <div class="card">
+    <h2>How a portfolio becomes a spectrum</h2>
+    <p class="sub">The full pipeline, run weekly. Numbers below are from the current build.</p>
+    <div class="tscroll" id="pipeline-diagram"></div>
+  </div>
+  <div class="card">
+    <h2>One week of the model</h2>
+    <p class="sub">Every Friday, that week's stock returns are regressed on the exposures known at the start of the week:</p>
+    <pre class="code" style="font-size:14px;text-align:center">r<sub>i</sub> &nbsp;=&nbsp; f<sub>mkt</sub> &nbsp;+&nbsp; Σ<sub>s</sub> X<sub>is</sub>·f<sub>s</sub> &nbsp;+&nbsp; Σ<sub>j</sub> I<sub>ij</sub>·f<sub>j</sub> &nbsp;+&nbsp; ε<sub>i</sub></pre>
+    <ul class="sub" style="margin:10px 0 0;padding-left:18px;line-height:1.8">
+      <li><b>Weighted least squares</b> with √(market cap) weights — large caps have less noisy returns, so they anchor the fit.</li>
+      <li><b>Identification constraint</b>: cap-weighted industry factor returns sum to zero, so the intercept f<sub>mkt</sub> <i>is</i> the cap-weighted market return, and styles/industries are deltas around it.</li>
+      <li>The regression's coefficients are that week's <b>factor returns</b>; what it can't explain (ε) becomes each stock's <b>specific return</b>.</li>
+      <li id="meth-r2" class="sub"></li>
+    </ul>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>The seven styles</h2>
+      <p class="sub">Raw descriptors from prices + SEC EDGAR fundamentals, winsorized at ±3σ, standardized to cap-weighted mean 0 / std 1. A stock's exposure answers: <i>how many standard deviations from the market is it on this dimension?</i></p>
+      <div class="tscroll" id="style-defs"></div>
+    </div>
+    <div class="card">
+      <h2>From weekly returns to annual risk</h2>
+      <p class="sub">Factor covariance is an exponentially weighted average of factor-return history. Volatilities react fast (13-week half-life); correlations move slowly (26 weeks):</p>
+      <div id="decay-chart"></div>
+      <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, shrunk 30% toward its size-quintile mean). F is repaired to positive semi-definite by eigenvalue flooring.</p>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Read this before trusting it</h2>
+    <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
+      <li><b>Survivorship bias</b>: prices are fetched at build time, so names delisted before the build are missing from history. Risk <i>forecasts</i> are less affected than the factor-return charts — treat those as indicative.</li>
+      <li><b>Crude universe heuristics</b>: ticker-pattern filters; some ADRs leak through; one share class per company.</li>
+      <li><b>First-order stress tests</b>: exposure × shock, no convexity, no specific returns.</li>
+      <li>Full methodology and every parameter: <a id="meth-repo-link" href="#">docs/METHODOLOGY.md on GitHub</a>.</li>
+    </ul>
+  </div>
+</section>
+
 <section class="view" id="view-agents">
   <div class="card">
     <h2>Point your agent at this model</h2>
+    <p class="sub">Reading this as an agent? The plain-markdown mirror of this build lives at <a href="model.md">/model.md</a> (indexed by <a href="llms.txt">/llms.txt</a>) — model card, factor definitions, correlations, and full coverage list, no DOM required.</p>
     <p class="sub">riskprism ships an MCP server. Install the package, download the latest artifacts, add the server — your agent can measure portfolio risk.</p>
     <div class="codehead"><h2 style="font-size:13px">MCP configuration</h2><button class="copy" data-copy="mcp-snippet">Copy</button></div>
     <pre class="code" id="mcp-snippet">{
@@ -367,7 +417,8 @@ a { color: var(--accent); }
   }
 }</pre>
     <div class="codehead"><h2 style="font-size:13px">Python</h2><button class="copy" data-copy="py-snippet">Copy</button></div>
-    <pre class="code" id="py-snippet">from riskprism import RiskModel
+    <pre class="code" id="py-snippet"># pip install git+https://github.com/wanxinwanxin/risk-prism
+from riskprism import RiskModel
 
 model = RiskModel.load("artifacts")
 model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
@@ -395,7 +446,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
 </div></main>
 
 <footer><div class="wrap">
-  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT
+  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT · <a href="https://github.com/wanxinwanxin/risk-prism">source</a> · <a href="model.md">model.md</a>
 </div></footer>
 
 <div id="tooltip" role="tooltip"></div>
@@ -448,7 +499,7 @@ function setView(name) {
   if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
 }
 tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
-const VIEWS = ["overview", "portfolio", "stocks", "agents"];
+const VIEWS = ["overview", "portfolio", "stocks", "methodology", "agents"];
 const initial = location.hash.slice(1);
 if (VIEWS.includes(initial)) setView(initial);
 window.addEventListener("hashchange", () => {
@@ -893,6 +944,93 @@ function renderStockTable() {
 }
 document.getElementById("stock-search").addEventListener("input", renderStockTable);
 renderStockTable();
+
+// ---------- methodology ----------
+{
+  const r2txt = (m.mean_r2 ?? 0).toFixed(2);
+  document.getElementById("meth-r2").innerHTML =
+    `In this build: <b>${m.n_periods}</b> weekly regressions over <b>${m.n_assets}</b> stocks, mean R² <b>${r2txt}</b> — factors explain about ${Math.round((m.mean_r2 ?? 0) * 100)}% of weekly cross-sectional return variance; the rest is stock-specific.`;
+  document.getElementById("meth-repo-link").href = (DATA.repo || "#") + "/blob/main/docs/METHODOLOGY.md";
+
+  // pipeline diagram
+  const box = (x, y, w, h, hot, lines3) => {
+    let s = `<rect class="box${hot ? " box-hot" : ""}" x="${x}" y="${y}" width="${w}" height="${h}" rx="8"/>`;
+    const cx = x + w / 2;
+    lines3.forEach((txt, i) => {
+      const cls = i === 0 ? "t1" : (txt.startsWith("`") ? "t3" : "t2");
+      s += `<text class="${cls}" x="${cx}" y="${y + 20 + i * 16}" text-anchor="middle">${txt.replace(/^\`/, "")}</text>`;
+    });
+    return s;
+  };
+  const arrow = (x1, y1, x2, y2, lbl, lx, ly) => {
+    let s = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="currentColor" stroke-width="1.2" marker-end="url(#pArr)"/>`;
+    if (lbl) s += `<text class="alabel" x="${lx}" y="${ly}" text-anchor="middle">${lbl}</text>`;
+    return s;
+  };
+  let s = `<svg class="pipe-svg" viewBox="0 0 960 430" role="img" aria-label="Pipeline: EDGAR fundamentals and provider prices feed universe and exposures, a weekly constrained WLS regression produces factor returns and residuals, which become the factor covariance and specific risk shipped as model artifacts to agents and this explorer.">
+    <defs><marker id="pArr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="currentColor"/></marker></defs>`;
+  s += box(8, 40, 176, 70, false, ["SEC EDGAR", "fundamentals + SIC codes", "\`point-in-time (filed)"]);
+  s += box(8, 210, 176, 70, false, ["Price provider", "daily adjusted bars", "\`yahoo / tiingo / stooq"]);
+  s += box(264, 122, 190, 78, false, ["Universe & exposures", `${m.n_assets} stocks pass filters`, "\`7 styles + 12 industries"]);
+  s += box(524, 122, 196, 78, true, ["Weekly WLS regression", `${m.n_periods} weeks · mean R² ${r2txt}`, "\`cap-wtd industry sum = 0"]);
+  s += box(760, 30, 192, 64, false, ["Factor covariance F", "\`EWMA 13w vol · 26w corr"]);
+  s += box(760, 236, 192, 64, false, ["Specific risk s", "\`EWMA residuals + shrinkage"]);
+  s += box(492, 352, 300, 62, false, ["Model artifacts", "X, F, s + factor return history", "\`parquet · weekly release"]);
+  s += box(94, 352, 260, 62, false, ["Consumers", "MCP agents · Python · this page"]);
+  s += arrow(184, 75, 264, 140, "book equity, ROE, leverage, shares", 250, 116);
+  s += arrow(184, 245, 264, 182, "returns, momentum, vol, ADV", 248, 206);
+  s += arrow(454, 161, 524, 161, "X each Friday", 489, 116);
+  s += arrow(720, 140, 760, 78, "factor returns f", 706, 108);
+  s += arrow(720, 182, 760, 252, "residuals ε", 706, 228);
+  s += arrow(856, 94, 700, 355, "annualized ×52", 812, 200);
+  s += arrow(856, 300, 748, 352, "", 0, 0);
+  s += arrow(359, 200, 590, 352, "final exposures X", 420, 290);
+  s += arrow(492, 383, 354, 383, "load / query", 423, 374);
+  s += `</svg>`;
+  document.getElementById("pipeline-diagram").innerHTML = s;
+
+  // style definitions table
+  const DEFS = {
+    size: ["ln(market cap)", "small caps move together, and differently"],
+    value: ["book equity / market cap", "cheap vs. expensive is a shared bet"],
+    momentum: ["12-month return, skipping last month", "winners keep co-moving — until they crash"],
+    volatility: ["252-day return std", "high-beta names amplify every market move"],
+    liquidity: ["ln(dollar volume / market cap)", "heavily traded names share flow shocks"],
+    quality: ["ROE from annual filings", "profitability is a flight-to-safety axis"],
+    leverage: ["liabilities / assets", "balance-sheet risk concentrates in rate moves"],
+  };
+  let dt = `<table><thead><tr><th>Factor</th><th>Descriptor</th><th>Why it's a risk factor</th><th class="num">Ann. vol</th></tr></thead><tbody>`;
+  STYLES.forEach(f => {
+    dt += `<tr><td style="white-space:nowrap"><span class="dot-i" style="background:${COLOR(f)}"></span>${f}</td>
+      <td style="font-family:var(--mono);font-size:12px">${DEFS[f][0]}</td><td>${DEFS[f][1]}</td>
+      <td class="num">${pct(DATA.factor_vol[f])}</td></tr>`;
+  });
+  dt += `</tbody></table>`;
+  document.getElementById("style-defs").innerHTML = dt;
+
+  // EWMA decay chart
+  const W = 480, H = 200, ml = 46, mr = 78, mt = 12, mb = 30, weeks = 60;
+  const xp = t => ml + t / weeks * (W - ml - mr);
+  const yp = v => mt + (1 - v) * (H - mt - mb);
+  let dc = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Exponential decay of observation weights: the 13-week volatility half-life discards history quickly, the 26-week correlation half-life keeps it longer.">`;
+  [0, 0.5, 1].forEach(v => {
+    dc += `<line x1="${ml}" y1="${yp(v)}" x2="${W - mr}" y2="${yp(v)}" stroke="var(--grid)"/>`;
+    dc += `<text class="mono" x="${ml - 6}" y="${yp(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${v}</text>`;
+  });
+  [0, 13, 26, 39, 52].forEach(t => {
+    dc += `<text class="mono" x="${xp(t)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${t}w</text>`;
+  });
+  [["13w (vol)", 13, "var(--s-size)"], ["26w (corr)", 26, "var(--s-market)"]].forEach(([lbl, hl, col]) => {
+    const pts = [];
+    for (let t = 0; t <= weeks; t++) pts.push(`${xp(t).toFixed(1)},${yp(Math.pow(0.5, t / hl)).toFixed(1)}`);
+    dc += `<polyline points="${pts.join(" ")}" fill="none" style="stroke:${col}" stroke-width="2"/>`;
+    dc += `<line x1="${xp(hl)}" y1="${yp(0.5)}" x2="${xp(hl)}" y2="${yp(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+    dc += `<circle cx="${xp(hl)}" cy="${yp(0.5)}" r="3.5" style="fill:${col}"/>`;
+    dc += `<text x="${xp(weeks) + 6}" y="${yp(Math.pow(0.5, weeks / hl)) + 4}" font-size="11" font-weight="600" style="fill:${col}">${lbl}</text>`;
+  });
+  dc += `<text x="${ml}" y="${mt + 2}" font-size="10.5" fill="var(--muted)">weight on a week, by its age</text></svg>`;
+  document.getElementById("decay-chart").innerHTML = dc;
+}
 
 // ---------- agents: copy buttons ----------
 document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
