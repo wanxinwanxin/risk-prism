@@ -25,7 +25,7 @@ must check their provider's terms for their own rebuilds.
 
 ## 3. Agent interface: Python package + MCP server
 
-`pip install osrisk` for the math; `osrisk-mcp` for agents. A hosted REST
+`pip install riskprism` for the math; `riskprism-mcp` for agents. A hosted REST
 API was deliberately deferred (hosting cost/ops without proven demand).
 
 ## 4. Refresh: weekly GitHub Actions
@@ -50,5 +50,8 @@ short-horizon/trading use, which is out of scope for v1.
   ubiquity beats speed at this data size; revisit if the pipeline slows.
 - **License**: MIT (code). Artifacts: derived data, distributed with
   attribution of sources.
-- **Naming**: package `osrisk`, model version string `OSRM-US-MH-x.y`
-  (US, Medium Horizon).
+- **Naming** (decided 2026-08-19): `riskprism` — a prism decomposes light
+  into its spectrum; the model decomposes portfolio risk into a factor
+  spectrum. Free on PyPI, keeps "risk" searchable, and gives the frontend
+  its visual identity. Runners-up: `beaufort`, `loadings`. Model version
+  string: `PRISM-US-MH-x.y` (US, Medium Horizon).

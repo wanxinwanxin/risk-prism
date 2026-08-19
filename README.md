@@ -1,6 +1,8 @@
-# osrisk — open-source US equity risk model
+# riskprism
 
-A Barra-style fundamental factor risk model for US equities, built to be
+**Decompose US equity portfolio risk into its factor spectrum.**
+
+An open-source, Barra-style fundamental factor risk model built to be
 **usable by AI agents out of the box**: a Python library, an MCP server, and
 weekly-published model artifacts covering most liquid US common stocks.
 
@@ -20,9 +22,9 @@ weekly-published model artifacts covering most liquid US common stocks.
 ```json
 {
   "mcpServers": {
-    "osrisk": {
-      "command": "osrisk-mcp",
-      "env": { "OSRISK_ARTIFACTS": "/path/to/artifacts" }
+    "riskprism": {
+      "command": "riskprism-mcp",
+      "env": { "RISKPRISM_ARTIFACTS": "/path/to/artifacts" }
     }
   }
 }
@@ -35,7 +37,7 @@ negative); volatilities are annualized decimals.
 ## For humans (Python)
 
 ```python
-from osrisk import RiskModel
+from riskprism import RiskModel
 
 model = RiskModel.load("artifacts")
 report = model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
@@ -48,9 +50,9 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})
 
 ```bash
 pip install -e ".[dev]"
-export OSRISK_EDGAR_UA="your-project (you@example.com)"   # SEC fair-access policy
-osrisk-build --max-names 1500 --out artifacts             # yahoo prices, no key needed
-osrisk-build --provider tiingo ...                        # licensed data, needs TIINGO_API_KEY
+export RISKPRISM_EDGAR_UA="your-project (you@example.com)"   # SEC fair-access policy
+riskprism-build --max-names 1500 --out artifacts             # yahoo prices, no key needed
+riskprism-build --provider tiingo ...                        # licensed data, needs TIINGO_API_KEY
 ```
 
 The weekly GitHub Action runs exactly this and publishes the artifact

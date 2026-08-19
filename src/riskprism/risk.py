@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from osrisk.artifacts import load_artifacts
+from riskprism.artifacts import load_artifacts
 
 
 class RiskModel:

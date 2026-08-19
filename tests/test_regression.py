@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from osrisk.config import STYLE_FACTORS
-from osrisk.factors.industry import INDUSTRY_PREFIX
-from osrisk.model.regression import cross_sectional_regression
+from riskprism.config import STYLE_FACTORS
+from riskprism.factors.industry import INDUSTRY_PREFIX
+from riskprism.model.regression import cross_sectional_regression
 
 
 def _synthetic_cross_section(seed=0, n=600, noise=1e-4):

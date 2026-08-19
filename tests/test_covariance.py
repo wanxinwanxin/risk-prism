@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from osrisk.config import ModelConfig
-from osrisk.model.covariance import factor_covariance
-from osrisk.model.specific import specific_risk
+from riskprism.config import ModelConfig
+from riskprism.model.covariance import factor_covariance
+from riskprism.model.specific import specific_risk
 
 
 def test_covariance_is_psd_and_recovers_scale():

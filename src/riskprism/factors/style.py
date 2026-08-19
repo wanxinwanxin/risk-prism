@@ -9,8 +9,8 @@ equal-weighted std 1, and missing values are set to 0 (market average).
 import numpy as np
 import pandas as pd
 
-from osrisk.config import STYLE_FACTORS, ModelConfig
-from osrisk.factors.transforms import process_exposure
+from riskprism.config import STYLE_FACTORS, ModelConfig
+from riskprism.factors.transforms import process_exposure
 
 
 def compute_style_exposures(

@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 
-from osrisk.config import ModelConfig
+from riskprism.config import ModelConfig
 
 
 def specific_risk(

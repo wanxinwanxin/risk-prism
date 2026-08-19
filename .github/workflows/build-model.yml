@@ -24,12 +24,12 @@ jobs:
       - run: pip install -e .
       - name: Build model
         env:
-          # Define OSRISK_EDGAR_UA as a repo variable, e.g.
-          # "osrisk weekly build (github.com/OWNER/REPO) you@example.com"
+          # Define RISKPRISM_EDGAR_UA as a repo variable, e.g.
+          # "riskprism weekly build (github.com/OWNER/REPO) you@example.com"
           # — SEC's fair-access policy requires a contact email.
-          OSRISK_EDGAR_UA: ${{ vars.OSRISK_EDGAR_UA }}
+          RISKPRISM_EDGAR_UA: ${{ vars.RISKPRISM_EDGAR_UA }}
         run: |
-          osrisk-build --max-names "${{ github.event.inputs.max_names || '1500' }}" --out artifacts
+          riskprism-build --max-names "${{ github.event.inputs.max_names || '1500' }}" --out artifacts
       - name: Set release tag
         id: tag
         run: echo "tag=model-$(date +%F)" >> "$GITHUB_OUTPUT"
@@ -37,8 +37,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tar czf osrisk-artifacts.tar.gz -C artifacts .
-          gh release create "${{ steps.tag.outputs.tag }}" osrisk-artifacts.tar.gz \
+          tar czf riskprism-artifacts.tar.gz -C artifacts .
+          gh release create "${{ steps.tag.outputs.tag }}" riskprism-artifacts.tar.gz \
             --title "Model build ${{ steps.tag.outputs.tag }}" \
-            --notes "Weekly OSRM-US-MH artifacts. See docs/METHODOLOGY.md. Not investment advice." \
-            || gh release upload "${{ steps.tag.outputs.tag }}" osrisk-artifacts.tar.gz --clobber
+            --notes "Weekly PRISM-US-MH artifacts. See docs/METHODOLOGY.md. Not investment advice." \
+            || gh release upload "${{ steps.tag.outputs.tag }}" riskprism-artifacts.tar.gz --clobber

@@ -1,6 +1,6 @@
 import numpy as np
 
-from osrisk.factors.industry import sic_to_industry
+from riskprism.factors.industry import sic_to_industry
 
 
 def test_known_sic_mappings():

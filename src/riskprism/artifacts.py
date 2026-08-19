@@ -44,7 +44,7 @@ def load_artifacts(path: str | Path) -> dict:
     path = Path(path)
     if not (path / META_FILE).exists():
         raise FileNotFoundError(
-            f"No model artifacts at {path} — run `osrisk-build` or download a "
+            f"No model artifacts at {path} — run `riskprism-build` or download a "
             "published model release."
         )
     return {

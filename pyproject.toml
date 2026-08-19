@@ -1,11 +1,11 @@
 [project]
-name = "osrisk"
+name = "riskprism"
 version = "0.1.0"
 description = "Open-source US equity factor risk model, built for AI agents"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
-authors = [{ name = "osrisk contributors" }]
+authors = [{ name = "riskprism contributors" }]
 keywords = ["equity", "risk-model", "factor-model", "quant", "mcp", "agents"]
 dependencies = [
     "numpy>=1.26",
@@ -19,15 +19,15 @@ mcp = ["mcp>=1.2"]
 dev = ["pytest>=8", "mcp>=1.2"]
 
 [project.scripts]
-osrisk-build = "osrisk.build_cli:main"
-osrisk-mcp = "osrisk.mcp_server:main"
+riskprism-build = "riskprism.build_cli:main"
+riskprism-mcp = "riskprism.mcp_server:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/osrisk"]
+packages = ["src/riskprism"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

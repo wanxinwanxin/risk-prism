@@ -13,7 +13,7 @@ from typing import Protocol
 import pandas as pd
 import requests
 
-from osrisk.data.edgar import default_cache_dir
+from riskprism.data.edgar import default_cache_dir
 
 
 class PriceProvider(Protocol):
@@ -42,7 +42,7 @@ class YahooProvider:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers["User-Agent"] = "Mozilla/5.0 (osrisk)"
+        self.session.headers["User-Agent"] = "Mozilla/5.0 (riskprism)"
 
     def get_daily(self, ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
         empty = pd.DataFrame(columns=["close", "volume"])
@@ -85,7 +85,7 @@ class StooqProvider:
 
     def __init__(self):
         self.session = requests.Session()
-        self.session.headers["User-Agent"] = "osrisk/0.1"
+        self.session.headers["User-Agent"] = "riskprism/0.1"
 
     def get_daily(self, ticker: str, start: pd.Timestamp, end: pd.Timestamp) -> pd.DataFrame:
         params = {

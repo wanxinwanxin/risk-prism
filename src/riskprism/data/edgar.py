@@ -4,7 +4,7 @@ EDGAR XBRL data is public domain, which is what makes an open-source
 fundamental risk model with broad US coverage legally distributable.
 
 SEC fair-access policy: max 10 requests/second and a descriptive
-User-Agent header are required. Set OSRISK_EDGAR_UA to identify yourself.
+User-Agent header are required. Set RISKPRISM_EDGAR_UA to identify yourself.
 """
 
 import json
@@ -22,7 +22,7 @@ SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
 
 _UA_HELP = (
     "SEC EDGAR requires a User-Agent identifying you with a contact email "
-    '(fair-access policy). Set OSRISK_EDGAR_UA, e.g. '
+    '(fair-access policy). Set RISKPRISM_EDGAR_UA, e.g. '
     '"my-project you@example.com", or pass user_agent= to EdgarClient.'
 )
 
@@ -46,10 +46,10 @@ _DURATION_CONCEPTS = {"net_income"}
 
 
 def default_cache_dir() -> Path:
-    root = os.environ.get("OSRISK_CACHE")
+    root = os.environ.get("RISKPRISM_CACHE")
     if root:
         return Path(root)
-    return Path.home() / ".cache" / "osrisk"
+    return Path.home() / ".cache" / "riskprism"
 
 
 class EdgarClient:
@@ -57,7 +57,7 @@ class EdgarClient:
 
     def __init__(self, user_agent: str | None = None, cache_dir: Path | None = None,
                  min_interval: float = 0.12, cache_max_age_days: float = 7.0):
-        ua = user_agent or os.environ.get("OSRISK_EDGAR_UA")
+        ua = user_agent or os.environ.get("RISKPRISM_EDGAR_UA")
         if not ua:
             raise ValueError(_UA_HELP)
         self.session = requests.Session()

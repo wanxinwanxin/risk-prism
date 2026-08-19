@@ -1,7 +1,7 @@
-# OSRM-US-MH methodology
+# PRISM-US-MH methodology
 
-Version `OSRM-US-MH-0.1`. Weekly-frequency, medium-horizon US equity
-fundamental factor model. All parameters live in `osrisk.config.ModelConfig`.
+Version `PRISM-US-MH-0.1`. Weekly-frequency, medium-horizon US equity
+fundamental factor model. All parameters live in `riskprism.config.ModelConfig`.
 
 ## Universe
 

@@ -14,8 +14,8 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from osrisk.config import MARKET_FACTOR
-from osrisk.factors.industry import industry_dummies
+from riskprism.config import MARKET_FACTOR
+from riskprism.factors.industry import industry_dummies
 
 
 @dataclass

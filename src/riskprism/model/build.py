@@ -8,16 +8,16 @@ artifacts are distributed, the pipeline that made them is open).
 import numpy as np
 import pandas as pd
 
-from osrisk.artifacts import save_artifacts
-from osrisk.config import MARKET_FACTOR, ModelConfig
-from osrisk.data.edgar import EdgarClient, Fundamentals
-from osrisk.data.prices import get_provider, load_price_panel
-from osrisk.data.universe import apply_liquidity_filters, candidate_tickers
-from osrisk.factors.industry import industry_dummies, sic_to_industry
-from osrisk.factors.style import compute_style_exposures
-from osrisk.model.covariance import factor_covariance
-from osrisk.model.regression import cross_sectional_regression
-from osrisk.model.specific import specific_risk
+from riskprism.artifacts import save_artifacts
+from riskprism.config import MARKET_FACTOR, ModelConfig
+from riskprism.data.edgar import EdgarClient, Fundamentals
+from riskprism.data.prices import get_provider, load_price_panel
+from riskprism.data.universe import apply_liquidity_filters, candidate_tickers
+from riskprism.factors.industry import industry_dummies, sic_to_industry
+from riskprism.factors.style import compute_style_exposures
+from riskprism.model.covariance import factor_covariance
+from riskprism.model.regression import cross_sectional_regression
+from riskprism.model.specific import specific_risk
 
 FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income", "shares_out"]
 
@@ -44,7 +44,7 @@ def build_model(
 
     def log(msg: str):
         if verbose:
-            print(f"[osrisk] {msg}")
+            print(f"[riskprism] {msg}")
 
     # ---- universe ----------------------------------------------------
     ticker_meta = candidate_tickers(edgar, max_names=max_names)

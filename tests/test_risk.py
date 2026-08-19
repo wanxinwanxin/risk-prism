@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from osrisk.artifacts import load_artifacts, save_artifacts
-from osrisk.risk import RiskModel
+from riskprism.artifacts import load_artifacts, save_artifacts
+from riskprism.risk import RiskModel
 
 
 @pytest.fixture

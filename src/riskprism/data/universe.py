@@ -4,8 +4,8 @@ import re
 
 import pandas as pd
 
-from osrisk.config import ModelConfig
-from osrisk.data.edgar import EdgarClient
+from riskprism.config import ModelConfig
+from riskprism.data.edgar import EdgarClient
 
 # Plain 1-5 letter tickers only: drops units, warrants, preferreds, and
 # most non-common share classes registered on EDGAR.

@@ -1,4 +1,4 @@
-"""Model configuration and constants for the OSRM-US medium-horizon model."""
+"""Model configuration and constants for the PRISM-US medium-horizon model."""
 
 from dataclasses import dataclass, asdict
 
@@ -24,7 +24,7 @@ class ModelConfig:
     a new model version.
     """
 
-    version: str = "OSRM-US-MH-0.1"
+    version: str = "PRISM-US-MH-0.1"
     frequency: str = "W-FRI"
     ann_factor: float = 52.0
 

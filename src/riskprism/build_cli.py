@@ -1,13 +1,13 @@
-"""CLI entry point: osrisk-build."""
+"""CLI entry point: riskprism-build."""
 
 import argparse
 
-from osrisk.model.build import build_model
+from riskprism.model.build import build_model
 
 
 def main() -> None:
     p = argparse.ArgumentParser(
-        prog="osrisk-build",
+        prog="riskprism-build",
         description="Build US equity factor risk model artifacts from public data.",
     )
     p.add_argument("--tickers", nargs="*", default=None,

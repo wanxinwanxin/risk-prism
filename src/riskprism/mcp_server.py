@@ -1,6 +1,6 @@
 """MCP server exposing the risk model to AI agents.
 
-Run with `osrisk-mcp`. Artifacts are loaded from $OSRISK_ARTIFACTS
+Run with `riskprism-mcp`. Artifacts are loaded from $RISKPRISM_ARTIFACTS
 (default: ./artifacts). All volatilities are annualized decimals.
 """
 
@@ -8,10 +8,10 @@ import os
 
 from mcp.server.fastmcp import FastMCP
 
-from osrisk.risk import RiskModel
+from riskprism.risk import RiskModel
 
 mcp = FastMCP(
-    "osrisk",
+    "riskprism",
     instructions=(
         "US equity factor risk model (Barra-style: 7 styles + 12 industries + market). "
         "Weights are portfolio weights; shorts are negative; they need not sum to 1. "
@@ -26,7 +26,7 @@ _model: RiskModel | None = None
 def _get_model() -> RiskModel:
     global _model
     if _model is None:
-        _model = RiskModel.load(os.environ.get("OSRISK_ARTIFACTS", "artifacts"))
+        _model = RiskModel.load(os.environ.get("RISKPRISM_ARTIFACTS", "artifacts"))
     return _model
 
 

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from osrisk.factors.transforms import process_exposure, standardize, winsorize_z
+from riskprism.factors.transforms import process_exposure, standardize, winsorize_z
 
 
 def test_winsorize_clips_outliers():
