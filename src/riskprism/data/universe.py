@@ -7,22 +7,23 @@ import pandas as pd
 from riskprism.config import ModelConfig
 from riskprism.data.edgar import EdgarClient
 
-# Plain 1-5 letter tickers only: drops units, warrants, preferreds, and
-# most non-common share classes registered on EDGAR.
-_COMMON_TICKER = re.compile(r"^[A-Z]{1,5}$")
+# Plain 1-5 letter tickers, optionally a single-letter class suffix
+# (BRK-B, BF-B). Drops units, warrants, and preferreds, whose suffixes
+# are two letters or longer (-UN, -WT, -PA).
+_COMMON_TICKER = re.compile(r"^[A-Z]{1,5}(-[A-Z])?$")
 
 
 def candidate_tickers(edgar: EdgarClient, max_names: int | None = None) -> pd.DataFrame:
     """Candidate US common stocks: columns [ticker, cik, title].
 
-    One ticker per CIK (the shortest, a heuristic for the primary share
-    class). EDGAR ordering roughly tracks market cap, so ``max_names``
-    keeps the largest companies first.
+    One ticker per CIK, keeping the first-listed: EDGAR's ordering tracks
+    the primary listing (GOOGL before GOOG, BRK-B before BRK-A) and
+    roughly tracks market cap, so ``max_names`` keeps the largest
+    companies first.
     """
     df = edgar.ticker_map()
     df = df[df["ticker"].str.match(_COMMON_TICKER)]
-    df = df.sort_values("ticker", key=lambda s: s.str.len()).drop_duplicates("cik")
-    df = df.sort_index().reset_index(drop=True)
+    df = df.drop_duplicates("cik").reset_index(drop=True)
     if max_names:
         df = df.head(max_names)
     return df
