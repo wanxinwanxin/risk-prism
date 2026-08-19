@@ -2,6 +2,9 @@
 
 **Decompose US equity portfolio risk into its factor spectrum.**
 
+**Explorer:** https://risk-prism-production.up.railway.app ·
+**Agent model card:** [/model.md](https://risk-prism-production.up.railway.app/model.md)
+
 An open-source, Barra-style fundamental factor risk model built to be
 **usable by AI agents out of the box**: a Python library, an MCP server, and
 weekly-published model artifacts covering most liquid US common stocks.
