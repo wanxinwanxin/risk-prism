@@ -18,6 +18,9 @@ def main() -> None:
     p.add_argument("--start", default=None, help="History start (default: 4y before end)")
     p.add_argument("--end", default=None, help="History end (default: today)")
     p.add_argument("--out", default="artifacts", help="Artifact output directory")
+    p.add_argument("--prior", default=None,
+                   help="Previous build's artifact directory: append new weeks to its "
+                        "history (capture-forward) instead of rebuilding from scratch")
     p.add_argument("--quiet", action="store_true")
     args = p.parse_args()
 
@@ -28,6 +31,7 @@ def main() -> None:
         end=args.end,
         max_names=args.max_names,
         artifacts_dir=args.out,
+        prior_artifacts=args.prior,
         verbose=not args.quiet,
     )
 

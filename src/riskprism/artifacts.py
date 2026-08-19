@@ -19,6 +19,11 @@ FILES = {
     "specific_risk": "specific_risk.parquet",
     "factor_returns": "factor_returns.parquet",
 }
+# Added in v0.2; loaders treat them as optional for older artifact dirs.
+OPTIONAL_FILES = {
+    "residuals": "residuals.parquet",     # capture-forward residual history
+    "asset_meta": "asset_meta.parquet",   # per-asset estimation quality
+}
 META_FILE = "meta.json"
 
 
@@ -29,6 +34,8 @@ def save_artifacts(
     specific_risk: pd.Series,
     factor_returns: pd.DataFrame,
     meta: dict,
+    residuals: pd.DataFrame | None = None,
+    asset_meta: pd.DataFrame | None = None,
 ) -> Path:
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -36,6 +43,10 @@ def save_artifacts(
     factor_covariance.to_parquet(path / FILES["factor_covariance"])
     specific_risk.rename("specific_vol").to_frame().to_parquet(path / FILES["specific_risk"])
     factor_returns.to_parquet(path / FILES["factor_returns"])
+    if residuals is not None:
+        residuals.to_parquet(path / OPTIONAL_FILES["residuals"])
+    if asset_meta is not None:
+        asset_meta.to_parquet(path / OPTIONAL_FILES["asset_meta"])
     (path / META_FILE).write_text(json.dumps(meta, indent=2, default=str))
     return path
 
@@ -47,10 +58,13 @@ def load_artifacts(path: str | Path) -> dict:
             f"No model artifacts at {path} — run `riskprism-build` or download a "
             "published model release."
         )
-    return {
+    out = {
         "exposures": pd.read_parquet(path / FILES["exposures"]),
         "factor_covariance": pd.read_parquet(path / FILES["factor_covariance"]),
         "specific_risk": pd.read_parquet(path / FILES["specific_risk"])["specific_vol"],
         "factor_returns": pd.read_parquet(path / FILES["factor_returns"]),
         "meta": json.loads((path / META_FILE).read_text()),
     }
+    for key, fname in OPTIONAL_FILES.items():
+        out[key] = pd.read_parquet(path / fname) if (path / fname).exists() else None
+    return out

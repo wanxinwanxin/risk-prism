@@ -32,7 +32,12 @@ def candidate_tickers(edgar: EdgarClient, max_names: int | None = None) -> pd.Da
 def apply_liquidity_filters(
     close: pd.DataFrame, volume: pd.DataFrame, config: ModelConfig
 ) -> list[str]:
-    """Filter to investable names: price, dollar ADV, and history floors."""
+    """Estimation universe: price, dollar ADV, and history floors.
+
+    Each name is evaluated at its own last traded date, so a stock that
+    was liquid before delisting mid-window still qualifies — its history
+    belongs in the factor regressions.
+    """
     keep = []
     dollar_vol = close * volume
     for ticker in close.columns:
@@ -44,5 +49,26 @@ def apply_liquidity_filters(
         adv = dollar_vol[ticker].dropna().tail(21)
         if adv.empty or adv.median() < config.min_dollar_adv:
             continue
+        keep.append(ticker)
+    return keep
+
+
+def coverage_universe(close: pd.DataFrame, config: ModelConfig) -> list[str]:
+    """Coverage universe: every name alive and sane at the panel end.
+
+    Much looser than the estimation universe — no history or ADV floor —
+    because coverage names get risk through the factor structure and the
+    structural specific-risk prior, not through their own history.
+    """
+    if close.empty:
+        return []
+    end = close.index[-1]
+    keep = []
+    for ticker in close.columns:
+        px = close[ticker].dropna()
+        if px.empty or px.iloc[-1] < config.coverage_min_price:
+            continue
+        if (end - px.index[-1]).days > config.coverage_max_stale_days:
+            continue  # stopped trading: historical name, not coverable today
         keep.append(ticker)
     return keep

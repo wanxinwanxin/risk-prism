@@ -53,11 +53,17 @@ def _load(artifacts_dir):
     Xv, Fv = X.to_numpy(), F.to_numpy()
     factor_var = np.einsum("ik,kl,il->i", Xv, Fv, Xv)
     total_vol = np.sqrt(np.clip(factor_var, 0, None) + spec.to_numpy() ** 2)
-    return a, X, F, spec, industry, total_vol
+
+    am = a.get("asset_meta")
+    if am is None:
+        am = pd.DataFrame({"in_estimation": True, "history_weeks": 0,
+                           "specific_blend_weight": 1.0}, index=X.index)
+    am = am.reindex(X.index)
+    return a, X, F, spec, industry, total_vol, am
 
 
 def build_site_data(artifacts_dir: str | Path) -> dict:
-    a, X, F, spec, industry, total_vol = _load(artifacts_dir)
+    a, X, F, spec, industry, total_vol, am = _load(artifacts_dir)
     freturns = a["factor_returns"]
     cum = (1 + freturns).cumprod() - 1
     show = [MARKET_FACTOR, *STYLE_FACTORS]
@@ -75,6 +81,9 @@ def build_site_data(artifacts_dir: str | Path) -> dict:
             "specific": _round(spec, 4),
             "total_vol": _round(total_vol, 4),
             "industry": list(industry),
+            "estu": [int(v) for v in am["in_estimation"].fillna(False)],
+            "weeks": [int(v) for v in am["history_weeks"].fillna(0)],
+            "blend": _round(am["specific_blend_weight"].fillna(0.0), 3),
         },
         "factor_returns": {
             "dates": [d.strftime("%Y-%m-%d") for d in cum.index],
@@ -84,10 +93,11 @@ def build_site_data(artifacts_dir: str | Path) -> dict:
 
 
 def build_model_md(artifacts_dir: str | Path) -> str:
-    a, X, F, spec, industry, total_vol = _load(artifacts_dir)
+    a, X, F, spec, industry, total_vol, am = _load(artifacts_dir)
     m = a["meta"]
     cfg = m.get("config", {})
     vol = lambda f: float(np.sqrt(F.loc[f, f]))
+    n_estu = int(am["in_estimation"].fillna(False).sum())
 
     lines = [
         "# riskprism — model card",
@@ -103,8 +113,9 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         f"| model version | {m.get('model_version')} |",
         f"| as of | {m.get('as_of')} |",
         f"| assets covered | {m.get('n_assets')} |",
+        f"| estimation universe | {n_estu} |",
         f"| regression weeks | {m.get('n_periods')} |",
-        f"| mean weekly R² | {m.get('mean_r2', 0):.3f} |",
+        f"| mean weekly R² | {(m.get('mean_r2') or 0):.3f} |",
         f"| price provider | {m.get('price_provider')} |",
         f"| frequency | {cfg.get('frequency', 'W-FRI')} (annualized outputs) |",
         "",
@@ -180,19 +191,43 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "   median dollar volume ≥ $1M, ≥ 26 weeks of history.",
         "2. Point-in-time fundamentals from EDGAR XBRL (values used only after",
         "   their `filed` date); daily adjusted prices from a pluggable provider.",
-        "3. Weekly cross-sectional WLS regression of returns on exposures,",
+        "3. Two universes: liquid names (price ≥ $2, ADV ≥ $1M, ≥ 26w history)",
+        "   estimate the factor returns; every name alive at the build date is",
+        "   covered — risk comes through the factor structure plus a structural",
+        "   specific-risk prior, so no asset-level history is required.",
+        "4. Weekly cross-sectional WLS regression of returns on exposures,",
         "   √(market cap) weights, industry returns cap-weighted to zero.",
-        "4. Factor covariance: EWMA on weekly factor returns — vol half-life",
+        "5. Factor covariance: EWMA on weekly factor returns — vol half-life",
         f"   {cfg.get('vol_half_life', 13)}w, correlation half-life {cfg.get('corr_half_life', 26)}w — annualized ×{int(cfg.get('ann_factor', 52))}, repaired to PSD.",
-        "5. Specific risk: EWMA of squared residuals, shrunk",
-        f"   {int(cfg.get('specific_shrinkage', 0.3) * 100)}% toward size-quintile means.",
-        "6. Portfolio risk: Σ = X F Xᵀ + diag(s²).",
+        "6. Specific risk: each asset's EWMA residual vol blended with a",
+        "   cross-sectional structural prediction (from size, volatility,",
+        "   liquidity, industry) by history length: w = T/(T + 26w). Assets",
+        "   without history get the pure structural prior.",
+        "7. Capture-forward history: each weekly build appends to the prior",
+        "   build's factor returns and residuals; names that stop trading get",
+        "   an imputed delisting return in their final week and keep their",
+        "   historical rows, so post-launch history is survivorship-free.",
+        "8. Portfolio risk: Σ = X F Xᵀ + diag(s²).",
+        "",
+        "### Per-asset estimation quality",
+        "",
+        "`get_factor_exposures` and the artifacts' `asset_meta.parquet` report,",
+        "per asset: `in_estimation` (participates in factor regressions),",
+        "`history_weeks` (residual observations), and `specific_blend_weight`",
+        "(how much of the specific-risk estimate is the asset's own history vs",
+        "the structural prior). Low-weight names are prior-driven — treat their",
+        "numbers as informed estimates, not measurements.",
         "",
         "## Known limitations",
         "",
-        "- Survivorship bias: the price panel is fetched at build time, so",
-        "  delisted names are absent from the regression history. Risk",
-        "  forecasts are less affected than historical factor-return studies.",
+        "- Survivorship bias in the cold-start history: weeks recorded before",
+        "  this project launched exclude names that had already delisted.",
+        "  Capture-forward appending plus the 13/26-week EWMA half-lives make",
+        "  this bias decay away — the effective window is largely bias-free",
+        "  ~18-24 months after launch. Factor-return means are affected more",
+        "  than the covariances this model actually ships.",
+        "- Delisting classification is a price heuristic (merger vs failure),",
+        "  not filing-verified.",
         "- Universe heuristics are crude (ticker-pattern filters; some ADRs",
         "  leak through).",
         "- Stress tests are first-order (exposure × shock).",

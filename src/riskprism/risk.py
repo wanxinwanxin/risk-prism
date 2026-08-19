@@ -21,18 +21,32 @@ class RiskModel:
         factor_covariance: pd.DataFrame,
         specific_vol: pd.Series,
         meta: dict | None = None,
+        asset_meta: pd.DataFrame | None = None,
     ):
         factors = list(factor_covariance.columns)
         self.exposures = exposures.reindex(columns=factors).fillna(0.0)
         self.factor_covariance = factor_covariance
         self.specific_vol = specific_vol.reindex(exposures.index)
         self.meta = meta or {}
+        self.asset_meta = asset_meta
         self.factors = factors
 
     @classmethod
     def load(cls, path: str | Path) -> "RiskModel":
         a = load_artifacts(path)
-        return cls(a["exposures"], a["factor_covariance"], a["specific_risk"], a["meta"])
+        return cls(a["exposures"], a["factor_covariance"], a["specific_risk"],
+                   a["meta"], a.get("asset_meta"))
+
+    def estimation_quality(self, ticker: str) -> dict | None:
+        """How much of this asset's risk is measured vs. inferred from priors."""
+        if self.asset_meta is None or ticker not in self.asset_meta.index:
+            return None
+        row = self.asset_meta.loc[ticker]
+        return {
+            "in_estimation_universe": bool(row["in_estimation"]),
+            "residual_history_weeks": int(row["history_weeks"]),
+            "specific_risk_weight_on_own_history": float(row["specific_blend_weight"]),
+        }
 
     # ------------------------------------------------------------------
 
@@ -118,10 +132,14 @@ class RiskModel:
         x = self.exposures.loc[ticker].to_numpy()
         factor_var = float(x @ self.factor_covariance.to_numpy() @ x)
         spec = float(self.specific_vol.get(ticker, np.nan))
-        return {
+        out = {
             "ticker": ticker,
             "total_vol": float(np.sqrt(factor_var + spec**2)),
             "factor_vol": float(np.sqrt(factor_var)),
             "specific_vol": spec,
             "exposures": {k: float(v) for k, v in self.exposures.loc[ticker].items()},
         }
+        quality = self.estimation_quality(ticker)
+        if quality is not None:
+            out["estimation_quality"] = quality
+        return out

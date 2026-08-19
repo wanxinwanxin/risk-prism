@@ -28,17 +28,21 @@ _UA_HELP = (
 
 # Concept fallbacks, tried in order. Chosen for near-universal coverage
 # across filers rather than accounting precision — see docs/METHODOLOGY.md.
+# ifrs-full entries pick up foreign private issuers (20-F filers).
 CONCEPTS = {
     "book_equity": [
         ("us-gaap", "StockholdersEquity"),
         ("us-gaap", "StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest"),
+        ("ifrs-full", "Equity"),
     ],
-    "total_assets": [("us-gaap", "Assets")],
-    "total_liabilities": [("us-gaap", "Liabilities")],
-    "net_income": [("us-gaap", "NetIncomeLoss"), ("us-gaap", "ProfitLoss")],
+    "total_assets": [("us-gaap", "Assets"), ("ifrs-full", "Assets")],
+    "total_liabilities": [("us-gaap", "Liabilities"), ("ifrs-full", "Liabilities")],
+    "net_income": [("us-gaap", "NetIncomeLoss"), ("us-gaap", "ProfitLoss"),
+                   ("ifrs-full", "ProfitLoss")],
     "shares_out": [
         ("dei", "EntityCommonStockSharesOutstanding"),
         ("us-gaap", "CommonStockSharesOutstanding"),
+        ("ifrs-full", "NumberOfSharesOutstanding"),
     ],
 }
 

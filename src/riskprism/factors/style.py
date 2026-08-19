@@ -2,8 +2,12 @@
 
 Seven styles, all computable from prices plus EDGAR fundamentals:
 size, value, momentum, volatility, liquidity, quality, leverage.
-Each raw descriptor is winsorized, standardized to cap-weighted mean 0 /
-equal-weighted std 1, and missing values are set to 0 (market average).
+
+Each raw descriptor is winsorized and standardized with statistics fit on
+the estimation universe (``fit``) and applied to the full cross-section.
+Missing fundamental descriptors are imputed with the industry median
+first (a bank with unfiled tags is more like other banks than like the
+market); anything still missing standardizes to 0 (market average).
 """
 
 import numpy as np
@@ -12,6 +16,8 @@ import pandas as pd
 from riskprism.config import STYLE_FACTORS, ModelConfig
 from riskprism.factors.transforms import process_exposure
 
+_FUNDAMENTAL_STYLES = ("value", "quality", "leverage")
+
 
 def compute_style_exposures(
     close: pd.DataFrame,
@@ -19,6 +25,8 @@ def compute_style_exposures(
     fund_df: pd.DataFrame,
     as_of: pd.Timestamp,
     config: ModelConfig,
+    industries: pd.Series | None = None,
+    fit: pd.Index | None = None,
 ) -> tuple[pd.DataFrame, pd.Series]:
     """Style exposures and market caps as of one date.
 
@@ -64,8 +72,15 @@ def compute_style_exposures(
         fund_df["total_assets"] > 0
     )
 
+    if industries is not None:
+        ind = industries.reindex(tickers)
+        for name in _FUNDAMENTAL_STYLES:
+            med = raw[name].groupby(ind).transform("median")
+            raw[name] = raw[name].fillna(med)
+
     exposures = pd.DataFrame(
-        {name: process_exposure(raw[name], mktcap, z=config.winsor_z) for name in STYLE_FACTORS},
+        {name: process_exposure(raw[name], mktcap, z=config.winsor_z, fit=fit)
+         for name in STYLE_FACTORS},
         index=tickers,
     )
     return exposures, mktcap
