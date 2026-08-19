@@ -1,0 +1,9 @@
+# riskprism
+
+> Open-source Barra-style US equity factor risk model for AI agents:
+> factor exposures, factor covariance, and specific risk for liquid US
+> stocks, rebuilt weekly from public data. Not investment advice.
+
+- [Model card, current build, and usage (markdown)](/model.md)
+- [Interactive explorer](/)
+- [Source and methodology](https://github.com/wanxinwanxin/risk-prism)
