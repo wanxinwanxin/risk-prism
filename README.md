@@ -49,8 +49,8 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})
 ```bash
 pip install -e ".[dev]"
 export OSRISK_EDGAR_UA="your-project (you@example.com)"   # SEC fair-access policy
-osrisk-build --max-names 1500 --out artifacts             # stooq prices, no key needed
-osrisk-build --provider tiingo ...                        # better data, needs TIINGO_API_KEY
+osrisk-build --max-names 1500 --out artifacts             # yahoo prices, no key needed
+osrisk-build --provider tiingo ...                        # licensed data, needs TIINGO_API_KEY
 ```
 
 The weekly GitHub Action runs exactly this and publishes the artifact

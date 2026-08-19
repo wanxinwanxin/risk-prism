@@ -24,7 +24,10 @@ jobs:
       - run: pip install -e .
       - name: Build model
         env:
-          OSRISK_EDGAR_UA: "osrisk weekly build (github.com/${{ github.repository }})"
+          # Define OSRISK_EDGAR_UA as a repo variable, e.g.
+          # "osrisk weekly build (github.com/OWNER/REPO) you@example.com"
+          # — SEC's fair-access policy requires a contact email.
+          OSRISK_EDGAR_UA: ${{ vars.OSRISK_EDGAR_UA }}
         run: |
           osrisk-build --max-names "${{ github.event.inputs.max_names || '1500' }}" --out artifacts
       - name: Set release tag

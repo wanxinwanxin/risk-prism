@@ -18,8 +18,10 @@ We publish precomputed model artifacts (exposures, factor covariance,
 specific risk — derived data, safe to redistribute) *and* ship the full
 pipeline so anyone can rebuild with their own price source. Raw prices are
 never redistributed. Fundamentals/SIC: EDGAR (public domain). Prices:
-pluggable providers (stooq keyless default; Tiingo with key). Users must
-check their provider's terms for their own rebuilds.
+pluggable providers — Yahoo chart API is the keyless default (unofficial
+endpoint, redistribution-restricted, hence artifacts-only distribution);
+Tiingo with a key; stooq kept but currently behind a JS challenge. Users
+must check their provider's terms for their own rebuilds.
 
 ## 3. Agent interface: Python package + MCP server
 

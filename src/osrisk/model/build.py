@@ -28,7 +28,7 @@ _BURN_IN_DAYS = 280
 
 def build_model(
     tickers: list[str] | None = None,
-    provider: str = "stooq",
+    provider: str = "yahoo",
     start: pd.Timestamp | None = None,
     end: pd.Timestamp | None = None,
     max_names: int | None = None,

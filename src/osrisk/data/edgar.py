@@ -20,7 +20,11 @@ TICKER_URL = "https://www.sec.gov/files/company_tickers.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
 
-DEFAULT_UA = "osrisk/0.1 (open-source equity risk model; https://github.com/os-risk-model)"
+_UA_HELP = (
+    "SEC EDGAR requires a User-Agent identifying you with a contact email "
+    '(fair-access policy). Set OSRISK_EDGAR_UA, e.g. '
+    '"my-project you@example.com", or pass user_agent= to EdgarClient.'
+)
 
 # Concept fallbacks, tried in order. Chosen for near-universal coverage
 # across filers rather than accounting precision — see docs/METHODOLOGY.md.
@@ -53,10 +57,11 @@ class EdgarClient:
 
     def __init__(self, user_agent: str | None = None, cache_dir: Path | None = None,
                  min_interval: float = 0.12, cache_max_age_days: float = 7.0):
+        ua = user_agent or os.environ.get("OSRISK_EDGAR_UA")
+        if not ua:
+            raise ValueError(_UA_HELP)
         self.session = requests.Session()
-        self.session.headers["User-Agent"] = (
-            user_agent or os.environ.get("OSRISK_EDGAR_UA", DEFAULT_UA)
-        )
+        self.session.headers["User-Agent"] = ua
         self.cache_dir = Path(cache_dir) if cache_dir else default_cache_dir() / "edgar"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.min_interval = min_interval
@@ -74,6 +79,9 @@ class EdgarClient:
             time.sleep(wait)
         resp = self.session.get(url, timeout=30)
         self._last_request = time.monotonic()
+        if resp.status_code == 403:
+            raise requests.HTTPError(f"EDGAR rejected the request (403). {_UA_HELP}",
+                                     response=resp)
         resp.raise_for_status()
         path.write_text(resp.text)
         return resp.json()
