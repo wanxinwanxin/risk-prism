@@ -32,10 +32,20 @@ API was deliberately deferred (hosting cost/ops without proven demand).
 
 A single self-contained HTML page (`site/template.html`) with the model
 data embedded as JSON by `riskprism-site`; all risk math re-implemented
-client-side (~60 lines of JS). Published to GitHub Pages by the weekly
-build. Chosen over a hosted app because the entire model fits in ~100KB,
-which makes a server pure liability. Views: factor returns/vol/correlation,
-portfolio sandbox with stress sliders, per-stock profiles, agent onboarding.
+client-side (~60 lines of JS). Chosen over a hosted app because the entire
+model fits in ~100KB, which makes a server pure liability. Views: factor
+returns/vol/correlation, portfolio sandbox with stress sliders, per-stock
+profiles, methodology walkthrough, agent onboarding.
+
+Hosting (2026-08-19): Railway, serving the `site/` directory via a Caddy
+Dockerfile — the user's platform choice; the site is plain static files so
+it deploys anywhere. The weekly Action re-renders and commits
+`site/index.html` + `site/model.md` + `site/llms.txt`, then redeploys via
+`railway up` when the RAILWAY_TOKEN secret is set.
+
+Agent endpoint: every build also renders `/model.md` (llms.txt-style
+markdown mirror — model card, factor definitions, correlations, coverage)
+because a JS-rendered page is hostile to text-only agents.
 
 ## 5. Refresh: weekly GitHub Actions
 

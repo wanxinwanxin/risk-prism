@@ -11,16 +11,11 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,10 +44,18 @@ jobs:
             || gh release upload "${{ steps.tag.outputs.tag }}" riskprism-artifacts.tar.gz --clobber
       - name: Render explorer site
         run: |
-          riskprism-site --artifacts artifacts --template site/template.html --out _site/index.html
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v4
+          riskprism-site --artifacts artifacts --out site
+      - name: Commit rendered site
+        run: |
+          git config user.name "riskprism-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add site/index.html site/model.md site/llms.txt
+          git diff --cached --quiet || git commit -m "Weekly site render ${{ steps.tag.outputs.tag }}"
+          git push
+      - name: Redeploy Railway
+        # Set the RAILWAY_TOKEN secret (a project token) to enable; skipped otherwise.
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then echo "RAILWAY_TOKEN not set; skipping deploy"; exit 0; fi
+          npx -y @railway/cli up --service risk-prism --detach

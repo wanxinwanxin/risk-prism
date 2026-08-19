@@ -60,14 +60,20 @@ directory; see `.github/workflows/build-model.yml`.
 
 ## The explorer
 
-A zero-backend static site (GitHub Pages, rendered from each weekly build)
-for exploring the model: cumulative factor returns, factor vol and
+A zero-backend static site (served on Railway, re-rendered by each weekly
+build) for exploring the model: cumulative factor returns, factor vol and
 correlations, a client-side portfolio risk sandbox with stress-test
-sliders, and per-stock factor profiles. All math runs in the browser on
-the embedded artifacts. Render it locally:
+sliders, per-stock factor profiles, and a visual methodology walkthrough.
+All math runs in the browser on the embedded artifacts.
+
+Agents get a plain-markdown mirror of every build at **`/model.md`**
+(indexed by `/llms.txt`): model card, factor definitions, correlations,
+and the full coverage list — no DOM parsing required.
+
+Render everything locally:
 
 ```bash
-riskprism-site --artifacts artifacts --out site/index.html
+riskprism-site --artifacts artifacts --out site   # index.html + model.md + llms.txt
 ```
 
 ## Model summary
