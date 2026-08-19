@@ -1,0 +1,127 @@
+"""Portfolio risk analytics on top of a built factor model.
+
+All volatilities are annualized decimals (0.20 = 20% a year). Weights are
+portfolio weights (long positive, short negative); they need not sum to 1
+— net-short and leveraged books are handled naturally.
+"""
+
+from collections.abc import Mapping
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from osrisk.artifacts import load_artifacts
+
+
+class RiskModel:
+    def __init__(
+        self,
+        exposures: pd.DataFrame,
+        factor_covariance: pd.DataFrame,
+        specific_vol: pd.Series,
+        meta: dict | None = None,
+    ):
+        factors = list(factor_covariance.columns)
+        self.exposures = exposures.reindex(columns=factors).fillna(0.0)
+        self.factor_covariance = factor_covariance
+        self.specific_vol = specific_vol.reindex(exposures.index)
+        self.meta = meta or {}
+        self.factors = factors
+
+    @classmethod
+    def load(cls, path: str | Path) -> "RiskModel":
+        a = load_artifacts(path)
+        return cls(a["exposures"], a["factor_covariance"], a["specific_risk"], a["meta"])
+
+    # ------------------------------------------------------------------
+
+    def coverage(self, tickers: list[str]) -> dict:
+        known = [t for t in tickers if t in self.exposures.index]
+        return {"covered": known, "uncovered": [t for t in tickers if t not in known]}
+
+    def _weight_vector(self, weights: Mapping[str, float]) -> tuple[pd.Series, dict]:
+        weights = {str(k).upper(): float(v) for k, v in weights.items()}
+        cov = self.coverage(list(weights))
+        w = pd.Series(0.0, index=self.exposures.index)
+        for t in cov["covered"]:
+            w[t] = weights[t]
+        uncovered_weight = float(sum(abs(weights[t]) for t in cov["uncovered"]))
+        gross = float(sum(abs(v) for v in weights.values()))
+        info = {
+            "uncovered_tickers": cov["uncovered"],
+            "uncovered_gross_weight": uncovered_weight,
+            "coverage_ratio": 1.0 - (uncovered_weight / gross if gross else 0.0),
+        }
+        return w, info
+
+    def factor_exposures(self, weights: Mapping[str, float]) -> pd.Series:
+        w, _ = self._weight_vector(weights)
+        return self.exposures.T @ w
+
+    def portfolio_risk(self, weights: Mapping[str, float], top_n: int = 10) -> dict:
+        """Total risk with factor/specific decomposition and contributions."""
+        w, info = self._weight_vector(weights)
+        X = self.exposures.to_numpy()
+        F = self.factor_covariance.to_numpy()
+        s2 = np.nan_to_num(self.specific_vol.to_numpy()) ** 2
+        wv = w.to_numpy()
+
+        x = X.T @ wv
+        Fx = F @ x
+        factor_var = float(x @ Fx)
+        specific_var = float((wv**2 * s2).sum())
+        total_var = factor_var + specific_var
+        total_vol = float(np.sqrt(total_var))
+
+        factor_contrib = pd.Series(x * Fx, index=self.factors)
+        if total_var > 0:
+            sigma_w = X @ Fx + s2 * wv
+            mctr = pd.Series(sigma_w / total_vol, index=self.exposures.index)
+            ctr = (w * mctr)[w != 0].sort_values(key=np.abs, ascending=False)
+        else:
+            ctr = pd.Series(dtype=float)
+
+        return {
+            "model_version": self.meta.get("model_version"),
+            "total_vol": total_vol,
+            "factor_vol": float(np.sqrt(factor_var)),
+            "specific_vol": float(np.sqrt(specific_var)),
+            "factor_var_share": factor_var / total_var if total_var else np.nan,
+            "factor_exposures": {k: float(v) for k, v in zip(self.factors, x)},
+            "factor_var_contributions": {
+                k: float(v) for k, v in factor_contrib.sort_values(key=np.abs, ascending=False).head(top_n).items()
+            },
+            "top_asset_risk_contributions": {k: float(v) for k, v in ctr.head(top_n).items()},
+            **info,
+        }
+
+    def stress_test(
+        self, weights: Mapping[str, float], factor_shocks: Mapping[str, float]
+    ) -> dict:
+        """Linear P&L estimate for factor shocks (in return units, e.g. -0.10)."""
+        x = self.factor_exposures(weights)
+        unknown = [f for f in factor_shocks if f not in x.index]
+        if unknown:
+            raise ValueError(f"Unknown factors {unknown}; model factors: {list(x.index)}")
+        contributions = {f: float(x[f] * shock) for f, shock in factor_shocks.items()}
+        return {
+            "pnl_estimate": float(sum(contributions.values())),
+            "per_factor": contributions,
+            "note": "First-order estimate: exposure x shock, ignoring specific returns.",
+        }
+
+    def asset_risk(self, ticker: str) -> dict:
+        ticker = ticker.upper()
+        if ticker not in self.exposures.index:
+            raise KeyError(f"{ticker} not covered by this model build")
+        x = self.exposures.loc[ticker].to_numpy()
+        factor_var = float(x @ self.factor_covariance.to_numpy() @ x)
+        spec = float(self.specific_vol.get(ticker, np.nan))
+        return {
+            "ticker": ticker,
+            "total_vol": float(np.sqrt(factor_var + spec**2)),
+            "factor_vol": float(np.sqrt(factor_var)),
+            "specific_vol": spec,
+            "exposures": {k: float(v) for k, v in self.exposures.loc[ticker].items()},
+        }
