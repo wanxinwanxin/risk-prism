@@ -21,8 +21,9 @@ FILES = {
 }
 # Added in v0.2; loaders treat them as optional for older artifact dirs.
 OPTIONAL_FILES = {
-    "residuals": "residuals.parquet",     # capture-forward residual history
-    "asset_meta": "asset_meta.parquet",   # per-asset estimation quality
+    "residuals": "residuals.parquet",             # capture-forward residual history
+    "asset_meta": "asset_meta.parquet",           # per-asset estimation quality
+    "fundamentals_store": "fundamentals_store.parquet",  # distilled EDGAR PIT data
 }
 META_FILE = "meta.json"
 
@@ -36,6 +37,7 @@ def save_artifacts(
     meta: dict,
     residuals: pd.DataFrame | None = None,
     asset_meta: pd.DataFrame | None = None,
+    fundamentals_store: pd.DataFrame | None = None,
 ) -> Path:
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -47,6 +49,8 @@ def save_artifacts(
         residuals.to_parquet(path / OPTIONAL_FILES["residuals"])
     if asset_meta is not None:
         asset_meta.to_parquet(path / OPTIONAL_FILES["asset_meta"])
+    if fundamentals_store is not None:
+        fundamentals_store.to_parquet(path / OPTIONAL_FILES["fundamentals_store"])
     (path / META_FILE).write_text(json.dumps(meta, indent=2, default=str))
     return path
 

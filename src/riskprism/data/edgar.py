@@ -125,7 +125,7 @@ class EdgarClient:
         """
         try:
             raw = self._get_json(TICKER_URL, "company_tickers")
-        except requests.RequestException as exc:
+        except (requests.RequestException, RuntimeError) as exc:
             import gzip
             from importlib import resources
 
@@ -140,16 +140,25 @@ class EdgarClient:
         ]
         return pd.DataFrame(rows)
 
+    @property
+    def is_blocked(self) -> bool:
+        """True once the circuit breaker has tripped (WAF rejecting this IP)."""
+        return self._consecutive_blocks >= 8
+
     def company_facts(self, cik: int) -> dict | None:
+        if self.is_blocked:
+            return None
         try:
             return self._get_json(FACTS_URL.format(cik=cik), f"facts_{cik:010d}")
-        except requests.HTTPError:
+        except (requests.HTTPError, RuntimeError):
             return None
 
     def sic_code(self, cik: int) -> int | None:
+        if self.is_blocked:
+            return None
         try:
             meta = self._get_json(SUBMISSIONS_URL.format(cik=cik), f"subs_{cik:010d}")
-        except requests.HTTPError:
+        except (requests.HTTPError, RuntimeError):
             return None
         sic = meta.get("sic")
         try:
@@ -222,3 +231,40 @@ class Fundamentals:
 
     def asof(self, date: pd.Timestamp) -> dict[str, float]:
         return {field: latest_asof(df, date) for field, df in self.series.items()}
+
+    def to_frame(self, ticker: str) -> pd.DataFrame:
+        frames = []
+        for field, df in self.series.items():
+            if df.empty:
+                continue
+            f = df.copy()
+            f["ticker"], f["field"] = ticker, field
+            frames.append(f)
+        if not frames:
+            return pd.DataFrame(columns=["ticker", "field", "end", "filed", "val"])
+        return pd.concat(frames)[["ticker", "field", "end", "filed", "val"]]
+
+
+def store_to_frame(store: dict[str, "Fundamentals"]) -> pd.DataFrame:
+    """Serialize a {ticker: Fundamentals} store into one long DataFrame.
+
+    Distilled from EDGAR XBRL (public domain), so this ships inside the
+    model artifacts — which lets CI builds run even when SEC's WAF blocks
+    the runner's IP: fundamentals fall back to the prior release's store.
+    """
+    frames = [f.to_frame(t) for t, f in store.items()]
+    frames = [f for f in frames if not f.empty]
+    if not frames:
+        return pd.DataFrame(columns=["ticker", "field", "end", "filed", "val"])
+    return pd.concat(frames, ignore_index=True)
+
+
+def store_from_frame(df: pd.DataFrame) -> dict[str, "Fundamentals"]:
+    store: dict[str, Fundamentals] = {}
+    for ticker, tdf in df.groupby("ticker"):
+        series = {
+            field: fdf[["end", "filed", "val"]].sort_values(["filed", "end"]).reset_index(drop=True)
+            for field, fdf in tdf.groupby("field")
+        }
+        store[str(ticker)] = Fundamentals(series)
+    return store

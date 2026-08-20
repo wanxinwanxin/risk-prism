@@ -19,7 +19,7 @@ import pandas as pd
 
 from riskprism.artifacts import load_artifacts, save_artifacts
 from riskprism.config import MARKET_FACTOR, ModelConfig
-from riskprism.data.edgar import EdgarClient, Fundamentals
+from riskprism.data.edgar import EdgarClient, Fundamentals, store_from_frame, store_to_frame
 from riskprism.data.prices import get_provider, load_price_panel
 from riskprism.data.universe import apply_liquidity_filters, candidate_tickers, coverage_universe
 from riskprism.factors.industry import industry_dummies, sic_to_industry
@@ -59,9 +59,17 @@ def build_model(
 
     # ---- prior build (capture-forward) --------------------------------
     prior_fr = prior_res = None
+    prior_fund: dict[str, Fundamentals] = {}
+    prior_industry: dict[str, str] = {}
     if prior_artifacts:
         prior = load_artifacts(prior_artifacts)
         prior_version = prior["meta"].get("model_version")
+        # fundamentals/industry fallbacks survive version bumps — they're
+        # data, not methodology
+        if prior.get("fundamentals_store") is not None:
+            prior_fund = store_from_frame(prior["fundamentals_store"])
+        if prior.get("asset_meta") is not None:
+            prior_industry = prior["asset_meta"]["industry"].to_dict()
         if prior_version != config.version:
             log(f"prior build is {prior_version}, config is {config.version}: "
                 "methodology changed, rebuilding history cold")
@@ -94,16 +102,32 @@ def build_model(
         )
 
     # ---- fundamentals & industries -------------------------------------
+    # Live EDGAR when reachable; the prior release's distilled store when
+    # SEC's WAF blocks this IP (common on CI runners). Fundamentals move
+    # quarterly, so a weeks-old snapshot barely changes exposures.
     fundamentals: dict[str, Fundamentals] = {}
     industries = {}
+    n_live = n_fallback = 0
     for i, ticker in enumerate(active):
         cik = cik_by_ticker[ticker]
         facts = edgar.company_facts(cik)
-        fundamentals[ticker] = Fundamentals.from_facts(facts) if facts else Fundamentals({})
-        industries[ticker] = sic_to_industry(edgar.sic_code(cik))
+        if facts:
+            fundamentals[ticker] = Fundamentals.from_facts(facts)
+            n_live += 1
+        elif ticker in prior_fund:
+            fundamentals[ticker] = prior_fund[ticker]
+            n_fallback += 1
+        else:
+            fundamentals[ticker] = Fundamentals({})
+        sic = edgar.sic_code(cik)
+        industries[ticker] = (sic_to_industry(sic) if sic is not None
+                              else prior_industry.get(ticker, "Other"))
         if verbose and (i + 1) % 100 == 0:
             log(f"fundamentals: {i + 1}/{len(active)}")
     industries = pd.Series(industries)
+    if n_fallback:
+        log(f"fundamentals: {n_live} live from EDGAR, {n_fallback} from prior release "
+            "(EDGAR unreachable from this IP)")
 
     # ---- weekly rebalance loop (estimation universe only) ---------------
     estu_idx = pd.Index(estimation)
@@ -195,11 +219,14 @@ def build_model(
         "mean_r2": float(np.mean(r2s)) if r2s else None,
         "price_provider": provider,
         "incremental": bool(prior_artifacts),
+        "fundamentals_live": n_live,
+        "fundamentals_from_prior": n_fallback,
         "config": config.to_dict(),
     }
     path = save_artifacts(
         artifacts_dir, X_final, F, spec.vol.reindex(X_final.index), factor_returns, meta,
         residuals=residuals, asset_meta=asset_meta,
+        fundamentals_store=store_to_frame(fundamentals),
     )
     log(f"artifacts written to {path} ({meta['n_assets']} covered, "
         f"{meta['n_estimation']} estimation, as of {meta['as_of']})")
