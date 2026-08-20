@@ -122,11 +122,17 @@ realized return / forecast vol. A calibrated model gives std(z) — the
 **bias statistic** — of ~1.0 (>1 underforecasts risk, <1 overforecasts)
 and |z| > 1.96 about 5% of the time.
 
-Overall: **bias statistic 1.07**, |z|>1.96 rate 7.0%, 123 weeks × 2829 portfolio-scores.
+Overall: **bias statistic 1.07**, |z|>1.96 rate 6.9%, 123 weeks × 3483 portfolio-scores.
 
 | portfolio | bias stat | \|z\|>1.96 | mean forecast vol | mean realized vol | vol ratio |
 |---|---|---|---|---|---|
 | equal_weight | 1.02 | 5.7% | 17.7% | 18.5% | 1.04 |
+| IWM | 0.98 | 5.5% | 21.1% | 21.6% | 1.02 |
+| MTUM | 1.06 | 11.0% | 21.2% | 24.8% | 1.16 |
+| QUAL | 0.99 | 4.6% | 14.9% | 15.5% | 1.03 |
+| SPY | 1.06 | 6.4% | 15.3% | 16.8% | 1.09 |
+| USMV | 1.03 | 4.6% | 10.6% | 11.0% | 1.03 |
+| VLUE | 1.13 | 9.2% | 16.9% | 19.4% | 1.14 |
 | industry_BusEq | 1.05 | 6.5% | 22.5% | 23.6% | 1.04 |
 | industry_Chems | 0.80 | 2.4% | 18.3% | 17.4% | 0.93 |
 | industry_Durbl | 0.99 | 6.5% | 26.5% | 27.7% | 1.04 |
