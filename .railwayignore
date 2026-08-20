@@ -1,0 +1,15 @@
+# Packing rules for `railway up` — replaces .gitignore for deploys, because
+# site/history/ is gitignored (25MB of generated snapshots) but MUST ship.
+.git/
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+artifacts/
+docs/
+scripts/
+tests/
+src/
+!site/history/
