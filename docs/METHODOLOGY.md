@@ -39,6 +39,21 @@ affected more than the covariances the model ships. A methodology version
 bump discards prior history (cold rebuild) rather than appending across
 incompatible definitions.
 
+### Severity, quantified (audit 2026-08-20, `scripts/survivorship_audit.py`)
+
+Measured on SEC bulk archives, which retain dead filers. Of ~11.0k XBRL
+filers actively filing at the window start (2023-01), **3,115 ceased
+filing during the window** (~28% over 3.6y, ~8%/yr — inflated relative to
+the classic ~2%/yr listed-stock delisting rate by OTC registrants and the
+2023–24 SPAC wind-down; the ADV/price-filtered investable universe sits
+between). Departures skew small: median last-reported book equity $115M
+vs $553M for survivors (28th percentile of the living), and the departed
+sum to **~8.7% of filer book equity**. Implied upper bound on
+cap-weighted return-mean bias: **~1.4bp/week** at a −30% delisting
+return, ~2.5bp/week at −55% — under ~1.3%/yr, concentrated in
+small-cap-heavy factor means. Covariance estimates are affected at
+second order.
+
 ## Style factors
 
 Raw descriptors, each winsorized at ±3σ (two passes), standardized to
@@ -106,8 +121,18 @@ variance contributions `x_k (Fx)_k` sum to factor variance; asset
 contributions `wᵢ · (Σw)ᵢ / σ_p` sum to total vol. Stress tests are
 first-order: `ΔP&L ≈ Σ x_k Δf_k`.
 
-## Validation (to build out)
+## Validation
 
-Planned: weekly bias statistics (realized/forecast risk ratios) on random
-and style-tilted test portfolios, published as a notebook with each release.
-Until then, treat forecasts with appropriate skepticism.
+Continuous and out-of-sample by construction: at each historical week t
+the build maintains a point-in-time risk state (recursive EWMA factor
+covariance and specific risk, warmed only on data through t), forecasts
+next-week volatility for a panel of test portfolios — cap-weighted
+market, equal-weighted, top-minus-bottom style spreads, cap-weighted
+industries, random 50-name baskets — and scores z = realized / forecast
+against week t+1. Scores ship in `validation.parquet` and accrue via
+capture-forward merging.
+
+Headline metric: the **bias statistic** std(z) per portfolio (~1.0 =
+calibrated; >1 = risk underforecast) with a ±2/√(2n) acceptance band,
+plus the |z| > 1.96 exceedance rate (target ~5%). Current numbers are on
+the explorer's Validation tab and in `/model.md` with every build.
