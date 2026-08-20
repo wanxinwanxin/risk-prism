@@ -485,9 +485,17 @@ a { color: var(--accent); }
     <h2>Full results</h2>
     <div class="tscroll" id="val-table"></div>
   </div>
+  <div class="card" id="val-cmp-card" hidden>
+    <h2>Could a simpler public method have done as well?</h2>
+    <p class="sub">The commercial models can't sit in this table — their forecasts are proprietary and their licenses forbid published benchmarks. What <i>can</i> sit here is every classic public-methodology forecaster, replayed point-in-time over the <b>same test portfolios and the same weeks</b>, graded with the same statistics on one shared sample. One asymmetry to keep in mind: each baseline needs that portfolio's own trailing return history, while the factor model prices any weight vector cold — that coverage is the product; matching the univariate baselines on their home turf is the calibration bar.</p>
+    <div class="tscroll" id="val-cmp-table"></div>
+    <p class="sub" id="val-cmp-note" style="margin-top:8px"></p>
+  </div>
   <div class="card">
-    <h2>How the commercial models report this</h2>
-    <p class="sub" style="margin-bottom:8px">The bias statistic used here is the industry-standard metric: MSCI Barra's published <a href="https://www.msci.com/documents/10199/ed6e42a3-c1fa-4430-89ba-efd5a5b52558">USE4 model research</a> reports the same realized/forecast ratio, targeting ~1.0, with a documented ±2/√(2n) confidence band. Direct numerical comparison isn't apples-to-apples (different periods, universes, horizons), but the failure modes are tellingly shared: commercial research documents that <b>optimized and extreme-tilt portfolios are underforecast</b> (Shepard 2009 — compare our style spreads at 1.2–1.4) and that <b>models lag volatility regime shifts</b> (low-vol eigenfactors realized ~40% above forecast in pre-USE4 models — compare our Mincer–Zarnowitz slope of 0.7). USE4's answers — the Volatility Regime Adjustment and eigenfactor adjustment — are the natural v0.3 roadmap here, with one difference: our validation history is public and regenerated weekly, not a whitepaper snapshot.</p>
+    <h2>Against the commercial models — on their own protocols</h2>
+    <p class="sub" style="margin-bottom:10px">The vendors can't be forced onto one standard, so we conform to theirs: each row runs <b>this model under that vendor's published test protocol</b> and puts the result next to what the vendor reports about itself. Periods and universes still differ — that caveat can't be engineered away with public data — but the statistic, horizon, and portfolio construction match.</p>
+    <div class="tscroll" id="val-vendor-table"></div>
+    <p class="sub" style="margin-top:8px">The shared failure modes are telling: commercial research documents that <b>optimized and extreme-tilt portfolios are underforecast</b> (Shepard 2009 — compare our style spreads) and that <b>models lag volatility regime shifts</b> — USE4's answers (Volatility Regime Adjustment, eigenfactor adjustment) are the natural v0.3 roadmap here. One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
   </div>
 </section>
 
@@ -1415,6 +1423,70 @@ renderStockTable();
       document.getElementById("val-rv-scatter").innerHTML = s;
       document.getElementById("val-rv-note").innerHTML =
         `Mincer–Zarnowitz on variances: slope <b>${V.rv.mz_slope.toFixed(2)}</b> (1.0 = ideal), R² <b>${V.rv.r2.toFixed(2)}</b> · overall vol ratio √(mean RV / mean forecast var) = <b>${V.rv.vol_ratio.toFixed(2)}</b>. Points above the diagonal are weeks the market was wilder than forecast.`;
+    }
+
+    // same-harness baseline comparison: rows = stats, columns = models
+    if (V.comparison && V.comparison.harness) {
+      const H = V.comparison.harness;
+      document.getElementById("val-cmp-card").hidden = false;
+      // [row label, field, format, "best" = closest to target / min / max]
+      const STATS = [
+        ["Bias statistic <span class='hint'>ideal 1.00</span>", "bias", v => v.toFixed(2), { target: 1 }],
+        ["|z| &gt; 1.96 rate <span class='hint'>ideal 5%</span>", "exc", v => (v * 100).toFixed(1) + "%", { target: 0.05 }],
+        ["Vol ratio, realized/forecast <span class='hint'>ideal 1.00</span>", "vratio", v => v.toFixed(2), { target: 1 }],
+        ["Mincer–Zarnowitz slope <span class='hint'>ideal 1.00</span>", "mz_slope", v => v.toFixed(2), { target: 1 }],
+        ["Mincer–Zarnowitz R² <span class='hint'>higher better</span>", "mz_r2", v => v.toFixed(2), { max: true }],
+        ["QLIKE loss <span class='hint'>lower better</span>", "qlike", v => v.toFixed(3), { min: true }],
+        ["RMSE of vol <span class='hint'>lower better</span>", "rmse", v => (v * 100).toFixed(1) + " pts", { min: true }],
+      ];
+      let ct = `<table><thead><tr><th>Statistic</th>` + H.models.map(m =>
+        `<th class="num"${m.key === "riskprism" ? ` style="color:var(--accent)"` : ""}>${m.label}</th>`).join("") + `</tr></thead><tbody>`;
+      STATS.forEach(([label, field, fmt, mode]) => {
+        const vals = H.models.map(m => m[field]);
+        const score = v => mode.target != null ? Math.abs(v - mode.target) : mode.min ? v : -v;
+        const best = Math.min(...vals.map(score));
+        ct += `<tr><td>${label}</td>` + vals.map(v =>
+          `<td class="num">${score(v) <= best + 1e-12 ? `<b>${fmt(v)}</b>` : fmt(v)}</td>`).join("") + `</tr>`;
+      });
+      ct += `</tbody></table>`;
+      document.getElementById("val-cmp-table").innerHTML = ct;
+      document.getElementById("val-cmp-note").innerHTML =
+        `Common sample: <b>${H.n_obs.toLocaleString()}</b> portfolio-weeks across ${H.n_portfolios} portfolios, ${H.start} → ${H.end} — every method forecasting the same portfolio-weeks, after each method's burn-in.` +
+        ` Bold = best in row. RiskMetrics EWMA (λ=0.94), trailing vol, and realized-vol EWMA forecast from each portfolio's own return history; Fama–French 5F is returns-based on Ken French's public factor data (its ~2-month publication lag sets the sample's end).` +
+        ` QLIKE = ln σ²<sub>f</sub> + RV²/σ²<sub>f</sub>; RMSE in annualized vol points against weekly realized vol.`;
+    }
+
+    // vendor protocols: our model re-scored under each vendor's published test
+    {
+      const VD = (V.comparison && V.comparison.vendor) || {};
+      const cite = (txt) => `<span class="hint">${txt}</span>`;
+      const rows = [];
+      const m = VD.msci;
+      rows.push([
+        "MSCI Barra <span class='hint'>USE4</span>",
+        `Monthly z = R/σ, rolling 12-month bias statistics and MRAD across a test-portfolio panel ${cite("Jul 1995 – May 2011, monthly horizon")}`,
+        `Rolling curves near ideal for most of the sample; their calibration puts the perfect-forecast MRAD floor at <b>0.17–0.19</b> ${cite("Empirical Notes, Figs 5.2–5.10")}`,
+        m ? `Mean rolling bias <b>${m.mean_bias.toFixed(2)}</b>, MRAD <b>${m.mrad.toFixed(2)}</b> ${cite(`${m.n_months} months · ${m.n_windows} windows — young history, wide error bars`)}` : "—",
+      ]);
+      const ax = VD.axioma;
+      rows.push([
+        "Axioma <span class='hint'>AXUS4</span>",
+        `Full-sample total-risk bias statistics on benchmark index portfolios, 95% band 1 ± 1.96/√(2T) ${cite("2002–2016, daily model")}`,
+        `All ten S&amp;P/Russell benchmarks near 1.00, within the band ${cite("factsheet Fig. 2")}`,
+        ax && ax.length ? ax.map(r =>
+          `${r.name} <b>${r.bias.toFixed(2)}</b> ${r.bias >= r.lo && r.bias <= r.hi ? "✓" : "✗"}`).join(" · ")
+          + ` ${cite(`band ≈ [${ax[0].lo.toFixed(2)}, ${ax[0].hi.toFixed(2)}]`)}` : "—",
+      ]);
+      rows.push([
+        "Bloomberg <span class='hint'>MAC3 / US</span>",
+        `${cite("No public out-of-sample protocol — model documentation and validation are terminal-gated")}`,
+        `${cite("Not publicly reported")}`,
+        `${cite("Nothing public to replicate")}`,
+      ]);
+      let wt = `<table><thead><tr><th>Vendor</th><th>Their published protocol</th><th>Their reported result</th><th style="color:var(--accent)">riskprism under that protocol</th></tr></thead><tbody>`;
+      rows.forEach(r => { wt += `<tr>` + r.map(c => `<td style="min-width:150px">${c}</td>`).join("") + `</tr>`; });
+      wt += `</tbody></table>`;
+      document.getElementById("val-vendor-table").innerHTML = wt;
     }
   }
 }
