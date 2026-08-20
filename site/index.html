@@ -320,6 +320,10 @@ a { color: var(--accent); }
       <div>
         <textarea id="pf-input" spellcheck="false" aria-label="Portfolio weights"></textarea>
         <div class="presets" id="pf-presets"></div>
+        <div class="controls" id="pf-asof-wrap" hidden>
+          <label class="hint" for="pf-asof">Model as of</label>
+          <select id="pf-asof" aria-label="Model as-of date" style="font:13px var(--mono);color:var(--ink);background:var(--page);border:1px solid var(--border);border-radius:8px;padding:7px 10px"></select>
+        </div>
         <div class="warn" id="pf-warn" role="status"></div>
       </div>
       <div id="pf-hero"></div>
@@ -350,6 +354,20 @@ a { color: var(--accent); }
     <div class="sliders" id="pf-sliders"></div>
     <div class="pnl" id="pf-pnl">0.0%</div>
     <div class="pnl-note" id="pf-pnl-note"></div>
+  </div>
+  <div class="card" id="pf-backtest-card" hidden>
+    <h2>Forecast vs realized</h2>
+    <p class="sub">Replay this portfolio through every historical week: at each formation date the point-in-time model forecasts the horizon's volatility band, then reality lands somewhere. Weights are held fixed (rebalanced each week); realized returns are reconstructed from factor returns + residuals of covered names.</p>
+    <div class="controls">
+      <label class="hint" for="bt-horizon">Horizon</label>
+      <select id="bt-horizon" style="font:13px var(--mono);color:var(--ink);background:var(--page);border:1px solid var(--border);border-radius:8px;padding:7px 10px">
+        <option value="1">1 week</option><option value="4">4 weeks</option><option value="13">13 weeks</option>
+      </select>
+      <button class="preset" id="bt-run">Run backtest</button>
+      <span class="hint" id="bt-status"></span>
+    </div>
+    <div id="bt-chart"></div>
+    <div class="hint" id="bt-summary" style="margin-top:8px"></div>
   </div>
 </section>
 
@@ -580,30 +598,35 @@ function parseWeights(text) {
   if (gross > 3) for (const k in w) w[k] /= 100; // entered as percents
   return { w, bad };
 }
-function computeRisk(weights) {
-  const wv = new Array(T.length).fill(0);
+const EMBEDDED = { tickers: T, tidx: TIDX, X, spec: SPEC, cov: COV, factors: FACTORS,
+                   label: `latest build (as of ${m.as_of})` };
+let ACTIVE = EMBEDDED; // the portfolio tab's current model (as-of toggle swaps it)
+
+function computeRisk(weights, M = ACTIVE) {
+  const n = M.tickers.length, K2 = M.factors.length;
+  const wv = new Array(n).fill(0);
   const uncovered = [];
   let gross = 0;
   for (const [t, v] of Object.entries(weights)) {
     gross += Math.abs(v);
-    if (t in TIDX) wv[TIDX[t]] = v; else uncovered.push(t);
+    if (t in M.tidx) wv[M.tidx[t]] = v; else uncovered.push(t);
   }
-  const x = new Array(K).fill(0);
-  for (let i = 0; i < T.length; i++) if (wv[i]) for (let k = 0; k < K; k++) x[k] += wv[i] * X[i][k];
-  const Fx = new Array(K).fill(0);
-  for (let k = 0; k < K; k++) for (let l = 0; l < K; l++) Fx[k] += COV[k][l] * x[l];
-  let fvar = 0; const contrib = new Array(K);
-  for (let k = 0; k < K; k++) { contrib[k] = x[k] * Fx[k]; fvar += contrib[k]; }
+  const x = new Array(K2).fill(0);
+  for (let i = 0; i < n; i++) if (wv[i]) for (let k = 0; k < K2; k++) x[k] += wv[i] * M.X[i][k];
+  const Fx = new Array(K2).fill(0);
+  for (let k = 0; k < K2; k++) for (let l = 0; l < K2; l++) Fx[k] += M.cov[k][l] * x[l];
+  let fvar = 0; const contrib = new Array(K2);
+  for (let k = 0; k < K2; k++) { contrib[k] = x[k] * Fx[k]; fvar += contrib[k]; }
   let svar = 0;
-  for (let i = 0; i < T.length; i++) if (wv[i]) svar += wv[i] * wv[i] * SPEC[i] * SPEC[i];
+  for (let i = 0; i < n; i++) if (wv[i]) svar += wv[i] * wv[i] * M.spec[i] * M.spec[i];
   const tvar = fvar + svar, tvol = Math.sqrt(Math.max(tvar, 0));
   const ctr = [];
-  if (tvol > 0) for (let i = 0; i < T.length; i++) if (wv[i]) {
-    let xf = 0; for (let k = 0; k < K; k++) xf += X[i][k] * Fx[k];
-    ctr.push([T[i], wv[i] * (xf + SPEC[i] * SPEC[i] * wv[i]) / tvol]);
+  if (tvol > 0) for (let i = 0; i < n; i++) if (wv[i]) {
+    let xf = 0; for (let k = 0; k < K2; k++) xf += M.X[i][k] * Fx[k];
+    ctr.push([M.tickers[i], wv[i] * (xf + M.spec[i] * M.spec[i] * wv[i]) / tvol]);
   }
   ctr.sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
-  return { x, contrib, fvar, svar, tvar, tvol, ctr, uncovered, gross };
+  return { x, contrib, fvar, svar, tvar, tvol, ctr, uncovered, gross, factors: M.factors };
 }
 
 // ---------- charts ----------
@@ -802,6 +825,7 @@ function renderPortfolio() {
     heroEl.innerHTML = `<p class="hint">Enter positions or pick a preset to see the portfolio's risk spectrum.</p>`;
     warnEl.textContent = bad.length ? `Couldn't parse: ${bad.join(" · ")}` : "";
     cards.forEach(c => c.hidden = true);
+    document.getElementById("pf-backtest-card").hidden = true;
     return;
   }
   const r = computeRisk(w);
@@ -811,20 +835,21 @@ function renderPortfolio() {
   warnEl.textContent = warns.join(" — ");
   if (r.tvol === 0) { cards.forEach(c => c.hidden = true); heroEl.innerHTML = ""; return; }
   cards.forEach(c => c.hidden = false);
+  document.getElementById("pf-backtest-card").hidden = !HISTORY_OK;
 
   heroEl.innerHTML = `
     <div class="hero-vol">
       <span class="num">${pct(r.tvol)}</span>
       <span class="split">= √(factor ${pct(Math.sqrt(r.fvar))}² + specific ${pct(Math.sqrt(r.svar))}²) · annualized</span>
     </div>
-    <p class="hint">Gross weight ${pct(r.gross, 0)} · net ${pct(Object.values(w).reduce((a, b) => a + b, 0), 0)} · ${Object.keys(w).length - r.uncovered.length} positions priced</p>`;
+    <p class="hint">Gross weight ${pct(r.gross, 0)} · net ${pct(Object.values(w).reduce((a, b) => a + b, 0), 0)} · ${Object.keys(w).length - r.uncovered.length} positions priced · <b>${esc(ACTIVE.label)}</b></p>`;
 
   // spectrum: positive variance contributions by class
   const byClass = CLASSES.map(c => {
     let v;
-    if (c.key === "__ind") v = FACTORS.reduce((a, f, k) => a + (f.startsWith("ind_") ? r.contrib[k] : 0), 0);
+    if (c.key === "__ind") v = r.factors.reduce((a, f, k) => a + (f.startsWith("ind_") ? r.contrib[k] : 0), 0);
     else if (c.key === "__spec") v = r.svar;
-    else v = r.contrib[FACTORS.indexOf(c.key)];
+    else v = r.contrib[r.factors.indexOf(c.key)];
     return { ...c, v };
   });
   const posSum = byClass.filter(c => c.v > 0).reduce((a, c) => a + c.v, 0);
@@ -852,9 +877,9 @@ function renderPortfolio() {
 
   // factor table (relief-rule table view of the spectrum)
   let tbl = `<table><thead><tr><th>Factor</th><th class="num">Exposure</th><th class="num">Var share</th></tr></thead><tbody>`;
-  const order = [MKT, ...STYLES, ...IND];
+  const order = [MKT, ...STYLES, ...r.factors.filter(f => f.startsWith("ind_"))];
   order.forEach(f => {
-    const k = FACTORS.indexOf(f);
+    const k = r.factors.indexOf(f);
     if (k < 0 || (f.startsWith("ind_") && Math.abs(r.x[k]) < 1e-6)) return;
     tbl += `<tr><td><span class="dot-i" style="background:${COLOR(f)}"></span>${label(f)}</td>
       <td class="num">${r.x[k].toFixed(2)}</td><td class="num">${pct(r.contrib[k] / r.tvar, 1)}</td></tr>`;
@@ -896,7 +921,7 @@ function renderStress(r) {
 function updatePnl(r) {
   let pnl = 0; const parts = [];
   for (const [f, s] of Object.entries(stressShocks)) {
-    const k = FACTORS.indexOf(f);
+    const k = r.factors.indexOf(f);
     const p = r.x[k] * s / 100;
     pnl += p;
     if (s !== 0) parts.push(`${label(f)} ${s}% → ${pct(p)}`);
@@ -908,6 +933,138 @@ function updatePnl(r) {
     parts.length ? parts.join(" · ") : "Move a slider to shock the portfolio.";
 }
 renderPortfolio();
+
+// ---------- history: as-of models & forecast-vs-realized backtest ----------
+let HISTORY_OK = false;
+const HIST = { index: null, files: new Map() };
+
+function histModel(d) {
+  const F = HIST.index.factors, nk = F.length;
+  const mktPos = F.indexOf(MKT);
+  const stylePos = HIST.index.style_factors.map(s => F.indexOf(s));
+  const indPos = {};
+  F.forEach((f, k) => { if (f.startsWith("ind_")) indPos[f.slice(4)] = k; });
+  const X2 = d.tickers.map((tk, i) => {
+    const row = new Array(nk).fill(0);
+    row[mktPos] = 1;
+    stylePos.forEach((k, j) => { row[k] = d.styles[i][j]; });
+    const ip = indPos[d.industry[i]];
+    if (ip !== undefined) row[ip] = 1;
+    return row;
+  });
+  const tidx = {};
+  d.tickers.forEach((tk, i) => { tidx[tk] = i; });
+  return { tickers: d.tickers, tidx, X: X2, spec: d.spec, cov: d.fcov, factors: F,
+           label: `historical model · as of ${d.date}`, next: d.next, date: d.date };
+}
+async function fetchHist(date) {
+  if (HIST.files.has(date)) return HIST.files.get(date);
+  const r = await fetch(`history/${date}.json`);
+  if (!r.ok) throw new Error(date);
+  const d = await r.json();
+  HIST.files.set(date, d);
+  return d;
+}
+(async () => {
+  try {
+    const r = await fetch("history/index.json");
+    if (!r.ok) return;
+    HIST.index = await r.json();
+    if (!HIST.index.dates || !HIST.index.dates.length) return;
+    HISTORY_OK = true;
+    const sel = document.getElementById("pf-asof");
+    sel.innerHTML = `<option value="latest">latest (${esc(m.as_of || "")})</option>` +
+      [...HIST.index.dates].reverse().map(d => `<option value="${d}">${d}</option>`).join("");
+    document.getElementById("pf-asof-wrap").hidden = false;
+    sel.addEventListener("change", async () => {
+      const warn = document.getElementById("pf-warn");
+      if (sel.value === "latest") { ACTIVE = EMBEDDED; renderPortfolio(); return; }
+      warn.textContent = "loading historical model…";
+      try { ACTIVE = histModel(await fetchHist(sel.value)); }
+      catch { warn.textContent = "couldn't load that snapshot"; return; }
+      renderPortfolio();
+    });
+    renderPortfolio(); // let the backtest card appear
+  } catch { /* history not served (e.g. preview) — controls stay hidden */ }
+})();
+
+document.getElementById("bt-run").addEventListener("click", async () => {
+  const status = document.getElementById("bt-status");
+  const { w } = parseWeights(pfInput.value);
+  if (!Object.keys(w).length) { status.textContent = "enter a portfolio first"; return; }
+  const h = +document.getElementById("bt-horizon").value;
+  const dates = HIST.index.dates;
+  for (let i = 0; i < dates.length; i += 8) {
+    await Promise.all(dates.slice(i, i + 8).map(fetchHist));
+    status.textContent = `loading history ${Math.min(i + 8, dates.length)}/${dates.length}…`;
+  }
+  const weekly = [];
+  for (const d of dates) {
+    const f = HIST.files.get(d);
+    const M = histModel(f);
+    const r = computeRisk(w, M);
+    const uncGross = r.uncovered.reduce((a, t) => a + Math.abs(w[t] ?? 0), 0);
+    if (r.gross === 0 || r.tvol === 0 || (r.gross - uncGross) / r.gross < 0.5) continue;
+    let real = 0;
+    for (let k = 0; k < M.factors.length; k++) real += r.x[k] * f.next.f[k];
+    for (const [tk, wt] of Object.entries(w)) {
+      const i = M.tidx[tk.toUpperCase()];
+      if (i !== undefined && f.next.resid[i] != null) real += wt * f.next.resid[i];
+    }
+    weekly.push({ date: f.next.date, sigW: r.tvol / Math.sqrt(52), real });
+  }
+  const blocks = [];
+  for (let i = 0; i + h <= weekly.length; i += h) {
+    let real = 0;
+    for (let j = 0; j < h; j++) real += weekly[i + j].real;
+    const sig = weekly[i].sigW * Math.sqrt(h);
+    if (sig > 0) blocks.push({ date: weekly[i + h - 1].date, sig, real, z: real / sig });
+  }
+  status.textContent = "";
+  if (blocks.length < 5) { status.textContent = "not enough covered history for this portfolio"; return; }
+  renderBtChart(blocks, h);
+  const zs = blocks.map(b => b.z);
+  const mean = zs.reduce((a, b) => a + b, 0) / zs.length;
+  const bias = Math.sqrt(zs.reduce((a, b) => a + (b - mean) * (b - mean), 0) / (zs.length - 1));
+  const exc = zs.filter(z => Math.abs(z) > 1.96).length;
+  document.getElementById("bt-summary").innerHTML =
+    `<b>Bias statistic ${bias.toFixed(2)}</b> (1.0 = calibrated) · realized outside the 95% band in ${exc}/${blocks.length} periods (${(exc / blocks.length * 100).toFixed(0)}%, target ~5%) · forecasts made with point-in-time models only.`;
+});
+
+function renderBtChart(blocks, h) {
+  const W = 960, H = 280, ml = 52, mr = 16, mt = 12, mb = 26;
+  const n = blocks.length;
+  const ymax = Math.max(...blocks.map(b => Math.max(Math.abs(b.real), 2.1 * b.sig))) * 1.08;
+  const xp = i => ml + (n === 1 ? 0.5 : i / (n - 1)) * (W - ml - mr);
+  const yp = v => mt + (1 - (v + ymax) / (2 * ymax)) * (H - mt - mb);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Forecast volatility band with realized returns overlaid.">`;
+  const top = blocks.map((b, i) => `${xp(i).toFixed(1)},${yp(1.96 * b.sig).toFixed(1)}`);
+  const bot = blocks.map((b, i) => `${xp(i).toFixed(1)},${yp(-1.96 * b.sig).toFixed(1)}`).reverse();
+  s += `<polygon points="${top.join(" ")} ${bot.join(" ")}" style="fill:color-mix(in oklab, var(--s-market) 16%, transparent)"/>`;
+  [1, -1].forEach(sign => {
+    const pts = blocks.map((b, i) => `${xp(i).toFixed(1)},${yp(sign * 1.96 * b.sig).toFixed(1)}`);
+    s += `<polyline points="${pts.join(" ")}" fill="none" stroke="var(--s-market)" stroke-width="1.4" opacity="0.7"/>`;
+  });
+  s += `<line x1="${ml}" y1="${yp(0)}" x2="${W - mr}" y2="${yp(0)}" stroke="var(--grid)"/>`;
+  [ymax * 0.7, -ymax * 0.7].forEach(v => {
+    s += `<text class="mono" x="${ml - 8}" y="${yp(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${pct(v, 0)}</text>`;
+  });
+  const step = Math.max(1, Math.floor(n / 7));
+  for (let i = 0; i < n; i += step)
+    s += `<text class="mono" x="${xp(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${blocks[i].date.slice(0, 7)}</text>`;
+  blocks.forEach((b, i) => {
+    const out = Math.abs(b.z) > 1.96;
+    s += `<circle data-i="${i}" cx="${xp(i)}" cy="${yp(b.real)}" r="3.6" style="fill:${out ? "var(--delta-bad)" : "var(--s-market)"}"${out ? "" : ' opacity="0.85"'}/>`;
+  });
+  s += `<text x="${ml + 6}" y="${mt + 12}" font-size="11" fill="var(--ink-2)">±1.96σ forecast band (${h}w horizon) · dots = realized</text>`;
+  s += `</svg>`;
+  const holder = document.getElementById("bt-chart");
+  holder.innerHTML = s;
+  holder.querySelectorAll("circle").forEach(c => {
+    const b = blocks[+c.dataset.i];
+    hover(c, () => `<div class="t mono">${b.date}</div>forecast σ <span class="mono">${pct(b.sig)}</span> · realized <span class="mono">${pct(b.real)}</span> · z <span class="mono">${b.z.toFixed(2)}</span>`);
+  });
+}
 
 // ---------- stocks ----------
 const dl = document.getElementById("stock-list");

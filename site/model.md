@@ -52,7 +52,15 @@ model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
 
 `exposures.parquet` (asset × factor), `factor_covariance.parquet`
 (K × K annualized), `specific_risk.parquet`, `factor_returns.parquet`,
-`meta.json`.
+`residuals.parquet`, `exposure_history.parquet`, `validation.parquet`,
+`asset_meta.parquet`, `fundamentals_store.parquet`, `meta.json`.
+
+### Historical (point-in-time) models
+
+Every weekly formation date is reconstructible from the same artifact
+download — `riskprism.model.asof.model_asof(artifacts, date)` returns a
+full RiskModel with no lookahead. The explorer serves the same
+snapshots as static JSON under [/history/index.json](/history/index.json).
 
 ## Factors
 
