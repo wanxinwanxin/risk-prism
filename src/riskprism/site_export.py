@@ -117,6 +117,9 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         f"| regression weeks | {m.get('n_periods')} |",
         f"| mean weekly R² | {(m.get('mean_r2') or 0):.3f} |",
         f"| price provider | {m.get('price_provider')} |",
+        f"| fundamentals | {m.get('fundamentals_live', 'n/a')} live from EDGAR"
+        + (f", {m['fundamentals_from_prior']} from prior release"
+           if m.get("fundamentals_from_prior") else "") + " |",
         f"| frequency | {cfg.get('frequency', 'W-FRI')} (annualized outputs) |",
         "",
         "## How to use this model",
