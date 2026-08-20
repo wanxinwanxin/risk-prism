@@ -55,6 +55,14 @@ def test_no_scores_before_warmup():
                             pd.Timestamp("2020-01-10"), 0) == []
 
 
+def test_merge_validation_handles_frames_without_portfolio_column():
+    d = pd.date_range("2024-01-05", periods=4, freq="W-FRI")
+    prior = pd.DataFrame({"date": d.repeat(2), "ticker": ["A", "B"] * 4, "size": 1.0})
+    new = pd.DataFrame({"date": [d[-1]], "ticker": ["A"], "size": [2.0]})
+    merged = merge_validation(prior, new, cap_weeks=100)
+    assert merged[merged["date"] == d[-1]]["size"].tolist() == [2.0]
+
+
 def test_merge_validation_dedups_and_caps():
     d1 = pd.date_range("2024-01-05", periods=10, freq="W-FRI")
     prior = pd.DataFrame({"date": d1.repeat(2), "portfolio": ["market", "equal_weight"] * 10,

@@ -9,5 +9,6 @@ build/
 .cache/
 artifacts/
 *.parquet
+site/history/
 .DS_Store
 .env

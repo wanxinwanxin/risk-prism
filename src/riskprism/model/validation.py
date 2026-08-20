@@ -191,7 +191,8 @@ def merge_validation(prior: pd.DataFrame | None, new: pd.DataFrame,
     if merged.empty:
         return merged
     dates = sorted(merged["date"].unique())[-cap_weeks:]
-    return merged[merged["date"].isin(dates)].sort_values(["date", "portfolio"]).reset_index(drop=True)
+    sort_cols = ["date"] + [c for c in ("portfolio", "ticker") if c in merged.columns]
+    return merged[merged["date"].isin(dates)].sort_values(sort_cols).reset_index(drop=True)
 
 
 def validation_summary(validation: pd.DataFrame, min_obs: int = 30) -> pd.DataFrame:

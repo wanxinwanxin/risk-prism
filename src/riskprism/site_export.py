@@ -20,7 +20,8 @@ import pandas as pd
 from riskprism.artifacts import load_artifacts
 from riskprism.config import MARKET_FACTOR, STYLE_FACTORS
 from riskprism.factors.industry import INDUSTRY_PREFIX
-from riskprism.model.validation import validation_summary
+from riskprism.config import STYLE_FACTORS as _STYLES, ModelConfig
+from riskprism.model.validation import FULL_FACTORS, RunningRiskState, validation_summary
 
 PLACEHOLDER = "__RISKPRISM_DATA__"
 REPO_URL = "https://github.com/wanxinwanxin/risk-prism"
@@ -176,7 +177,15 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "",
         "`exposures.parquet` (asset × factor), `factor_covariance.parquet`",
         "(K × K annualized), `specific_risk.parquet`, `factor_returns.parquet`,",
-        "`meta.json`.",
+        "`residuals.parquet`, `exposure_history.parquet`, `validation.parquet`,",
+        "`asset_meta.parquet`, `fundamentals_store.parquet`, `meta.json`.",
+        "",
+        "### Historical (point-in-time) models",
+        "",
+        "Every weekly formation date is reconstructible from the same artifact",
+        "download — `riskprism.model.asof.model_asof(artifacts, date)` returns a",
+        "full RiskModel with no lookahead. The explorer serves the same",
+        "snapshots as static JSON under [/history/index.json](/history/index.json).",
         "",
         "## Factors",
         "",
@@ -316,6 +325,67 @@ LLMS_TXT = f"""# riskprism
 """
 
 
+def export_history(artifacts_dir: str | Path, out_dir: str | Path,
+                   config: ModelConfig | None = None) -> int:
+    """Per-week point-in-time model snapshots as static JSON.
+
+    Each file carries the formation-date exposures, the replayed EWMA
+    factor covariance and specific risk (annualized), and the *next*
+    week's factor returns and residuals — everything the explorer needs
+    for as-of portfolio risk and forecast-vs-realized backtests, served
+    as plain static files.
+    """
+    config = config or ModelConfig()
+    a = load_artifacts(artifacts_dir)
+    eh, fr, res = a.get("exposure_history"), a["factor_returns"], a["residuals"]
+    am = a.get("asset_meta")
+    if eh is None or eh.empty or res is None:
+        return 0
+    hist_dir = Path(out_dir) / "history"
+    hist_dir.mkdir(parents=True, exist_ok=True)
+
+    ind_of = (am["industry"].to_dict() if am is not None else {})
+    fr_dates = list(fr.index)
+    eh_dates = sorted(pd.to_datetime(eh["date"].unique()))
+    state = RunningRiskState(config)
+    k = 0
+    written = []
+    for t in eh_dates:
+        while k < len(fr_dates) and fr_dates[k] <= t:
+            d = fr_dates[k]
+            e = res.loc[d].dropna() if d in res.index else pd.Series(dtype=float)
+            state.update(fr.loc[d], e)
+            k += 1
+        if not state.ready or k >= len(fr_dates):
+            continue  # warm-up, or last formation week (nothing realized yet)
+        snap = eh[eh["date"] == t].set_index("ticker")
+        tickers = list(snap.index)
+        t_next = fr_dates[k]
+        resid_next = res.loc[t_next].reindex(tickers) if t_next in res.index else pd.Series(np.nan, index=tickers)
+        spec_ann = np.sqrt(state.specific_var_weekly(pd.Index(tickers)) * config.ann_factor)
+        payload = {
+            "date": t.strftime("%Y-%m-%d"),
+            "tickers": tickers,
+            "styles": snap[_STYLES].astype(float).round(3).to_numpy().tolist(),
+            "industry": [ind_of.get(tk, "Other") for tk in tickers],
+            "spec": _round(spec_ann, 4),
+            "fcov": [_round(row, 8) for row in state.factor_cov_weekly() * config.ann_factor],
+            "next": {
+                "date": t_next.strftime("%Y-%m-%d"),
+                "f": _round(fr.loc[t_next].reindex(FULL_FACTORS).fillna(0.0), 6),
+                "resid": [None if not np.isfinite(v) else round(float(v), 5)
+                          for v in resid_next],
+            },
+        }
+        name = f"{payload['date']}.json"
+        (hist_dir / name).write_text(json.dumps(payload, separators=(",", ":")))
+        written.append(payload["date"])
+    (hist_dir / "index.json").write_text(json.dumps(
+        {"dates": written, "factors": FULL_FACTORS, "style_factors": _STYLES},
+        separators=(",", ":")))
+    return len(written)
+
+
 def export_site(artifacts_dir: str | Path, template: str | Path, out_dir: str | Path) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -338,8 +408,10 @@ def main() -> None:
     p.add_argument("--out", default="site", help="Output directory")
     args = p.parse_args()
     out = export_site(args.artifacts, args.template, args.out)
+    n_hist = export_history(args.artifacts, args.out)
     size = sum(f.stat().st_size for f in out.glob("*") if f.name != "template.html")
-    print(f"[riskprism] site rendered to {out}/ (index.html + model.md + llms.txt, {size / 1024:.0f} KB)")
+    print(f"[riskprism] site rendered to {out}/ (index.html + model.md + llms.txt, "
+          f"{size / 1024:.0f} KB · {n_hist} weekly history snapshots)")
 
 
 if __name__ == "__main__":
