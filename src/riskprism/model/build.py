@@ -28,6 +28,7 @@ from riskprism.model.covariance import factor_covariance
 from riskprism.model.history import delisting_return, merge_history
 from riskprism.model.regression import cross_sectional_regression
 from riskprism.model.specific import specific_risk
+from riskprism.model.validation import RunningRiskState, merge_validation, score_portfolios
 
 FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income", "shares_out"]
 
@@ -58,7 +59,7 @@ def build_model(
             print(f"[riskprism] {msg}")
 
     # ---- prior build (capture-forward) --------------------------------
-    prior_fr = prior_res = None
+    prior_fr = prior_res = prior_val = None
     prior_fund: dict[str, Fundamentals] = {}
     prior_industry: dict[str, str] = {}
     if prior_artifacts:
@@ -75,6 +76,7 @@ def build_model(
                 "methodology changed, rebuilding history cold")
         else:
             prior_fr, prior_res = prior["factor_returns"], prior["residuals"]
+            prior_val = prior.get("validation")
             log(f"prior build loaded: {len(prior_fr)} weeks through {prior_fr.index[-1].date()}")
 
     # ---- universe ------------------------------------------------------
@@ -153,10 +155,16 @@ def build_model(
             {tk: fundamentals[tk].asof(date) for tk in names}
         ).T.reindex(columns=FUND_FIELDS)
 
+    # point-in-time risk state for in-loop forecast validation
+    risk_state = RunningRiskState(config)
+    if prior_fr is not None:
+        risk_state.warm_up(prior_fr, prior_res)
+
     factor_return_rows: dict[pd.Timestamp, pd.Series] = {}
     residual_rows: dict[pd.Timestamp, pd.Series] = {}
+    validation_rows: list[dict] = []
     r2s = []
-    for t, t_next in zip(rebal_dates[:-1], rebal_dates[1:]):
+    for wk, (t, t_next) in enumerate(zip(rebal_dates[:-1], rebal_dates[1:])):
         exposures, mktcap = compute_style_exposures(
             close[estimation], volume[estimation], fund_asof(estimation, t), t,
             config, industries=industries, fit=estu_idx,
@@ -174,6 +182,16 @@ def build_model(
             )
         except ValueError:
             continue
+        # score forecasts made from data through t against week t+1,
+        # BEFORE the state sees t+1 (no lookahead)
+        x_full = pd.concat(
+            [pd.Series(1.0, index=exposures.index, name=MARKET_FACTOR), exposures,
+             industry_dummies(industries.reindex(exposures.index).fillna("Other"))],
+            axis=1,
+        )
+        validation_rows.extend(score_portfolios(
+            risk_state, x_full, industries, mktcap, y, t_next, wk))
+        risk_state.update(res.factor_returns, res.residuals)
         factor_return_rows[t_next] = res.factor_returns
         residual_rows[t_next] = res.residuals
         r2s.append(res.r2)
@@ -182,6 +200,8 @@ def build_model(
     new_res = pd.DataFrame(residual_rows).T.sort_index()
     factor_returns = merge_history(prior_fr, new_fr, config.history_cap_weeks).fillna(0.0)
     residuals = merge_history(prior_res, new_res, config.history_cap_weeks)
+    validation = merge_validation(prior_val, pd.DataFrame(validation_rows),
+                                  config.history_cap_weeks)
     if len(factor_returns) < config.vol_half_life:
         raise ValueError(
             f"Only {len(factor_returns)} usable regression periods; "
@@ -229,12 +249,14 @@ def build_model(
         "incremental": bool(prior_artifacts),
         "fundamentals_live": n_live,
         "fundamentals_from_prior": n_fallback,
+        "n_validation_weeks": int(validation["date"].nunique()) if len(validation) else 0,
         "config": config.to_dict(),
     }
     path = save_artifacts(
         artifacts_dir, X_final, F, spec.vol.reindex(X_final.index), factor_returns, meta,
         residuals=residuals, asset_meta=asset_meta,
         fundamentals_store=store_to_frame(fundamentals),
+        validation=validation,
     )
     log(f"artifacts written to {path} ({meta['n_assets']} covered, "
         f"{meta['n_estimation']} estimation, as of {meta['as_of']})")

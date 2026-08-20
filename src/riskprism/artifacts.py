@@ -24,6 +24,7 @@ OPTIONAL_FILES = {
     "residuals": "residuals.parquet",             # capture-forward residual history
     "asset_meta": "asset_meta.parquet",           # per-asset estimation quality
     "fundamentals_store": "fundamentals_store.parquet",  # distilled EDGAR PIT data
+    "validation": "validation.parquet",   # in-loop forecast scores (z per portfolio-week)
 }
 META_FILE = "meta.json"
 
@@ -38,6 +39,7 @@ def save_artifacts(
     residuals: pd.DataFrame | None = None,
     asset_meta: pd.DataFrame | None = None,
     fundamentals_store: pd.DataFrame | None = None,
+    validation: pd.DataFrame | None = None,
 ) -> Path:
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -51,6 +53,8 @@ def save_artifacts(
         asset_meta.to_parquet(path / OPTIONAL_FILES["asset_meta"])
     if fundamentals_store is not None:
         fundamentals_store.to_parquet(path / OPTIONAL_FILES["fundamentals_store"])
+    if validation is not None and len(validation):
+        validation.to_parquet(path / OPTIONAL_FILES["validation"])
     (path / META_FILE).write_text(json.dumps(meta, indent=2, default=str))
     return path
 
