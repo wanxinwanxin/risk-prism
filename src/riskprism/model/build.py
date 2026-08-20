@@ -28,6 +28,7 @@ from riskprism.model.covariance import factor_covariance
 from riskprism.model.history import delisting_return, merge_history
 from riskprism.model.regression import cross_sectional_regression
 from riskprism.model.specific import specific_risk
+from riskprism.model.benchmarks import ETF_BENCHMARKS, score_etf_week
 from riskprism.model.validation import RunningRiskState, merge_validation, score_portfolios
 
 FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income", "shares_out"]
@@ -145,6 +146,12 @@ def build_model(
     weekly_close = close[estimation].resample(config.frequency).last()
     weekly_returns = weekly_close.pct_change(fill_method=None)
     daily_returns = close[estimation].pct_change(fill_method=None)
+
+    # real external benchmarks (factor ETFs) for out-of-family validation
+    etf_close, _ = load_price_panel(list(ETF_BENCHMARKS), price_provider, start, end)
+    etf_close = etf_close.where(etf_close > 0)
+    etf_weekly = etf_close.resample(config.frequency).last().pct_change(fill_method=None)
+    etf_daily = etf_close.pct_change(fill_method=None)
     last_traded_week = weekly_close.apply(lambda s: s.last_valid_index())
 
     first_regression = close.index[0] + pd.Timedelta(days=_BURN_IN_DAYS)
@@ -159,6 +166,9 @@ def build_model(
 
     # point-in-time risk state for in-loop forecast validation
     risk_state = RunningRiskState(config)
+    trailing_fr = [] if prior_fr is None else [
+        (d, prior_fr.loc[d]) for d in prior_fr.index[-52:]
+    ]
     if prior_fr is not None:
         risk_state.warm_up(prior_fr, prior_res)
 
@@ -195,6 +205,10 @@ def build_model(
         dr = daily_returns[(daily_returns.index > t) & (daily_returns.index <= t_next)]
         validation_rows.extend(score_portfolios(
             risk_state, x_full, industries, mktcap, y, t_next, wk, daily_returns=dr))
+        if trailing_fr:
+            validation_rows.extend(score_etf_week(
+                risk_state, pd.DataFrame({d: s for d, s in trailing_fr}).T,
+                etf_weekly, etf_daily, t, t_next))
         # persist formation-date exposures so historical models are
         # reconstructible from the artifacts (see model/asof.py)
         eh = exposures.astype("float32").round(4)
@@ -202,6 +216,9 @@ def build_model(
         eh.insert(1, "mktcap", mktcap.reindex(exposures.index).astype("float32"))
         exposure_history_rows.append(eh.reset_index(names="ticker"))
         risk_state.update(res.factor_returns, res.residuals)
+        trailing_fr.append((t_next, res.factor_returns))
+        if len(trailing_fr) > 52:
+            trailing_fr.pop(0)
         factor_return_rows[t_next] = res.factor_returns
         residual_rows[t_next] = res.residuals
         r2s.append(res.r2)
