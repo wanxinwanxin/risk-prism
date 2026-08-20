@@ -534,7 +534,7 @@ a { color: var(--accent); }
       <figure class="anim" id="anim-ewma">
         <figcaption>Memory in motion: each week a new observation arrives on the right; old ones fade at the half-life rate, and the volatility estimate breathes with the flow.</figcaption>
       </figure>
-      <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, shrunk 30% toward its size-quintile mean). F is repaired to positive semi-definite by eigenvalue flooring.</p>
+      <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, blended with a structural cross-sectional model by history length). F is repaired to positive semi-definite by eigenvalue flooring.</p>
     </div>
   </div>
   <div class="card">
@@ -587,7 +587,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
   </div>
   <div class="card">
     <h2>The model in one paragraph</h2>
-    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives); specific risk is shrunk toward size buckets. Everything here is computed in your browser from the published artifacts — no server.</p>
+    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives); specific risk blends per-stock residual EWMA with a structural characteristics model. Everything here is computed in your browser from the published artifacts — no server.</p>
   </div>
 </section>
 
