@@ -20,6 +20,7 @@ import pandas as pd
 from riskprism.artifacts import load_artifacts
 from riskprism.config import MARKET_FACTOR, STYLE_FACTORS
 from riskprism.factors.industry import INDUSTRY_PREFIX
+from riskprism.model.validation import validation_summary
 
 PLACEHOLDER = "__RISKPRISM_DATA__"
 REPO_URL = "https://github.com/wanxinwanxin/risk-prism"
@@ -89,6 +90,32 @@ def build_site_data(artifacts_dir: str | Path) -> dict:
             "dates": [d.strftime("%Y-%m-%d") for d in cum.index],
             "cumulative": {f: _round(cum[f], 4) for f in show if f in cum},
         },
+        "validation": _validation_payload(a.get("validation")),
+    }
+
+
+def _validation_payload(val: pd.DataFrame | None) -> dict | None:
+    if val is None or val.empty:
+        return None
+    summary = validation_summary(val)
+    if summary.empty:
+        return None
+    z = val["z"].to_numpy()
+    z = z[np.isfinite(z)]
+    edges = np.linspace(-4, 4, 33)
+    hist, _ = np.histogram(np.clip(z, -3.99, 3.99), bins=edges, density=True)
+    return {
+        "n_weeks": int(val["date"].nunique()),
+        "n_scores": int(len(z)),
+        "overall_bias": round(float(np.std(z, ddof=1)), 3),
+        "exceed_95": round(float((np.abs(z) > 1.96).mean()), 4),
+        "portfolios": [
+            {"name": r["portfolio"], "group": r["group"], "n": int(r["n"]),
+             "bias": round(r["bias_stat"], 3), "exc": round(r["exceed_95"], 3),
+             "vol": round(r["mean_forecast_vol"], 4)}
+            for _, r in summary.iterrows()
+        ],
+        "z_hist": {"edges": _round(edges, 3), "density": _round(hist, 4)},
     }
 
 
@@ -188,6 +215,7 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "",
         ", ".join(X.index),
         "",
+        *_validation_md(a.get("validation")),
         "## Methodology in brief",
         "",
         "1. Universe: EDGAR-registered US common stocks; price ≥ $2, 21-day",
@@ -225,10 +253,11 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "",
         "- Survivorship bias in the cold-start history: weeks recorded before",
         "  this project launched exclude names that had already delisted.",
-        "  Capture-forward appending plus the 13/26-week EWMA half-lives make",
-        "  this bias decay away — the effective window is largely bias-free",
-        "  ~18-24 months after launch. Factor-return means are affected more",
-        "  than the covariances this model actually ships.",
+        "  Audited severity (SEC bulk archives, 2026-08): departed filers are",
+        "  ~8.7% of filer book equity, bounding cap-weighted return-mean bias",
+        "  at ~1.4-2.5bp/week; covariances (what this model ships) are affected",
+        "  at second order. Capture-forward appending plus the 13/26-week EWMA",
+        "  half-lives make the bias decay away within ~18-24 months of launch.",
         "- Delisting classification is a price heuristic (merger vs failure),",
         "  not filing-verified.",
         "- Universe heuristics are crude (ticker-pattern filters; some ADRs",
@@ -242,6 +271,37 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "",
     ]
     return "\n".join(lines)
+
+
+def _validation_md(val: pd.DataFrame | None) -> list[str]:
+    if val is None or val.empty:
+        return []
+    summary = validation_summary(val)
+    if summary.empty:
+        return []
+    z = val["z"].to_numpy()
+    z = z[np.isfinite(z)]
+    lines = [
+        "## Forecast validation (out-of-sample, in-build)",
+        "",
+        "Every historical week, the model forecast next-week volatility for a",
+        "panel of test portfolios using only data available at the time; z =",
+        "realized return / forecast vol. A calibrated model gives std(z) — the",
+        "**bias statistic** — of ~1.0 (>1 underforecasts risk, <1 overforecasts)",
+        "and |z| > 1.96 about 5% of the time.",
+        "",
+        f"Overall: **bias statistic {np.std(z, ddof=1):.2f}**, "
+        f"|z|>1.96 rate {(np.abs(z) > 1.96).mean():.1%}, "
+        f"{val['date'].nunique()} weeks × {summary['n'].sum()} portfolio-scores.",
+        "",
+        "| portfolio | bias stat | \\|z\\|>1.96 | mean forecast vol |",
+        "|---|---|---|---|",
+    ]
+    for _, r in summary.iterrows():
+        lines.append(f"| {r['portfolio']} | {r['bias_stat']:.2f} | "
+                     f"{r['exceed_95']:.1%} | {r['mean_forecast_vol']:.1%} |")
+    lines.append("")
+    return lines
 
 
 LLMS_TXT = f"""# riskprism

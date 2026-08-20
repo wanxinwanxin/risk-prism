@@ -246,6 +246,16 @@ footer .wrap { padding-top: 18px; padding-bottom: 28px; font-size: 12px; color: 
 .pipe-svg .t2 { fill: var(--ink-2); font-size: 11px; }
 .pipe-svg .t3 { fill: var(--muted); font-size: 10.5px; font-family: var(--mono); }
 .pipe-svg .alabel { fill: var(--muted); font-size: 10.5px; }
+.anim { position: relative; margin-top: 14px; }
+.anim canvas { width: 100%; height: auto; display: block; border: 1px solid var(--grid); border-radius: 8px; background: var(--page); }
+.anim .play {
+  position: absolute; top: 8px; right: 8px;
+  font: 600 12px var(--sans); color: var(--ink);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+  padding: 5px 12px; cursor: pointer;
+}
+.anim .play:hover { border-color: var(--ink-2); }
+.anim figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
 a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .spectrum .slice { transition: flex-basis .25s ease; }
@@ -273,6 +283,7 @@ a { color: var(--accent); }
   <button data-view="overview" aria-selected="true">Overview</button>
   <button data-view="portfolio" aria-selected="false">Portfolio</button>
   <button data-view="stocks" aria-selected="false">Stocks</button>
+  <button data-view="validation" aria-selected="false">Validation</button>
   <button data-view="methodology" aria-selected="false">Methodology</button>
   <button data-view="agents" aria-selected="false">For agents</button>
 </div></nav>
@@ -361,11 +372,38 @@ a { color: var(--accent); }
   </div>
 </section>
 
+<section class="view" id="view-validation">
+  <div class="card">
+    <h2>Does the model tell the truth?</h2>
+    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time.</p>
+    <div id="val-hero"></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <h2>Bias statistic by portfolio</h2>
+      <p class="sub">1.0 = calibrated · above the band = risk underforecast · below = overforecast. Band is ±2 standard errors.</p>
+      <div id="val-bias-chart"></div>
+    </div>
+    <div class="card">
+      <h2>Distribution of forecast errors</h2>
+      <p class="sub">All portfolio-week z-scores against the standard normal a calibrated model would produce.</p>
+      <div id="val-zhist"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Full results</h2>
+    <div class="tscroll" id="val-table"></div>
+  </div>
+</section>
+
 <section class="view" id="view-methodology">
   <div class="card">
     <h2>How a portfolio becomes a spectrum</h2>
     <p class="sub">The full pipeline, run weekly. Numbers below are from the current build.</p>
     <div class="tscroll" id="pipeline-diagram"></div>
+    <figure class="anim" id="anim-prism">
+      <figcaption>The name, animated: a mega-cap portfolio's total variance enters as one beam; the model refracts it into its factor spectrum. Beam widths are this build's real variance shares.</figcaption>
+    </figure>
   </div>
   <div class="card">
     <h2>One week of the model</h2>
@@ -377,6 +415,9 @@ a { color: var(--accent); }
       <li>The regression's coefficients are that week's <b>factor returns</b>; what it can't explain (ε) becomes each stock's <b>specific return</b>.</li>
       <li id="meth-r2" class="sub"></li>
     </ul>
+    <figure class="anim" id="anim-regression">
+      <figcaption>One week, animated: stock returns scatter against momentum exposure; the weighted fit sweeps in; what the line can't explain — the residual sticks — becomes each stock's specific return.</figcaption>
+    </figure>
   </div>
   <div class="grid2">
     <div class="card">
@@ -388,13 +429,16 @@ a { color: var(--accent); }
       <h2>From weekly returns to annual risk</h2>
       <p class="sub">Factor covariance is an exponentially weighted average of factor-return history. Volatilities react fast (13-week half-life); correlations move slowly (26 weeks):</p>
       <div id="decay-chart"></div>
+      <figure class="anim" id="anim-ewma">
+        <figcaption>Memory in motion: each week a new observation arrives on the right; old ones fade at the half-life rate, and the volatility estimate breathes with the flow.</figcaption>
+      </figure>
       <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, shrunk 30% toward its size-quintile mean). F is repaired to positive semi-definite by eigenvalue flooring.</p>
     </div>
   </div>
   <div class="card">
     <h2>Read this before trusting it</h2>
     <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
-      <li><b>Survivorship bias, decaying</b>: history recorded before this project launched excludes names that had already delisted. Each weekly build now appends to the prior build's history — names that stop trading get an imputed delisting return and keep their rows — and with 13/26-week half-lives the biased cold start washes out of the model within ~18–24 months.</li>
+      <li><b>Survivorship bias, decaying — and measured</b>: history recorded before launch excludes names that had already delisted. Audited against SEC bulk archives (which retain dead filers): ~8%/yr of active filers ceased during our window, but they skew small — median last book equity $115M vs $553M for survivors, ~8.7% of filer book equity in total — bounding the cap-weighted return-mean bias at ~1.4–2.5bp/week and covariances at second order. Weekly builds append history with imputed delisting returns, so with 13/26-week half-lives the biased cold start washes out within ~18–24 months.</li>
       <li><b>Prior-driven names</b>: stocks outside the estimation universe (illiquid, recent IPOs) get specific risk from a structural model of their characteristics, not their own history — the stock page shows how much is prior.</li>
       <li><b>Crude universe heuristics</b>: ticker-pattern filters; some ADRs leak through; one share class per company.</li>
       <li><b>First-order stress tests</b>: exposure × shock, no convexity, no specific returns.</li>
@@ -501,7 +545,7 @@ function setView(name) {
   if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
 }
 tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
-const VIEWS = ["overview", "portfolio", "stocks", "methodology", "agents"];
+const VIEWS = ["overview", "portfolio", "stocks", "validation", "methodology", "agents"];
 const initial = location.hash.slice(1);
 if (VIEWS.includes(initial)) setView(initial);
 window.addEventListener("hashchange", () => {
@@ -956,6 +1000,95 @@ function renderStockTable() {
 document.getElementById("stock-search").addEventListener("input", renderStockTable);
 renderStockTable();
 
+// ---------- validation ----------
+{
+  const V = DATA.validation;
+  const heroEl = document.getElementById("val-hero");
+  if (!V) {
+    heroEl.innerHTML = `<p class="hint">This build carries no validation history yet — it appears with the next model release.</p>`;
+  } else {
+    const ok = V.overall_bias >= 0.85 && V.overall_bias <= 1.15;
+    heroEl.innerHTML = `
+      <div class="hero-vol">
+        <span class="num" style="color:${ok ? "var(--delta-good)" : "var(--delta-bad)"}">${V.overall_bias.toFixed(2)}</span>
+        <span class="split">overall bias statistic · |z|&gt;1.96 in ${(V.exceed_95 * 100).toFixed(1)}% of weeks (target ~5%) · ${V.n_scores.toLocaleString()} scores over ${V.n_weeks} weeks</span>
+      </div>`;
+
+    const pcolor = p => p.group === "market" ? "var(--s-market)"
+      : p.group === "style" ? `var(--s-${p.name.replace("style_", "")})`
+      : p.group === "industry" ? "var(--s-industry)"
+      : p.group === "equal" ? "var(--accent)" : "var(--s-specific)";
+    const plabel = p => p.name.replace("style_", "").replace("industry_", "");
+
+    // bias chart: dot-and-stick around the 1.0 reference with a ±2SE band
+    {
+      const rows = V.portfolios;
+      const W = 480, rh = 21, lw = 96, gap = 5;
+      const H = rows.length * (rh + gap) + 24;
+      const lo = 0.4, hi = Math.max(1.6, ...rows.map(r => r.bias)) + 0.1;
+      const xp = v => lw + (v - lo) / (hi - lo) * (W - lw - 16);
+      let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Bias statistic per test portfolio versus the calibrated value of 1.">`;
+      rows.forEach((r, i) => {
+        const y = i * (rh + gap) + 12;
+        const se = 2 / Math.sqrt(2 * r.n);
+        s += `<rect x="${xp(1 - se)}" y="${y - 5}" width="${xp(1 + se) - xp(1 - se)}" height="10" rx="3" fill="var(--grid)"/>`;
+        s += `<text x="${lw - 8}" y="${y + 4}" text-anchor="end" font-size="11.5" fill="var(--ink-2)">${plabel(r)}</text>`;
+        s += `<line x1="${xp(1)}" y1="${y - 8}" x2="${xp(1)}" y2="${y + 8}" stroke="var(--muted)" stroke-width="1"/>`;
+        s += `<circle data-i="${i}" cx="${xp(r.bias)}" cy="${y}" r="4.5" style="fill:${pcolor(r)}"/>`;
+      });
+      const axisY = rows.length * (rh + gap) + 16;
+      [0.5, 1.0, 1.5].forEach(v => {
+        if (v >= lo && v <= hi) s += `<text class="mono" x="${xp(v)}" y="${axisY}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${v.toFixed(1)}</text>`;
+      });
+      s += `</svg>`;
+      const holder = document.getElementById("val-bias-chart");
+      holder.innerHTML = s;
+      holder.querySelectorAll("circle").forEach(c => {
+        const r = V.portfolios[+c.dataset.i];
+        hover(c, () => `<div class="t">${plabel(r)}</div>bias <span class="mono">${r.bias.toFixed(2)}</span> · n=${r.n} · |z|&gt;1.96: <span class="mono">${(r.exc * 100).toFixed(0)}%</span>`);
+      });
+    }
+
+    // z histogram vs standard normal
+    {
+      const { edges, density } = V.z_hist;
+      const W = 480, H = 210, ml = 14, mr = 14, mt = 10, mb = 24;
+      const phi = x => Math.exp(-x * x / 2) / Math.sqrt(2 * Math.PI);
+      const ymax = Math.max(phi(0), ...density) * 1.08;
+      const xp = v => ml + (v + 4) / 8 * (W - ml - mr);
+      const yp = v => mt + (1 - v / ymax) * (H - mt - mb);
+      let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Histogram of z-scores with the standard normal density overlaid.">`;
+      for (let i = 0; i < density.length; i++) {
+        const x0 = xp(edges[i]), x1 = xp(edges[i + 1]);
+        s += `<rect data-i="${i}" x="${x0 + 1}" y="${yp(density[i])}" width="${x1 - x0 - 2}" height="${yp(0) - yp(density[i])}" rx="2" style="fill:var(--s-market)" opacity="0.75"/>`;
+      }
+      const pts = [];
+      for (let x = -4; x <= 4.001; x += 0.1) pts.push(`${xp(x).toFixed(1)},${yp(phi(x)).toFixed(1)}`);
+      s += `<polyline points="${pts.join(" ")}" fill="none" stroke="var(--ink)" stroke-width="1.8"/>`;
+      [-3, -1.96, 0, 1.96, 3].forEach(v => {
+        s += `<text class="mono" x="${xp(v)}" y="${H - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">${v}</text>`;
+      });
+      s += `<text x="${xp(1.2)}" y="${yp(phi(0.9))}" font-size="11" fill="var(--ink-2)">N(0,1)</text>`;
+      s += `</svg>`;
+      const holder = document.getElementById("val-zhist");
+      holder.innerHTML = s;
+      holder.querySelectorAll("rect").forEach(rc => {
+        const i = +rc.dataset.i;
+        hover(rc, () => `<span class="mono">z ∈ [${edges[i].toFixed(1)}, ${edges[i + 1].toFixed(1)})</span> · density ${density[i].toFixed(3)}`);
+      });
+    }
+
+    let vt = `<table><thead><tr><th>Portfolio</th><th>Group</th><th class="num">Weeks</th><th class="num">Bias stat</th><th class="num">|z|&gt;1.96</th><th class="num">Mean forecast vol</th></tr></thead><tbody>`;
+    V.portfolios.forEach(p => {
+      vt += `<tr><td><span class="dot-i" style="background:${pcolor(p)}"></span>${plabel(p)}</td><td>${p.group}</td>
+        <td class="num">${p.n}</td><td class="num">${p.bias.toFixed(2)}</td>
+        <td class="num">${(p.exc * 100).toFixed(1)}%</td><td class="num">${pct(p.vol)}</td></tr>`;
+    });
+    vt += `</tbody></table>`;
+    document.getElementById("val-table").innerHTML = vt;
+  }
+}
+
 // ---------- methodology ----------
 {
   const r2txt = (m.mean_r2 ?? 0).toFixed(2);
@@ -1041,6 +1174,204 @@ renderStockTable();
   });
   dc += `<text x="${ml}" y="${mt + 2}" font-size="10.5" fill="var(--muted)">weight on a week, by its age</text></svg>`;
   document.getElementById("decay-chart").innerHTML = dc;
+}
+
+// ---------- animations (methodology) ----------
+{
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const mulberry = seed => () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let z = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z;
+    return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+  };
+  const gauss = rng => Math.sqrt(-2 * Math.log(rng() + 1e-12)) * Math.cos(2 * Math.PI * rng());
+  const ease = u => u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function makeAnim(id, drawFn, { aspect = 0.42, loop = 12 } = {}) {
+    const fig = document.getElementById(id);
+    if (!fig) return;
+    const canvas = document.createElement("canvas");
+    const btn = document.createElement("button");
+    btn.className = "play"; btn.textContent = "▶ Play";
+    fig.prepend(btn); fig.prepend(canvas);
+    const ctx = canvas.getContext("2d");
+    let playing = false, start = 0, raf = null, W = 0, H = 0;
+    function size() {
+      const dpr = devicePixelRatio || 1;
+      W = fig.clientWidth; H = Math.round(W * aspect);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function render(t) { ctx.clearRect(0, 0, W, H); drawFn(ctx, W, H, t); }
+    function frame(now) {
+      if (!start) start = now;
+      render(((now - start) / 1000) % loop);
+      if (playing) raf = requestAnimationFrame(frame);
+    }
+    btn.addEventListener("click", () => {
+      playing = !playing;
+      btn.textContent = playing ? "❚❚ Pause" : "▶ Play";
+      if (playing) { start = 0; raf = requestAnimationFrame(frame); }
+      else if (raf) cancelAnimationFrame(raf);
+    });
+    addEventListener("resize", () => { size(); if (!playing) render(loop * 0.8); });
+    size();
+    render(loop * 0.8); // showcase frame until played (also the reduced-motion state)
+  }
+
+  // --- 1. one week of the regression -------------------------------------
+  {
+    const rng = mulberry(7);
+    const N = 110, beta = 0.013, noise = 0.02;
+    const pts = Array.from({ length: N }, () => {
+      const x = Math.max(-2.8, Math.min(2.8, gauss(rng)));
+      return { x, y: 0.002 + beta * x + noise * gauss(rng), r: 2 + rng() * 2.5 };
+    });
+    makeAnim("anim-regression", (ctx, W, H, t) => {
+      const ml = 46, mr = 16, mt = 14, mb = 26;
+      const xp = v => ml + (v + 3) / 6 * (W - ml - mr);
+      const yp = v => mt + (0.07 - v) / 0.14 * (H - mt - mb);
+      ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(ml, yp(0)); ctx.lineTo(W - mr, yp(0)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(xp(0), mt); ctx.lineTo(xp(0), H - mb); ctx.stroke();
+      ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans");
+      ctx.textAlign = "center";
+      ctx.fillText("momentum exposure (σ) →", (ml + W - mr) / 2, H - 8);
+      ctx.save(); ctx.translate(14, (mt + H - mb) / 2); ctx.rotate(-Math.PI / 2);
+      ctx.fillText("this week's return", 0, 0); ctx.restore();
+
+      const nShow = Math.floor(ease(t / 2) * N);
+      const slopeU = ease((t - 2.2) / 3.2);
+      const slope = beta * slopeU, icept = 0.002 * slopeU;
+      const residU = ease((t - 6) / 1.6);
+      const labelU = ease((t - 8) / 1.2);
+
+      if (residU > 0) {
+        ctx.strokeStyle = css("--s-specific"); ctx.lineWidth = 1.4;
+        for (let i = 0; i < Math.floor(residU * 40); i++) {
+          const p = pts[i * 2];
+          ctx.beginPath(); ctx.moveTo(xp(p.x), yp(p.y));
+          ctx.lineTo(xp(p.x), yp(icept + slope * p.x)); ctx.stroke();
+        }
+      }
+      ctx.fillStyle = css("--s-market");
+      for (let i = 0; i < nShow; i++) {
+        const p = pts[i];
+        ctx.globalAlpha = 0.75;
+        ctx.beginPath(); ctx.arc(xp(p.x), yp(p.y), p.r, 0, 7); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      if (slopeU > 0.01) {
+        ctx.strokeStyle = css("--s-momentum"); ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.moveTo(xp(-2.9), yp(icept - slope * 2.9));
+        ctx.lineTo(xp(2.9), yp(icept + slope * 2.9)); ctx.stroke();
+      }
+      if (labelU > 0) {
+        ctx.globalAlpha = labelU;
+        ctx.fillStyle = css("--ink");
+        ctx.font = "600 13px " + css("--mono");
+        ctx.textAlign = "left";
+        ctx.fillText("slope = momentum factor return = +1.3%", ml + 8, mt + 16);
+        ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans");
+        ctx.fillText("vertical sticks = ε, each stock's specific return", ml + 8, mt + 32);
+        ctx.globalAlpha = 1;
+      }
+    }, { loop: 11 });
+  }
+
+  // --- 2. the prism -------------------------------------------------------
+  {
+    // real variance shares from this build: the mega-cap preset
+    const w = {}; ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"].forEach(t2 => { if (t2 in TIDX) w[t2] = 0.2; });
+    const r = computeRisk(Object.keys(w).length >= 3 ? w : { [T[0]]: 0.5, [T[1]]: 0.5 });
+    const classes = [];
+    const add = (name, v, color) => { if (v > 0) classes.push({ name, v, color }); };
+    add("market", r.contrib[FACTORS.indexOf(MKT)], css("--s-market") || "#2a78d6");
+    STYLES.forEach(f => add(f, r.contrib[FACTORS.indexOf(f)], `var:${f}`));
+    add("industries", FACTORS.reduce((a, f, k) => a + (f.startsWith("ind_") ? r.contrib[k] : 0), 0), "ind");
+    add("specific", r.svar, "spec");
+    const tot = classes.reduce((a, c) => a + c.v, 0);
+    classes.forEach(c => c.share = c.v / tot);
+    const colorOf = c => c.color === "ind" ? css("--s-industry")
+      : c.color === "spec" ? css("--s-specific")
+      : c.color.startsWith("var:") ? css(`--s-${c.color.slice(4)}`) : c.color;
+
+    makeAnim("anim-prism", (ctx, W, H, t) => {
+      const cy = H / 2, px = W * 0.42, pw = H * 0.42;
+      const beamU = ease(t / 1.8);
+      const splitU = ease((t - 1.8) / 2.6);
+      const labelU = ease((t - 4.2) / 1.4);
+      // incoming beam: total variance
+      ctx.strokeStyle = css("--ink-2"); ctx.lineWidth = 8; ctx.lineCap = "round";
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.moveTo(W * 0.05, cy);
+      ctx.lineTo(W * 0.05 + beamU * (px - W * 0.05 - pw * 0.35), cy); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = css("--muted"); ctx.font = "11.5px " + css("--sans"); ctx.textAlign = "left";
+      ctx.fillText(`total variance (${pct(r.tvol)} vol)`, W * 0.05, cy - 12);
+      // prism
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.8; ctx.lineJoin = "round";
+      ctx.beginPath(); ctx.moveTo(px, cy - pw * 0.62);
+      ctx.lineTo(px + pw * 0.55, cy + pw * 0.5); ctx.lineTo(px - pw * 0.55, cy + pw * 0.5);
+      ctx.closePath(); ctx.stroke();
+      // spectrum
+      if (splitU > 0) {
+        const spread = H * 0.6;
+        let acc = 0;
+        classes.forEach(c => {
+          const mid = acc + c.share / 2; acc += c.share;
+          const y1 = cy + (mid - 0.5) * spread * splitU;
+          const x0 = px + pw * 0.28, x1 = x0 + splitU * (W - x0 - W * 0.16);
+          ctx.strokeStyle = colorOf(c);
+          ctx.lineWidth = Math.min(H * 0.2, Math.max(2, c.share * H * 0.42));
+          ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, y1); ctx.stroke();
+          if (labelU > 0 && c.share > 0.03) {
+            ctx.globalAlpha = labelU;
+            ctx.fillStyle = css("--ink"); ctx.font = "600 11.5px " + css("--mono");
+            ctx.fillText(` ${c.name} ${Math.round(c.share * 100)}%`, x1 + 4, y1 + 4);
+            ctx.globalAlpha = 1;
+          }
+        });
+      }
+    }, { aspect: 0.36, loop: 9 });
+  }
+
+  // --- 3. EWMA memory -----------------------------------------------------
+  {
+    const rng = mulberry(21);
+    const M = 120, hl = 13, lam = Math.pow(0.5, 1 / hl);
+    const obs = Array.from({ length: M }, () => Math.abs(gauss(rng)) * 0.02 + 0.003);
+    makeAnim("anim-ewma", (ctx, W, H, t) => {
+      const ml = 14, mr = 14, mb = 24, mt = 30;
+      const nBars = 44, step = t / 0.55; // one new week every 0.55s
+      const head = Math.floor(step) + nBars, frac = step - Math.floor(step);
+      const bw = (W - ml - mr) / nBars;
+      let varEst = 0, wSum = 0;
+      for (let k = 0; k < nBars; k++) {
+        const idx2 = (head - k) % M;
+        const age = k + frac;
+        const wgt = Math.pow(lam, age);
+        varEst += wgt * obs[idx2] * obs[idx2]; wSum += wgt;
+        const x = W - mr - (k + frac) * bw;
+        if (x < ml) continue;
+        const h = obs[idx2] / 0.055 * (H - mt - mb);
+        ctx.fillStyle = css("--s-size");
+        ctx.globalAlpha = Math.max(0.06, wgt);
+        ctx.fillRect(x, H - mb - h, Math.max(2, bw - 3), h);
+      }
+      ctx.globalAlpha = 1;
+      const vol = Math.sqrt(varEst / wSum * 52);
+      ctx.fillStyle = css("--ink"); ctx.font = "600 15px " + css("--mono"); ctx.textAlign = "left";
+      ctx.fillText(`EWMA vol estimate: ${(vol * 100).toFixed(1)}% ann.`, ml + 2, mt - 10);
+      ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans"); ctx.textAlign = "right";
+      ctx.fillText("new week arrives →", W - mr, H - 8);
+      ctx.textAlign = "left";
+      ctx.fillText(`opacity = weight: halves every ${hl} weeks of age`, ml + 2, H - 8);
+    }, { aspect: 0.34, loop: 24 });
+  }
 }
 
 // ---------- agents: copy buttons ----------
