@@ -71,6 +71,7 @@ class EdgarClient:
         self.min_interval = min_interval
         self.cache_max_age_days = cache_max_age_days
         self._last_request = 0.0
+        self._consecutive_blocks = 0
 
     def _get_json(self, url: str, cache_key: str) -> dict:
         path = self.cache_dir / f"{cache_key}.json"
@@ -78,21 +79,61 @@ class EdgarClient:
             age_days = (time.time() - path.stat().st_mtime) / 86400
             if age_days < self.cache_max_age_days:
                 return json.loads(path.read_text())
-        wait = self.min_interval - (time.monotonic() - self._last_request)
-        if wait > 0:
-            time.sleep(wait)
-        resp = self.session.get(url, timeout=30)
-        self._last_request = time.monotonic()
-        if resp.status_code == 403:
-            raise requests.HTTPError(f"EDGAR rejected the request (403). {_UA_HELP}",
-                                     response=resp)
-        resp.raise_for_status()
-        path.write_text(resp.text)
-        return resp.json()
+        if self._consecutive_blocks >= 8:
+            raise RuntimeError(
+                "EDGAR has rejected 8 requests in a row — this IP appears to be "
+                "blocked by SEC's WAF. Aborting instead of burning hours on retries."
+            )
+        last_exc: Exception | None = None
+        for attempt in range(3):
+            wait = self.min_interval - (time.monotonic() - self._last_request)
+            if wait > 0:
+                time.sleep(wait)
+            try:
+                resp = self.session.get(url, timeout=30)
+            except requests.RequestException as exc:
+                last_exc = exc
+                time.sleep(2 * (attempt + 1))
+                continue
+            self._last_request = time.monotonic()
+            if resp.status_code in (403, 429):
+                # SEC's WAF intermittently blocks datacenter IPs (CI runners);
+                # back off and retry before giving up.
+                last_exc = requests.HTTPError(
+                    f"EDGAR rejected the request ({resp.status_code}) for {url}. "
+                    f"{_UA_HELP} Datacenter/CI IPs are sometimes blocked outright.",
+                    response=resp,
+                )
+                time.sleep(3 * (attempt + 1))
+                continue
+            resp.raise_for_status()
+            self._consecutive_blocks = 0
+            path.write_text(resp.text)
+            return resp.json()
+        self._consecutive_blocks += 1
+        if path.exists():  # stale cache beats no data
+            return json.loads(path.read_text())
+        raise last_exc
 
     def ticker_map(self) -> pd.DataFrame:
-        """All EDGAR-registered tickers: columns [ticker, cik, title]."""
-        raw = self._get_json(TICKER_URL, "company_tickers")
+        """All EDGAR-registered tickers: columns [ticker, cik, title].
+
+        The live file sits on www.sec.gov, whose WAF blocks many CI/cloud
+        IPs. On failure, fall back to the snapshot bundled with the
+        package (public domain; refreshed with releases) so automated
+        builds always have a universe to start from.
+        """
+        try:
+            raw = self._get_json(TICKER_URL, "company_tickers")
+        except requests.RequestException as exc:
+            import gzip
+            from importlib import resources
+
+            print(f"[riskprism] live ticker file unavailable ({exc}); "
+                  "using bundled snapshot")
+            blob = (resources.files("riskprism.data")
+                    / "company_tickers_snapshot.json.gz").read_bytes()
+            raw = json.loads(gzip.decompress(blob))
         rows = [
             {"ticker": v["ticker"].upper(), "cik": int(v["cik_str"]), "title": v["title"]}
             for v in raw.values()
