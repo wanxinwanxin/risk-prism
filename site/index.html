@@ -578,6 +578,9 @@ function setView(name) {
   document.querySelectorAll("section.view").forEach(s =>
     s.classList.toggle("active", s.id === "view-" + name));
   if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+  // canvases sized while their tab was display:none measured 0 wide —
+  // remeasure everything once the new view is actually laid out
+  requestAnimationFrame(() => dispatchEvent(new Event("resize")));
 }
 tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
 const VIEWS = ["overview", "portfolio", "stocks", "validation", "methodology", "agents"];
@@ -1451,6 +1454,7 @@ renderStockTable();
     const ctx = canvas.getContext("2d");
     let playing = false, start = 0, raf = null, W = 0, H = 0;
     function size() {
+      if (!fig.clientWidth) return; // hidden tab: keep dims, resize event will retry
       const dpr = devicePixelRatio || 1;
       W = fig.clientWidth; H = Math.round(W * aspect);
       canvas.width = W * dpr; canvas.height = H * dpr;
@@ -1702,6 +1706,7 @@ renderStockTable();
     const ctx = canvas.getContext("2d");
     let si = 0, playing = false, sceneStart = 0, raf = null, W = 0, H = 0;
     function size() {
+      if (!fig.clientWidth) return; // hidden tab: resize event retries on reveal
       const dpr = devicePixelRatio || 1;
       W = fig.clientWidth; H = Math.round(W * 0.42);
       canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = H + "px";
