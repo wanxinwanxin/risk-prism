@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from riskprism.config import STYLE_FACTORS, ModelConfig
 from riskprism.model.validation import (
@@ -45,6 +46,36 @@ def test_calibrated_world_gives_bias_stat_near_one():
     assert summary["bias_stat"].between(0.7, 1.35).all(), summary.to_string()
     med = summary["bias_stat"].median()
     assert 0.85 < med < 1.15
+
+
+def test_realized_vol_recovers_true_vol():
+    from riskprism.model.validation import _realized_vol_ann
+    rng = np.random.default_rng(3)
+    idx = pd.Index([f"T{i}" for i in range(50)])
+    w = pd.Series(1.0 / 50, index=idx)
+    sig_d = 0.02
+    rvs = []
+    for _ in range(300):
+        daily = pd.DataFrame(rng.normal(0, sig_d, (5, 50)), columns=idx)
+        rvs.append(_realized_vol_ann(daily, w))
+    true_ann = sig_d / np.sqrt(50) * np.sqrt(5 * 52)  # eq-weight diversification
+    assert np.sqrt(np.mean(np.array(rvs) ** 2)) == pytest.approx(true_ann, rel=0.08)
+
+
+def test_scores_carry_realized_vol_only_with_daily_data():
+    rng, idx, styles, industries, caps, x_full, sig = _world(seed=4)
+    state = RunningRiskState(CFG)
+    for wk in range(30):
+        f = pd.Series(rng.normal(0, sig.to_numpy()), index=FULL_FACTORS)
+        state.update(f, pd.Series(rng.normal(0, 0.03, len(idx)), index=idx))
+    y = pd.Series(rng.normal(0, 0.03, len(idx)), index=idx)
+    daily = pd.DataFrame(rng.normal(0, 0.012, (5, len(idx))), columns=idx)
+    with_rv = score_portfolios(state, x_full, industries, caps, y,
+                               pd.Timestamp("2021-01-08"), 30, daily_returns=daily)
+    without = score_portfolios(state, x_full, industries, caps, y,
+                               pd.Timestamp("2021-01-08"), 30)
+    assert all(np.isfinite(r["realized_vol_ann"]) for r in with_rv)
+    assert all(np.isnan(r["realized_vol_ann"]) for r in without)
 
 
 def test_no_scores_before_warmup():

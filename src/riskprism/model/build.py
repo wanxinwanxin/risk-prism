@@ -144,6 +144,7 @@ def build_model(
     estu_idx = pd.Index(estimation)
     weekly_close = close[estimation].resample(config.frequency).last()
     weekly_returns = weekly_close.pct_change(fill_method=None)
+    daily_returns = close[estimation].pct_change(fill_method=None)
     last_traded_week = weekly_close.apply(lambda s: s.last_valid_index())
 
     first_regression = close.index[0] + pd.Timedelta(days=_BURN_IN_DAYS)
@@ -191,8 +192,9 @@ def build_model(
              industry_dummies(industries.reindex(exposures.index).fillna("Other"))],
             axis=1,
         )
+        dr = daily_returns[(daily_returns.index > t) & (daily_returns.index <= t_next)]
         validation_rows.extend(score_portfolios(
-            risk_state, x_full, industries, mktcap, y, t_next, wk))
+            risk_state, x_full, industries, mktcap, y, t_next, wk, daily_returns=dr))
         # persist formation-date exposures so historical models are
         # reconstructible from the artifacts (see model/asof.py)
         eh = exposures.astype("float32").round(4)

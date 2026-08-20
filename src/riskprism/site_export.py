@@ -105,7 +105,11 @@ def _validation_payload(val: pd.DataFrame | None) -> dict | None:
     z = z[np.isfinite(z)]
     edges = np.linspace(-4, 4, 33)
     hist, _ = np.histogram(np.clip(z, -3.99, 3.99), bins=edges, density=True)
-    return {
+
+    def _num(v, nd=3):
+        return None if v is None or not np.isfinite(v) else round(float(v), nd)
+
+    payload = {
         "n_weeks": int(val["date"].nunique()),
         "n_scores": int(len(z)),
         "overall_bias": round(float(np.std(z, ddof=1)), 3),
@@ -113,11 +117,32 @@ def _validation_payload(val: pd.DataFrame | None) -> dict | None:
         "portfolios": [
             {"name": r["portfolio"], "group": r["group"], "n": int(r["n"]),
              "bias": round(r["bias_stat"], 3), "exc": round(r["exceed_95"], 3),
-             "vol": round(r["mean_forecast_vol"], 4)}
+             "vol": round(r["mean_forecast_vol"], 4),
+             "rvol": _num(r.get("mean_realized_vol"), 4),
+             "vratio": _num(r.get("vol_ratio"))}
             for _, r in summary.iterrows()
         ],
         "z_hist": {"edges": _round(edges, 3), "density": _round(hist, 4)},
     }
+    if "realized_vol_ann" in val.columns:
+        ok = val.dropna(subset=["realized_vol_ann", "forecast_vol_ann"])
+        if len(ok) >= 30:
+            fv2 = (ok["forecast_vol_ann"] ** 2).to_numpy()
+            rv2 = (ok["realized_vol_ann"] ** 2).to_numpy()
+            slope, intercept = np.polyfit(fv2, rv2, 1)
+            r2 = float(np.corrcoef(fv2, rv2)[0, 1] ** 2)
+            sample = ok.sample(min(1200, len(ok)), random_state=0)
+            payload["rv"] = {
+                "mz_slope": round(float(slope), 3),
+                "mz_intercept": round(float(intercept), 5),
+                "r2": round(r2, 3),
+                "vol_ratio": round(float(np.sqrt(rv2.mean() / fv2.mean())), 3),
+                "scatter": [[round(float(a), 3), round(float(b), 3), g]
+                            for a, b, g in zip(sample["forecast_vol_ann"],
+                                               sample["realized_vol_ann"],
+                                               sample["group"])],
+            }
+    return payload
 
 
 def build_model_md(artifacts_dir: str | Path) -> str:
@@ -303,13 +328,24 @@ def _validation_md(val: pd.DataFrame | None) -> list[str]:
         f"|z|>1.96 rate {(np.abs(z) > 1.96).mean():.1%}, "
         f"{val['date'].nunique()} weeks × {summary['n'].sum()} portfolio-scores.",
         "",
-        "| portfolio | bias stat | \\|z\\|>1.96 | mean forecast vol |",
-        "|---|---|---|---|",
+        "| portfolio | bias stat | \\|z\\|>1.96 | mean forecast vol | mean realized vol | vol ratio |",
+        "|---|---|---|---|---|---|",
     ]
+    def _fmt(v, f):
+        return f.format(v) if v is not None and np.isfinite(v) else "—"
     for _, r in summary.iterrows():
-        lines.append(f"| {r['portfolio']} | {r['bias_stat']:.2f} | "
-                     f"{r['exceed_95']:.1%} | {r['mean_forecast_vol']:.1%} |")
-    lines.append("")
+        lines.append(
+            f"| {r['portfolio']} | {r['bias_stat']:.2f} | {r['exceed_95']:.1%} "
+            f"| {r['mean_forecast_vol']:.1%} "
+            f"| {_fmt(r.get('mean_realized_vol'), '{:.1%}')} "
+            f"| {_fmt(r.get('vol_ratio'), '{:.2f}')} |")
+    lines += [
+        "",
+        "The vol ratio compares average realized variance (from daily returns",
+        "within each week) to average forecast variance, in vol units — an",
+        "RV-based check with far more statistical power than z-scores alone.",
+        "",
+    ]
     return lines
 
 

@@ -143,6 +143,22 @@ def _group(name: str) -> str:
     return name.split("_")[0] if "_" in name else name
 
 
+def _realized_vol_ann(daily_returns: pd.DataFrame | None, w: pd.Series) -> float:
+    """Within-week realized vol of the portfolio from daily returns, annualized.
+
+    RV = sum of squared daily portfolio returns over the week — a direct
+    (chi-squared-noisy, ~5 obs) observation of that week's variance,
+    giving vol-forecast tests far more power than one return draw.
+    """
+    if daily_returns is None or daily_returns.empty:
+        return float("nan")
+    rets = daily_returns.reindex(columns=w.index).fillna(0.0)
+    pr = rets.to_numpy() @ w.to_numpy()
+    if len(pr) < 3:
+        return float("nan")
+    return float(np.sqrt((pr ** 2).sum() * 52.0))
+
+
 def score_portfolios(
     state: RunningRiskState,
     exposures_full: pd.DataFrame,  # incl. market + industry columns, FULL_FACTORS order
@@ -151,6 +167,7 @@ def score_portfolios(
     realized: pd.Series,           # week t+1 returns
     date: pd.Timestamp,
     week_index: int,
+    daily_returns: pd.DataFrame | None = None,  # week t+1 daily returns
 ) -> list[dict]:
     """Forecast each test portfolio's vol at t and score against t+1."""
     if not state.ready:
@@ -175,6 +192,7 @@ def score_portfolios(
             "forecast_vol_ann": vol_w * np.sqrt(52.0),
             "realized_ret": r,
             "z": r / vol_w,
+            "realized_vol_ann": _realized_vol_ann(daily_returns, w),
         })
     return rows
 
@@ -199,17 +217,27 @@ def validation_summary(validation: pd.DataFrame, min_obs: int = 30) -> pd.DataFr
     """Per-portfolio calibration: bias statistic and tail coverage."""
     if validation is None or validation.empty:
         return pd.DataFrame(columns=["portfolio", "group", "n", "bias_stat", "exceed_95"])
+    has_rv = "realized_vol_ann" in validation.columns
     out = []
     for name, g in validation.groupby("portfolio"):
         if len(g) < min_obs:
             continue
         z = g["z"].to_numpy()
-        out.append({
+        row = {
             "portfolio": name,
             "group": g["group"].iloc[0],
             "n": len(g),
             "bias_stat": float(np.std(z, ddof=1)),
             "exceed_95": float((np.abs(z) > 1.96).mean()),
             "mean_forecast_vol": float(g["forecast_vol_ann"].mean()),
-        })
+        }
+        if has_rv:
+            rv2 = g["realized_vol_ann"].dropna() ** 2
+            fc2 = g.loc[rv2.index, "forecast_vol_ann"] ** 2
+            # ratio of average realized to average forecast variance, in vol
+            # units: >1 means the model underforecast this portfolio's vol
+            row["vol_ratio"] = (float(np.sqrt(rv2.mean() / fc2.mean()))
+                                if len(rv2) >= min_obs and fc2.mean() > 0 else np.nan)
+            row["mean_realized_vol"] = float(np.sqrt(rv2.mean())) if len(rv2) else np.nan
+        out.append(row)
     return pd.DataFrame(out).sort_values(["group", "portfolio"]).reset_index(drop=True)
