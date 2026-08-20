@@ -1256,7 +1256,8 @@ renderStockTable();
     if (V.rv) {
       document.getElementById("val-rv-card").hidden = false;
       const S = 460, mlv = 46, mbv = 34, mtv = 10, mrv = 12;
-      const vmax = Math.min(1.2, Math.max(...V.rv.scatter.map(p => Math.max(p[0], p[1]))) * 1.06);
+      const allv = V.rv.scatter.flatMap(p => [p[0], p[1]]).sort((a, b) => a - b);
+      const vmax = Math.min(1.2, allv[Math.floor(allv.length * 0.975)] * 1.15);
       const xp = v => mlv + v / vmax * (S - mlv - mrv);
       const yp = v => (S - mbv) - v / vmax * (S - mbv - mtv);
       let s = `<svg viewBox="0 0 ${S} ${S}" width="100%" role="img" aria-label="Scatter of realized versus forecast volatility with the calibration diagonal.">`;

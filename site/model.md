@@ -124,31 +124,35 @@ and |z| > 1.96 about 5% of the time.
 
 Overall: **bias statistic 1.07**, |z|>1.96 rate 7.0%, 123 weeks × 2829 portfolio-scores.
 
-| portfolio | bias stat | \|z\|>1.96 | mean forecast vol |
-|---|---|---|---|
-| equal_weight | 1.02 | 5.7% | 17.7% |
-| industry_BusEq | 1.05 | 6.5% | 22.5% |
-| industry_Chems | 0.80 | 2.4% | 18.3% |
-| industry_Durbl | 0.99 | 6.5% | 26.5% |
-| industry_Enrgy | 1.04 | 4.9% | 22.6% |
-| industry_Hlth | 1.06 | 6.5% | 16.5% |
-| industry_Manuf | 1.04 | 3.3% | 20.0% |
-| industry_Money | 1.11 | 7.3% | 15.1% |
-| industry_NoDur | 1.01 | 5.7% | 15.3% |
-| industry_Shops | 1.01 | 7.3% | 16.7% |
-| industry_Telcm | 0.95 | 5.7% | 19.4% |
-| industry_Utils | 0.99 | 4.9% | 14.9% |
-| market | 1.07 | 4.9% | 17.8% |
-| random_1 | 0.97 | 4.9% | 20.5% |
-| random_2 | 1.03 | 6.5% | 20.0% |
-| random_3 | 1.00 | 4.1% | 20.1% |
-| style_leverage | 1.38 | 16.3% | 10.0% |
-| style_liquidity | 1.01 | 8.1% | 14.8% |
-| style_momentum | 1.05 | 5.7% | 15.3% |
-| style_quality | 1.27 | 15.4% | 13.7% |
-| style_size | 1.18 | 11.4% | 13.3% |
-| style_value | 1.13 | 8.1% | 10.4% |
-| style_volatility | 1.05 | 8.1% | 26.5% |
+| portfolio | bias stat | \|z\|>1.96 | mean forecast vol | mean realized vol | vol ratio |
+|---|---|---|---|---|---|
+| equal_weight | 1.02 | 5.7% | 17.7% | 18.5% | 1.04 |
+| industry_BusEq | 1.05 | 6.5% | 22.5% | 23.6% | 1.04 |
+| industry_Chems | 0.80 | 2.4% | 18.3% | 17.4% | 0.93 |
+| industry_Durbl | 0.99 | 6.5% | 26.5% | 27.7% | 1.04 |
+| industry_Enrgy | 1.04 | 4.9% | 22.6% | 22.9% | 1.00 |
+| industry_Hlth | 1.06 | 6.5% | 16.5% | 16.5% | 0.99 |
+| industry_Manuf | 1.04 | 3.3% | 20.0% | 22.1% | 1.10 |
+| industry_Money | 1.11 | 7.3% | 15.1% | 17.3% | 1.14 |
+| industry_NoDur | 1.01 | 5.7% | 15.3% | 16.2% | 1.06 |
+| industry_Shops | 1.01 | 7.3% | 16.7% | 17.3% | 1.03 |
+| industry_Telcm | 0.95 | 5.7% | 19.4% | 17.7% | 0.91 |
+| industry_Utils | 0.99 | 4.9% | 14.9% | 15.4% | 1.03 |
+| market | 1.07 | 4.9% | 17.8% | 21.2% | 1.15 |
+| random_1 | 0.97 | 4.9% | 20.5% | 19.7% | 0.92 |
+| random_2 | 1.03 | 6.5% | 20.0% | 20.3% | 0.99 |
+| random_3 | 1.00 | 4.1% | 20.1% | 18.9% | 0.91 |
+| style_leverage | 1.38 | 16.3% | 10.0% | 13.3% | 1.33 |
+| style_liquidity | 1.01 | 8.1% | 14.8% | 16.8% | 1.10 |
+| style_momentum | 1.05 | 5.7% | 15.3% | 21.9% | 1.40 |
+| style_quality | 1.27 | 15.4% | 13.7% | 16.6% | 1.21 |
+| style_size | 1.18 | 11.4% | 13.3% | 14.1% | 1.06 |
+| style_value | 1.13 | 8.1% | 10.4% | 11.6% | 1.08 |
+| style_volatility | 1.05 | 8.1% | 26.5% | 28.8% | 1.08 |
+
+The vol ratio compares average realized variance (from daily returns
+within each week) to average forecast variance, in vol units — an
+RV-based check with far more statistical power than z-scores alone.
 
 ## Methodology in brief
 
