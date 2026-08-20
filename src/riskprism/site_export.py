@@ -92,6 +92,11 @@ def build_site_data(artifacts_dir: str | Path) -> dict:
             "cumulative": {f: _round(cum[f], 4) for f in show if f in cum},
         },
         "validation": _validation_payload(a.get("validation")),
+        "sample_week": {
+            "date": freturns.index[-1].strftime("%Y-%m-%d"),
+            "f": {f: round(float(freturns.iloc[-1].get(f, 0.0)), 5)
+                  for f in [MARKET_FACTOR, *STYLE_FACTORS]},
+        },
     }
 
 
@@ -123,6 +128,23 @@ def _validation_payload(val: pd.DataFrame | None) -> dict | None:
             for _, r in summary.iterrows()
         ],
         "z_hist": {"edges": _round(edges, 3), "density": _round(hist, 4)},
+    }
+    dates = sorted(val["date"].unique())
+    date_pos = {d: i for i, d in enumerate(dates)}
+    series = {}
+    for name, g in val.groupby("portfolio"):
+        if len(g) < 30:
+            continue
+        fc = [None] * len(dates)
+        rv = [None] * len(dates)
+        for _, r in g.iterrows():
+            i = date_pos[r["date"]]
+            fc[i] = _num(r["forecast_vol_ann"], 4)
+            rv[i] = _num(r.get("realized_vol_ann"), 4)
+        series[name] = {"fc": fc, "rv": rv, "group": g["group"].iloc[0]}
+    payload["series"] = {
+        "dates": [pd.Timestamp(d).strftime("%Y-%m-%d") for d in dates],
+        "portfolios": series,
     }
     if "realized_vol_ann" in val.columns:
         ok = val.dropna(subset=["realized_vol_ann", "forecast_vol_ann"])

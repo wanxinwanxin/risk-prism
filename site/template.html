@@ -414,20 +414,34 @@ a { color: var(--accent); }
     <div id="val-rv-scatter" style="max-width:560px"></div>
     <p class="sub" id="val-rv-note" style="margin-top:8px"></p>
   </div>
+  <div class="card" id="val-ts-card" hidden>
+    <h2>Forecast vs realized vol through time</h2>
+    <p class="sub">Pick any test portfolio — including real, traded factor ETFs scored via point-in-time returns-based exposures — and watch the forecast track (or lag) realized volatility.</p>
+    <div class="controls">
+      <select id="val-ts-pick" aria-label="Portfolio" style="font:13px var(--mono);color:var(--ink);background:var(--page);border:1px solid var(--border);border-radius:8px;padding:7px 10px"></select>
+    </div>
+    <div id="val-ts-chart"></div>
+  </div>
   <div class="card">
     <h2>Full results</h2>
     <div class="tscroll" id="val-table"></div>
+  </div>
+  <div class="card">
+    <h2>How the commercial models report this</h2>
+    <p class="sub" style="margin-bottom:8px">The bias statistic used here is the industry-standard metric: MSCI Barra's published <a href="https://www.msci.com/documents/10199/ed6e42a3-c1fa-4430-89ba-efd5a5b52558">USE4 model research</a> reports the same realized/forecast ratio, targeting ~1.0, with a documented ±2/√(2n) confidence band. Direct numerical comparison isn't apples-to-apples (different periods, universes, horizons), but the failure modes are tellingly shared: commercial research documents that <b>optimized and extreme-tilt portfolios are underforecast</b> (Shepard 2009 — compare our style spreads at 1.2–1.4) and that <b>models lag volatility regime shifts</b> (low-vol eigenfactors realized ~40% above forecast in pre-USE4 models — compare our Mincer–Zarnowitz slope of 0.7). USE4's answers — the Volatility Regime Adjustment and eigenfactor adjustment — are the natural v0.3 roadmap here, with one difference: our validation history is public and regenerated weekly, not a whitepaper snapshot.</p>
   </div>
 </section>
 
 <section class="view" id="view-methodology">
   <div class="card">
+    <h2>From 3,000 stocks to 20 factors — and back</h2>
+    <p class="sub">The whole idea of a factor model, in six scenes. Numbers marked ● are live from the current build.</p>
+    <figure class="anim" id="explainer"></figure>
+  </div>
+  <div class="card">
     <h2>How a portfolio becomes a spectrum</h2>
     <p class="sub">The full pipeline, run weekly. Numbers below are from the current build.</p>
     <div class="tscroll" id="pipeline-diagram"></div>
-    <figure class="anim" id="anim-prism">
-      <figcaption>The name, animated: a mega-cap portfolio's total variance enters as one beam; the model refracts it into its factor spectrum. Beam widths are this build's real variance shares.</figcaption>
-    </figure>
   </div>
   <div class="card">
     <h2>One week of the model</h2>
@@ -439,9 +453,6 @@ a { color: var(--accent); }
       <li>The regression's coefficients are that week's <b>factor returns</b>; what it can't explain (ε) becomes each stock's <b>specific return</b>.</li>
       <li id="meth-r2" class="sub"></li>
     </ul>
-    <figure class="anim" id="anim-regression">
-      <figcaption>One week, animated: stock returns scatter against momentum exposure; the weighted fit sweeps in; what the line can't explain — the residual sticks — becomes each stock's specific return.</figcaption>
-    </figure>
   </div>
   <div class="grid2">
     <div class="card">
@@ -1180,6 +1191,7 @@ renderStockTable();
     const pcolor = p => p.group === "market" ? "var(--s-market)"
       : p.group === "style" ? `var(--s-${p.name.replace("style_", "")})`
       : p.group === "industry" ? "var(--s-industry)"
+      : p.group === "etf" ? "var(--s-quality)"
       : p.group === "equal" ? "var(--accent)" : "var(--s-specific)";
     const plabel = p => p.name.replace("style_", "").replace("industry_", "");
 
@@ -1241,6 +1253,52 @@ renderStockTable();
       });
     }
 
+    // forecast-vs-realized vol time series with portfolio toggle
+    if (V.series && V.series.dates.length) {
+      document.getElementById("val-ts-card").hidden = false;
+      const pick = document.getElementById("val-ts-pick");
+      const names = Object.keys(V.series.portfolios)
+        .sort((a, b) => (V.series.portfolios[a].group > V.series.portfolios[b].group ? 1 : -1));
+      pick.innerHTML = names.map(nm =>
+        `<option value="${nm}"${nm === "market" ? " selected" : ""}>${V.series.portfolios[nm].group} · ${nm.replace("style_", "").replace("industry_", "")}</option>`).join("");
+      const drawTs = () => {
+        const S2 = V.series, nm = pick.value, P = S2.portfolios[nm];
+        const W = 960, H = 260, ml = 52, mr = 16, mt = 12, mb = 26;
+        const n = S2.dates.length;
+        const vals = [...P.fc, ...P.rv].filter(v => v != null);
+        const vmax = Math.max(...vals) * 1.1;
+        const xp = i => ml + i / (n - 1) * (W - ml - mr);
+        const yp = v => mt + (1 - v / vmax) * (H - mt - mb);
+        let s = `<svg id="ts-svg" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Forecast and realized volatility through time.">`;
+        [0.25, 0.5, 0.75, 1].map(f => f * vmax).forEach(v => {
+          s += `<line x1="${ml}" y1="${yp(v)}" x2="${W - mr}" y2="${yp(v)}" stroke="var(--grid)"/>`;
+          s += `<text class="mono" x="${ml - 8}" y="${yp(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${pct(v, 0)}</text>`;
+        });
+        const xstep = Math.max(1, Math.floor(n / 7));
+        for (let i = 0; i < n; i += xstep)
+          s += `<text class="mono" x="${xp(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${S2.dates[i].slice(0, 7)}</text>`;
+        const line = arr => arr.map((v, i) => v == null ? null : `${xp(i).toFixed(1)},${yp(v).toFixed(1)}`)
+          .filter(Boolean).join(" ");
+        s += `<polyline points="${line(P.rv)}" fill="none" stroke="var(--s-size)" stroke-width="1.4" opacity="0.75"/>`;
+        s += `<polyline points="${line(P.fc)}" fill="none" stroke="var(--s-market)" stroke-width="2.4"/>`;
+        s += `<text x="${ml + 6}" y="${mt + 12}" font-size="11.5" font-weight="600" style="fill:var(--s-market)">forecast vol</text>`;
+        s += `<text x="${ml + 96}" y="${mt + 12}" font-size="11.5" font-weight="600" style="fill:var(--s-size)">realized vol (weekly RV)</text>`;
+        s += `<rect x="${ml}" y="${mt}" width="${W - ml - mr}" height="${H - mt - mb}" fill="transparent" id="ts-hit"/>`;
+        s += `</svg>`;
+        const holder = document.getElementById("val-ts-chart");
+        holder.innerHTML = s;
+        const svg = document.getElementById("ts-svg");
+        document.getElementById("ts-hit").addEventListener("mousemove", ev => {
+          const rct = svg.getBoundingClientRect();
+          const i = Math.max(0, Math.min(n - 1, Math.round(((ev.clientX - rct.left) * (W / rct.width) - ml) / (W - ml - mr) * (n - 1))));
+          showTip(`<div class="t mono">${S2.dates[i]}</div>forecast <span class="mono">${P.fc[i] != null ? pct(P.fc[i]) : "—"}</span> · realized <span class="mono">${P.rv[i] != null ? pct(P.rv[i]) : "—"}</span>`, ev);
+        });
+        document.getElementById("ts-hit").addEventListener("mouseleave", hideTip);
+      };
+      pick.addEventListener("change", drawTs);
+      drawTs();
+    }
+
     let vt = `<table><thead><tr><th>Portfolio</th><th>Group</th><th class="num">Weeks</th><th class="num">Bias stat</th><th class="num">|z|&gt;1.96</th><th class="num">Forecast vol</th><th class="num">Realized vol</th><th class="num">Vol ratio</th></tr></thead><tbody>`;
     V.portfolios.forEach(p => {
       vt += `<tr><td><span class="dot-i" style="background:${pcolor(p)}"></span>${plabel(p)}</td><td>${p.group}</td>
@@ -1268,7 +1326,7 @@ renderStockTable();
         s += `<text class="mono" x="${mlv - 6}" y="${yp(v) + 3}" text-anchor="end" font-size="10" fill="var(--muted)">${pct(v, 0)}</text>`;
       });
       s += `<line x1="${xp(0)}" y1="${yp(0)}" x2="${xp(vmax)}" y2="${yp(vmax)}" stroke="var(--ink-2)" stroke-width="1.4" stroke-dasharray="5 4"/>`;
-      const gcolor = { market: "var(--s-market)", style: "var(--s-momentum)", industry: "var(--s-industry)", equal: "var(--accent)", random: "var(--s-specific)" };
+      const gcolor = { market: "var(--s-market)", style: "var(--s-momentum)", industry: "var(--s-industry)", equal: "var(--accent)", random: "var(--s-specific)", etf: "var(--s-quality)" };
       V.rv.scatter.forEach(p => {
         if (p[0] > vmax || p[1] > vmax) return;
         s += `<circle cx="${xp(p[0]).toFixed(1)}" cy="${yp(p[1]).toFixed(1)}" r="2.6" style="fill:${gcolor[p[2]] || "var(--s-market)"}" opacity="0.55"/>`;
@@ -1415,6 +1473,271 @@ renderStockTable();
     size();
     render(loop * 0.8); // showcase frame until played (also the reduced-motion state)
   }
+
+  // --- the explainer: six scenes, stocks → factors → risk ------------------
+  (() => {
+    const fig = document.getElementById("explainer");
+    if (!fig) return;
+    const SW = DATA.sample_week || { date: "", f: { market: 0.012, momentum: -0.004 } };
+    const fMom = SW.f.momentum, fMkt = SW.f.market;
+    const fVis = (fMom < 0 ? -1 : 1) * Math.max(Math.abs(fMom), 0.009); // visible slope, real value labeled
+    const volMom = DATA.factor_vol.momentum || 0.09;
+    const hero = "AAPL" in TIDX ? "AAPL" : T[0];
+    const hx = X[TIDX[hero]];
+    const heroParts = (() => {
+      const parts = [{ name: "market", load: 1.0, pay: fMkt, color: "--s-market" }];
+      const styled = STYLES.map(f2 => ({
+        name: f2, load: hx[FACTORS.indexOf(f2)], pay: SW.f[f2] || 0, color: `--s-${f2}`,
+      })).sort((a, b) => Math.abs(b.load * b.pay) - Math.abs(a.load * a.pay)).slice(0, 3);
+      return [...parts, ...styled, { name: "ε (own news)", load: null, pay: 0.006, color: "--s-specific" }];
+    })();
+    const rngA = mulberry(11);
+    const N3 = 56;
+    const stocks = Array.from({ length: N3 }, () => {
+      const b = Math.max(-2.4, Math.min(2.4, gauss(rngA)));
+      const e = gauss(rngA) * 0.016;
+      return { b, e, r: fMkt + b * fVis + e };
+    });
+    const sortedIdx = stocks.map((s, i) => i).sort((a, b) => stocks[a].b - stocks[b].b);
+    const rankOf = []; sortedIdx.forEach((orig, rank) => { rankOf[orig] = rank; });
+    const rngH = mulberry(31);
+    const payoffs = Array.from({ length: 130 }, () => gauss(rngH) * volMom / Math.sqrt(52));
+    const spec = (() => {  // real variance shares for the final spectrum
+      const w = {}; ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"].forEach(t2 => { if (t2 in TIDX) w[t2] = 0.2; });
+      const r = computeRisk(Object.keys(w).length >= 3 ? w : { [T[0]]: 1 }, EMBEDDED);
+      const cls = [["market", r.contrib[r.factors.indexOf(MKT)], "--s-market"]];
+      let sty = 0, ind = 0;
+      r.factors.forEach((f2, k) => {
+        if (STYLES.includes(f2)) sty += r.contrib[k];
+        else if (f2.startsWith("ind_")) ind += r.contrib[k];
+      });
+      cls.push(["styles", sty, "--s-momentum"], ["industries", ind, "--s-industry"], ["specific", r.svar, "--s-specific"]);
+      const pos = cls.filter(c => c[1] > 0), tot = pos.reduce((a, c) => a + c[1], 0);
+      return pos.map(c => ({ name: c[0], share: c[1] / tot, color: c[2] }));
+    })();
+
+    const P = { mlx: 56, mrx: 20, mty: 20, mby: 32 };
+    const lerp = (a, b, u2) => a + (b - a) * u2;
+    function barGeom(W, i, pos) {
+      const bw = (W - P.mlx - P.mrx) / N3;
+      return { x: P.mlx + pos * bw + 1, w: Math.max(2, bw - 2) };
+    }
+    function drawBars(ctx, W, H, u, sortU, colorU) {
+      const mid = (P.mty + H - P.mby) / 2, scale = (H - P.mty - P.mby) / 0.14;
+      ctx.strokeStyle = css("--grid"); ctx.beginPath();
+      ctx.moveTo(P.mlx, mid); ctx.lineTo(W - P.mrx, mid); ctx.stroke();
+      const nShow = Math.max(1, Math.floor(u * N3));
+      for (let i = 0; i < nShow; i++) {
+        const s = stocks[i];
+        const pos = lerp(i, rankOf[i], ease(sortU));
+        const g = barGeom(W, i, pos);
+        const h = s.r * scale;
+        const heat = Math.min(1, Math.abs(s.b) / 2.2);
+        ctx.fillStyle = colorU > 0 ? css("--s-momentum") : css("--muted");
+        ctx.globalAlpha = colorU > 0 ? 0.25 + 0.65 * heat * colorU : 0.55;
+        ctx.fillRect(g.x, h >= 0 ? mid - h : mid, g.w, Math.abs(h));
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    const scenes = [
+      { dur: 6, cap: `<b>1 · The puzzle.</b> One week in the market — here are ${N3} stocks' returns in ticker order (week of <b>${esc(SW.date)}</b> ●, scaled). Three thousand numbers print every week. Is it all just noise?`,
+        draw(ctx, W, H, u) { drawBars(ctx, W, H, u, 0, 0); } },
+      { dur: 7, cap: `<b>2 · Sort by a trait.</b> Same bars, same week — re-ordered by <i>one characteristic</i>: momentum (how much each stock won over the past year). The noise develops a tilt. Stocks don't move as 3,000 individuals; they move as carriers of shared traits.`,
+        draw(ctx, W, H, u) { drawBars(ctx, W, H, 1, Math.min(1, u * 1.6), Math.min(1, u * 1.6)); } },
+      { dur: 8, cap: `<b>3 · The price of a trait.</b> Plot return against the trait; fit a √cap-weighted line. <b>The slope IS the factor return</b> — what one unit of momentum paid this week (● actual: <span style="font-family:var(--mono)">${(fMom * 100).toFixed(2)}%/σ</span>; drawn exaggerated). The scatter around the line — ε — belongs to each company alone. riskprism solves 20 slopes jointly, every Friday.`,
+        draw(ctx, W, H, u) {
+          const morph = ease(Math.min(1, u * 2.6));
+          const mid = (P.mty + H - P.mby) / 2, scale = (H - P.mty - P.mby) / 0.14;
+          const xs = v => P.mlx + (v + 2.6) / 5.2 * (W - P.mlx - P.mrx);
+          ctx.strokeStyle = css("--grid");
+          ctx.globalAlpha = morph;
+          ctx.beginPath(); ctx.moveTo(P.mlx, mid); ctx.lineTo(W - P.mrx, mid); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(xs(0), P.mty); ctx.lineTo(xs(0), H - P.mby); ctx.stroke();
+          ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans"); ctx.textAlign = "center";
+          ctx.fillText("momentum exposure (σ) →", (P.mlx + W - P.mrx) / 2, H - 10);
+          ctx.globalAlpha = 1;
+          stocks.forEach((s, i) => {
+            const g = barGeom(W, i, rankOf[i]);
+            const bx = g.x + g.w / 2, by = s.r >= 0 ? mid - s.r * scale : mid;
+            const tx = xs(s.b), ty = mid - s.r * scale;
+            ctx.fillStyle = css("--s-market"); ctx.globalAlpha = 0.7;
+            ctx.beginPath(); ctx.arc(lerp(bx, tx, morph), lerp(by, ty, morph), lerp(2, 3.4, morph), 0, 7); ctx.fill();
+          });
+          ctx.globalAlpha = 1;
+          const su = ease((u - 0.45) / 0.35);
+          if (su > 0) {
+            const sl = fVis * su, ic = fMkt * su;
+            ctx.strokeStyle = css("--s-momentum"); ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.moveTo(xs(-2.5), mid - (ic - 2.5 * sl) * scale);
+            ctx.lineTo(xs(2.5), mid - (ic + 2.5 * sl) * scale); ctx.stroke(); ctx.lineWidth = 1;
+          }
+          if (u > 0.85) {
+            ctx.fillStyle = css("--ink"); ctx.font = "600 13px " + css("--mono"); ctx.textAlign = "left";
+            ctx.fillText(`slope = momentum factor return`, P.mlx + 8, P.mty + 14);
+          }
+        } },
+      { dur: 8, cap: `<b>4 · One stock, rebuilt.</b> Run it backwards for <b>${esc(hero)}</b> ●: each <i>loading</i> says how many units of a trait it carries; multiply by this week's factor payoffs and add the piece that is purely ${esc(hero)} news. Loadings are the stock's risk DNA — measured from its balance sheet and its trading history.`,
+        draw(ctx, W, H, u) {
+          const total = heroParts.reduce((a, p2) => a + (p2.load === null ? p2.pay : p2.load * p2.pay), 0);
+          const scale = (H - P.mty - P.mby) / 0.05;
+          const bx = P.mlx + 30, bw2 = 56, mid = H - P.mby;
+          const grow = ease(Math.min(1, u * 3));
+          let acc = 0;
+          const rows = heroParts.map((p2, i) => {
+            const v = p2.load === null ? p2.pay : p2.load * p2.pay;
+            const seg = { v, y0: acc }; acc += Math.abs(v); return seg;
+          });
+          const peel = ease((u - 0.3) / 0.55);
+          ctx.font = "12px " + css("--mono"); ctx.textAlign = "left";
+          heroParts.forEach((p2, i) => {
+            const seg = rows[i];
+            const segH = Math.abs(seg.v) * scale * grow;
+            const stackY = mid - (seg.y0 * scale * grow) - segH;
+            const rowY = P.mty + 14 + i * ((H - P.mty - P.mby - 14) / heroParts.length);
+            const y = lerp(stackY, rowY, peel);
+            const x = lerp(bx, P.mlx + 150, peel);
+            const w2 = lerp(bw2, Math.max(6, Math.abs(seg.v) * scale * 2.2), peel);
+            ctx.fillStyle = css(p2.color);
+            ctx.fillRect(x, y, w2, lerp(segH, 14, peel));
+            if (peel > 0.55) {
+              ctx.globalAlpha = (peel - 0.55) / 0.45;
+              ctx.fillStyle = css("--ink");
+              const lbl = p2.load === null
+                ? `${p2.name}  =  ${(p2.pay * 100).toFixed(2)}%`
+                : `${p2.name}  ${p2.load.toFixed(2)} × ${(p2.pay * 100).toFixed(2)}%  =  ${(p2.load * p2.pay * 100).toFixed(2)}%`;
+              ctx.fillText(lbl, x + w2 + 10, y + 12);
+              ctx.globalAlpha = 1;
+            }
+          });
+          ctx.fillStyle = css("--ink-2"); ctx.font = "600 12px " + css("--sans");
+          ctx.fillText(`${hero}'s week ≈ ${(total * 100).toFixed(2)}%`, bx - 20, mid + 18);
+        } },
+      { dur: 8, cap: `<b>5 · Portfolios: ε dies, β doesn't.</b> Sum many stocks: the private leftovers arrive with random signs and cancel each other out. But everyone's <i>market</i> segment points the same way — those stack. Diversification erases specific risk; it can never erase factor risk. That's why factors are what portfolio risk is made of.`,
+        draw(ctx, W, H, u) {
+          const n4 = 22, rngB = mulberry(77);
+          const cols = Array.from({ length: n4 }, () => ({ f: 0.014, e: gauss(rngB) * 0.014 }));
+          const scale = (H - P.mty - P.mby) / 0.09, mid = H - P.mby - 40;
+          const bw3 = (W * 0.58 - P.mlx) / n4;
+          const gather = ease((u - 0.35) / 0.5);
+          let eAcc = 0, fAcc = 0;
+          cols.forEach((c, i) => {
+            const x0 = P.mlx + i * bw3;
+            const fx = lerp(x0, W * 0.66, gather), fy = lerp(mid - c.f * scale, mid - (fAcc + c.f) * scale, gather);
+            ctx.fillStyle = css("--s-market"); ctx.globalAlpha = 0.85;
+            ctx.fillRect(fx, fy, Math.max(3, bw3 - 3), c.f * scale);
+            fAcc += gather > 0.02 ? c.f : 0;
+            const eH = Math.abs(c.e) * scale;
+            const targetY = mid - 90 - (eAcc - (c.e < 0 ? Math.abs(c.e) : 0)) * scale * 0.2;
+            const ex = lerp(x0, W * 0.85, gather);
+            const ey = lerp(c.e >= 0 ? mid - c.f * scale - eH : mid, mid - 110, gather);
+            ctx.fillStyle = css("--s-specific"); ctx.globalAlpha = lerp(0.9, Math.max(0.15, 0.9 - gather), gather);
+            ctx.fillRect(ex, ey, Math.max(3, bw3 - 3), eH * lerp(1, 0.25, gather));
+            eAcc += c.e;
+          });
+          ctx.globalAlpha = 1;
+          if (gather > 0.6) {
+            ctx.fillStyle = css("--ink"); ctx.font = "600 12px " + css("--sans"); ctx.textAlign = "center";
+            ctx.fillText("Σ market parts: stack", W * 0.68, mid + 18);
+            ctx.fillStyle = css("--muted");
+            ctx.fillText("Σ ε ≈ 0", W * 0.86, mid - 118);
+          }
+        } },
+      { dur: 9, cap: `<b>6 · Weeks become risk.</b> Repeat scene 3 for 150 Fridays and each factor's payoffs pile into a distribution — its volatility (momentum: ● <span style="font-family:var(--mono)">${pct(volMom)}</span>/yr) and its correlations with every other factor: the matrix F. Your exposures pass through it — Σ = XFXᵀ + diag(s²) — and total risk splits into the spectrum. That's the prism.`,
+        draw(ctx, W, H, u) {
+          const k = Math.max(3, Math.floor(ease(Math.min(1, u * 1.4)) * payoffs.length));
+          const bins = new Array(21).fill(0);
+          const bmax = volMom / Math.sqrt(52) * 3;
+          for (let i = 0; i < k; i++) {
+            const bi = Math.floor((payoffs[i] + bmax) / (2 * bmax) * 21);
+            if (bi >= 0 && bi < 21) bins[bi]++;
+          }
+          const hmax = Math.max(...bins, 1);
+          const hw = W * 0.5, bw4 = hw / 21, base = H - P.mby;
+          bins.forEach((c, i) => {
+            ctx.fillStyle = css("--s-momentum"); ctx.globalAlpha = 0.8;
+            const h = c / hmax * (H - P.mty - P.mby - 20);
+            ctx.fillRect(P.mlx + i * bw4 + 1, base - h, bw4 - 2, h);
+          });
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans"); ctx.textAlign = "center";
+          ctx.fillText(`momentum's weekly payoffs (${Math.min(k, payoffs.length)} weeks)`, P.mlx + hw / 2, base + 16);
+          const su = ease((u - 0.55) / 0.35);
+          if (su > 0) {
+            const sx = W * 0.62, sw = (W - P.mrx - sx) * su, mid2 = (P.mty + base) / 2;
+            let acc2 = 0;
+            spec.forEach(c => {
+              const h2 = Math.max(6, c.share * (H - P.mty - P.mby) * 0.8);
+              const y = P.mty + acc2 * (H - P.mty - P.mby) * 0.8;
+              ctx.fillStyle = css(c.color);
+              ctx.fillRect(sx, y, sw, h2 - 3);
+              if (su > 0.7 && c.share > 0.05) {
+                ctx.fillStyle = css("--ink"); ctx.font = "600 11px " + css("--mono"); ctx.textAlign = "left";
+                ctx.fillText(`${c.name} ${Math.round(c.share * 100)}%`, sx + 6, y + h2 / 2 + 1);
+              }
+              acc2 += c.share;
+            });
+            ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans"); ctx.textAlign = "center";
+            ctx.fillText("a real portfolio's variance, split ●", sx + sw / 2, base + 16);
+          }
+        } },
+    ];
+
+    // --- player ---
+    const canvas = document.createElement("canvas");
+    const capEl = document.createElement("figcaption");
+    capEl.style.cssText = "font-size:13px;line-height:1.55;color:var(--ink-2);margin-top:10px;min-height:60px";
+    const ctrl = document.createElement("div");
+    ctrl.style.cssText = "display:flex;gap:8px;align-items:center;margin-top:4px";
+    fig.append(canvas, capEl, ctrl);
+    const mkBtn = (txt) => { const b = document.createElement("button"); b.className = "preset"; b.textContent = txt; ctrl.appendChild(b); return b; };
+    const prevB = mkBtn("‹"), playB = mkBtn("▶ Play"), nextB = mkBtn("›");
+    const dots = scenes.map((_, i) => {
+      const d = document.createElement("button");
+      d.setAttribute("aria-label", `Scene ${i + 1}`);
+      d.style.cssText = "width:10px;height:10px;border-radius:99px;border:1px solid var(--border);background:var(--grid);cursor:pointer;padding:0";
+      d.addEventListener("click", () => go(i, false));
+      ctrl.appendChild(d); return d;
+    });
+    const ctx = canvas.getContext("2d");
+    let si = 0, playing = false, sceneStart = 0, raf = null, W = 0, H = 0;
+    function size() {
+      const dpr = devicePixelRatio || 1;
+      W = fig.clientWidth; H = Math.round(W * 0.42);
+      canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    function render(u) {
+      ctx.clearRect(0, 0, W, H);
+      scenes[si].draw(ctx, W, H, u);
+      capEl.innerHTML = scenes[si].cap;
+      dots.forEach((d, i) => { d.style.background = i === si ? css("--accent") : css("--grid"); });
+    }
+    function frame(now) {
+      if (!sceneStart) sceneStart = now;
+      const u = (now - sceneStart) / 1000 / scenes[si].dur;
+      if (u >= 1) { si = (si + 1) % scenes.length; sceneStart = now; }
+      render(Math.min(1, Math.max(0.001, u)));
+      if (playing) raf = requestAnimationFrame(frame);
+    }
+    function go(i, keepPlaying) {
+      si = (i + scenes.length) % scenes.length; sceneStart = 0;
+      if (!keepPlaying && playing) toggle();
+      if (!playing) render(reduced ? 1 : 0.92);
+    }
+    function toggle() {
+      playing = !playing;
+      playB.textContent = playing ? "❚❚ Pause" : "▶ Play";
+      if (playing) { sceneStart = 0; raf = requestAnimationFrame(frame); }
+      else if (raf) cancelAnimationFrame(raf);
+    }
+    playB.addEventListener("click", toggle);
+    prevB.addEventListener("click", () => go(si - 1, false));
+    nextB.addEventListener("click", () => go(si + 1, false));
+    addEventListener("resize", () => { size(); if (!playing) render(reduced ? 1 : 0.92); });
+    size();
+    render(reduced ? 1 : 0.92);
+  })();
 
   // --- 1. one week of the regression -------------------------------------
   {
