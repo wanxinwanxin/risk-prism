@@ -815,7 +815,7 @@ function renderPortfolio() {
   heroEl.innerHTML = `
     <div class="hero-vol">
       <span class="num">${pct(r.tvol)}</span>
-      <span class="split">factor ${pct(Math.sqrt(r.fvar))} · specific ${pct(Math.sqrt(r.svar))} · annualized</span>
+      <span class="split">= √(factor ${pct(Math.sqrt(r.fvar))}² + specific ${pct(Math.sqrt(r.svar))}²) · annualized</span>
     </div>
     <p class="hint">Gross weight ${pct(r.gross, 0)} · net ${pct(Object.values(w).reduce((a, b) => a + b, 0), 0)} · ${Object.keys(w).length - r.uncovered.length} positions priced</p>`;
 
@@ -938,7 +938,7 @@ function renderStock(t) {
     <div class="hero-vol">
       <span class="num mono" style="font-size:34px">${esc(t)}</span>
       <span class="num">${pct(tvol)}</span>
-      <span class="split">factor ${pct(Math.sqrt(fvar))} · specific ${pct(SPEC[i])} · ${esc(DATA.assets.industry[i])}</span>
+      <span class="split">= √(factor ${pct(Math.sqrt(fvar))}² + specific ${pct(SPEC[i])}²) · ${esc(DATA.assets.industry[i])}</span>
       ${quality}
     </div>
     <div id="stock-expo"></div>
