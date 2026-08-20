@@ -59,7 +59,7 @@ def build_model(
             print(f"[riskprism] {msg}")
 
     # ---- prior build (capture-forward) --------------------------------
-    prior_fr = prior_res = prior_val = None
+    prior_fr = prior_res = prior_val = prior_eh = None
     prior_fund: dict[str, Fundamentals] = {}
     prior_industry: dict[str, str] = {}
     if prior_artifacts:
@@ -77,6 +77,7 @@ def build_model(
         else:
             prior_fr, prior_res = prior["factor_returns"], prior["residuals"]
             prior_val = prior.get("validation")
+            prior_eh = prior.get("exposure_history")
             log(f"prior build loaded: {len(prior_fr)} weeks through {prior_fr.index[-1].date()}")
 
     # ---- universe ------------------------------------------------------
@@ -163,6 +164,7 @@ def build_model(
     factor_return_rows: dict[pd.Timestamp, pd.Series] = {}
     residual_rows: dict[pd.Timestamp, pd.Series] = {}
     validation_rows: list[dict] = []
+    exposure_history_rows: list[pd.DataFrame] = []
     r2s = []
     for wk, (t, t_next) in enumerate(zip(rebal_dates[:-1], rebal_dates[1:])):
         exposures, mktcap = compute_style_exposures(
@@ -191,6 +193,12 @@ def build_model(
         )
         validation_rows.extend(score_portfolios(
             risk_state, x_full, industries, mktcap, y, t_next, wk))
+        # persist formation-date exposures so historical models are
+        # reconstructible from the artifacts (see model/asof.py)
+        eh = exposures.astype("float32").round(4)
+        eh.insert(0, "date", t)
+        eh.insert(1, "mktcap", mktcap.reindex(exposures.index).astype("float32"))
+        exposure_history_rows.append(eh.reset_index(names="ticker"))
         risk_state.update(res.factor_returns, res.residuals)
         factor_return_rows[t_next] = res.factor_returns
         residual_rows[t_next] = res.residuals
@@ -202,6 +210,9 @@ def build_model(
     residuals = merge_history(prior_res, new_res, config.history_cap_weeks)
     validation = merge_validation(prior_val, pd.DataFrame(validation_rows),
                                   config.history_cap_weeks)
+    new_eh = (pd.concat(exposure_history_rows, ignore_index=True)
+              if exposure_history_rows else pd.DataFrame())
+    exposure_history = merge_validation(prior_eh, new_eh, config.history_cap_weeks)
     if len(factor_returns) < config.vol_half_life:
         raise ValueError(
             f"Only {len(factor_returns)} usable regression periods; "
@@ -256,7 +267,7 @@ def build_model(
         artifacts_dir, X_final, F, spec.vol.reindex(X_final.index), factor_returns, meta,
         residuals=residuals, asset_meta=asset_meta,
         fundamentals_store=store_to_frame(fundamentals),
-        validation=validation,
+        validation=validation, exposure_history=exposure_history,
     )
     log(f"artifacts written to {path} ({meta['n_assets']} covered, "
         f"{meta['n_estimation']} estimation, as of {meta['as_of']})")
