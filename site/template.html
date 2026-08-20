@@ -260,6 +260,45 @@ a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .spectrum .slice { transition: flex-basis .25s ease; }
 }
+/* ---------- homepage hero ---------- */
+.hero { display: flex; gap: 30px; align-items: center; padding: 26px 26px 24px; }
+.hero-copy { flex: 1 1 auto; min-width: 0; }
+.hero h1 { font-size: 27px; line-height: 1.22; letter-spacing: -0.015em; margin: 0 0 10px; text-wrap: balance; }
+.hero .lede { font-size: 14.5px; line-height: 1.65; color: var(--ink-2); margin: 0 0 16px; max-width: 68ch; }
+.hero .lede b { color: var(--ink); }
+.hero-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.cta { font: 600 13px var(--sans); border-radius: 8px; padding: 10px 15px; cursor: pointer; border: 1px solid transparent; }
+.cta.solid { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cta.solid:hover { filter: brightness(1.08); }
+.cta.ghost { background: var(--page); border-color: var(--border); color: var(--ink); }
+.cta.ghost:hover { border-color: var(--ink-2); }
+.hero-prism { flex: 0 0 auto; }
+@media (max-width: 760px) { .hero-prism { display: none; } .hero h1 { font-size: 22px; } }
+/* ---------- guided tour ---------- */
+#tour-veil { position: fixed; inset: 0; z-index: 40; }
+#tour-hole {
+  position: fixed; border-radius: 12px; pointer-events: none;
+  box-shadow: 0 0 0 200vmax rgba(5,5,5,.55);
+  transition: top .45s cubic-bezier(.3,.7,.3,1), left .45s cubic-bezier(.3,.7,.3,1),
+              width .45s cubic-bezier(.3,.7,.3,1), height .45s cubic-bezier(.3,.7,.3,1);
+}
+#tour-card {
+  position: fixed; z-index: 41; width: min(400px, calc(100vw - 32px));
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 15px 16px 12px; box-shadow: 0 16px 48px rgba(0,0,0,.3); overflow: hidden;
+  transition: top .45s cubic-bezier(.3,.7,.3,1), left .45s cubic-bezier(.3,.7,.3,1);
+}
+#tour-hole.no-anim, #tour-card.no-anim { transition: none; }
+#tour-bar { position: absolute; display: block; top: 0; left: 0; height: 3px; width: 0; background: var(--accent); }
+#tour-card .t-step { font: 600 10px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+#tour-card h3 { font-size: 15px; margin: 5px 0 4px; letter-spacing: -0.01em; }
+#tour-card p { font-size: 13px; line-height: 1.55; color: var(--ink-2); margin: 0 0 12px; }
+#tour-card .t-nav { display: flex; align-items: center; gap: 8px; }
+#tour-card .t-spacer { flex: 1; }
+.preset:disabled { opacity: .4; cursor: default; }
+.t-skip { font: 500 12px var(--sans); color: var(--muted); background: none; border: none; cursor: pointer; padding: 6px 4px; }
+.t-skip:hover { color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { #tour-hole, #tour-card { transition: none; } }
 </style>
 </head>
 <body>
@@ -291,6 +330,26 @@ a { color: var(--accent); }
 <main><div class="wrap">
 
 <section class="view active" id="view-overview">
+  <div class="card hero" id="home-hero">
+    <div class="hero-copy">
+      <h1>An open risk model for US equities</h1>
+      <p class="lede">riskprism answers one question about any stock portfolio: <b>how much should it move, and why?</b> It's a Barra-style factor risk model — the kind of tool quant funds license commercially — built fully in the open: <b><span id="hero-n">…</span> US stocks</b>, <b><span id="hero-k">…</span> factors</b>, re-estimated every week from public prices and SEC filings, with every forecast <a href="#validation">graded publicly</a> against what actually happened. Explore it here, or point an AI agent at <a href="model.md">model.md</a> — the whole model is <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">free to download</a>.</p>
+      <div class="hero-actions">
+        <button class="cta solid" id="tour-start">Take the one-minute tour</button>
+        <button class="cta ghost" id="hero-try">Try a portfolio</button>
+        <span class="hint" id="hero-asof"></span>
+      </div>
+    </div>
+    <svg class="hero-prism" width="150" height="120" viewBox="0 0 150 120" aria-hidden="true">
+      <line x1="0" y1="60" x2="56" y2="60" stroke="var(--ink-2)" stroke-width="2"/>
+      <path d="M75 14 L110 106 L40 106 Z" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linejoin="round"/>
+      <line x1="93" y1="62" x2="148" y2="18" stroke="var(--s-market)" stroke-width="2.4"/>
+      <line x1="96" y1="68" x2="148" y2="46" stroke="var(--s-size)" stroke-width="2.4"/>
+      <line x1="98" y1="74" x2="148" y2="66" stroke="var(--s-value)" stroke-width="2.4"/>
+      <line x1="100" y1="80" x2="148" y2="88" stroke="var(--s-momentum)" stroke-width="2.4"/>
+      <line x1="102" y1="86" x2="148" y2="108" stroke="var(--s-volatility)" stroke-width="2.4"/>
+    </svg>
+  </div>
   <div class="tiles" id="tiles"></div>
   <div class="card">
     <h2>Cumulative factor returns</h2>
@@ -531,6 +590,22 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
 </div></footer>
 
 <div id="tooltip" role="tooltip"></div>
+
+<div id="tour-veil" hidden>
+  <div id="tour-hole"></div>
+  <div id="tour-card" role="dialog" aria-modal="true" aria-label="Site tour">
+    <i id="tour-bar"></i>
+    <div class="t-step" id="tour-step"></div>
+    <h3 id="tour-title"></h3>
+    <p id="tour-body"></p>
+    <div class="t-nav">
+      <button class="preset" id="tour-back">← Back</button>
+      <button class="preset" id="tour-next">Next →</button>
+      <span class="t-spacer"></span>
+      <button class="t-skip" id="tour-skip">Skip tour ✕</button>
+    </div>
+  </div>
+</div>
 
 <script>
 const DATA = __RISKPRISM_DATA__;
@@ -1902,6 +1977,169 @@ document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", asyn
   const old = b.textContent; b.textContent = "Copied";
   setTimeout(() => { b.textContent = old; }, 1200);
 }));
+
+// ---------- homepage hero + guided tour ----------
+document.getElementById("hero-n").textContent = m.n_assets.toLocaleString();
+document.getElementById("hero-k").textContent = K;
+document.getElementById("hero-asof").textContent = `rebuilt weekly · as of ${m.as_of}`;
+document.getElementById("hero-try").addEventListener("click", () => {
+  setView("portfolio");
+  if (!pfInput.value.trim()) { pfInput.value = PRESETS["Mega-cap tech"]; renderPortfolio(); }
+  pfInput.focus();
+});
+
+(function () {
+  const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const STEP_MS = 8000;
+  const DEMO = PRESETS["Mega-cap tech"];
+  const etfs = ((DATA.validation || {}).portfolios || []).filter(p => p.group === "etf");
+  const etfNote = etfs.length
+    ? ` On ${etfs.length} real traded factor ETFs the bias statistic runs ${Math.min(...etfs.map(p => p.bias)).toFixed(2)}–${Math.max(...etfs.map(p => p.bias)).toFixed(2)} (1.00 is perfect).`
+    : "";
+  const TOUR = [
+    { view: "overview", sel: "#home-hero", title: "What this is",
+      body: `A factor risk model — the tool quant funds pay for — free and open. ${m.n_assets.toLocaleString()} US stocks, rebuilt every Monday from public data. Everything you'll see is computed live in your browser.` },
+    { view: "overview", sel: "#freturns-chart", title: `${K} factors explain the market`,
+      body: "Stocks move together: one market tide, seven style currents (momentum, value, size…), and industry groups. These are their live cumulative returns over the model's history." },
+    { view: "portfolio", sel: "#pf-input", title: "Paste any portfolio…", demo: true,
+      body: "One ticker and weight per line — shorts welcome. Watch: the tour is typing a demo for you." },
+    { view: "portfolio", sel: "#pf-spectrum-card", title: "…and see its risk split like light",
+      body: "Total volatility, decomposed into market, style bets, industries, and stock-specific noise. Below: stress tests, a time-machine toggle for any historical model, and a forecast-vs-realized backtest." },
+    { view: "stocks", sel: "#stock-card", title: "Every stock has a fingerprint",
+      body: "Look up any ticker for its factor exposures and volatility forecast — and how much of that number is measured history versus structural prior." },
+    { view: "validation", sel: "#val-bias-chart", title: "The forecasts are graded in public",
+      body: `Every weekly forecast is scored against what actually happened — no cherry-picking, this page regenerates with every build.${etfNote}` },
+    { view: "methodology", sel: "#explainer", title: "New to factor models?",
+      body: "Six animated scenes build the whole idea from scratch — thousands of stocks down to a handful of factors and back — using live numbers from the current build." },
+    { view: "agents", sel: "#view-agents .card", title: "Built for AI agents too",
+      body: "The whole model mirrors as plain markdown at /model.md, ships an MCP server, and every weekly build is a free download. That's the tour — poke anything." },
+  ];
+  const veil = document.getElementById("tour-veil"),
+        hole = document.getElementById("tour-hole"),
+        card = document.getElementById("tour-card"),
+        bar = document.getElementById("tour-bar");
+  let idx = -1, timer = null, typer = null, active = false, squelch = false, auto = true;
+
+  function target(step) {
+    let el = document.querySelector(step.sel);
+    if (el && !(el.offsetWidth || el.offsetHeight)) el = null; // hidden: fall back
+    el = el && (el.closest(".card") || el);
+    return el || document.querySelector("#view-" + step.view + " .card");
+  }
+  function place(animate) {
+    if (!active) return;
+    const r = target(TOUR[idx]).getBoundingClientRect(), pad = 8;
+    if (!animate) { hole.classList.add("no-anim"); card.classList.add("no-anim"); }
+    hole.style.top = (r.top - pad) + "px";
+    hole.style.left = (r.left - pad) + "px";
+    hole.style.width = (r.width + 2 * pad) + "px";
+    hole.style.height = (r.height + 2 * pad) + "px";
+    const w = card.offsetWidth, h = card.offsetHeight;
+    let top = r.bottom + pad + 12;
+    if (top + h > innerHeight - 12) top = r.top - pad - 12 - h;
+    if (top < 12) top = innerHeight - h - 16;
+    card.style.top = top + "px";
+    card.style.left = Math.max(12, Math.min(r.left, innerWidth - w - 12)) + "px";
+    if (!animate) requestAnimationFrame(() => { hole.classList.remove("no-anim"); card.classList.remove("no-anim"); });
+  }
+  function arm() {
+    clearTimeout(timer);
+    bar.style.transition = "none"; bar.style.width = "0";
+    if (REDUCED || !auto) return;
+    void bar.offsetWidth;
+    bar.style.transition = `width ${STEP_MS}ms linear`;
+    bar.style.width = "100%";
+    timer = setTimeout(() => show(idx + 1), STEP_MS);
+  }
+  function takeControl() { // first manual navigation ends autoplay for the rest of the tour
+    auto = false;
+    clearTimeout(timer);
+    bar.style.transition = "none"; bar.style.width = "0";
+  }
+  function typeDemo() {
+    if (REDUCED) { pfInput.value = DEMO; renderPortfolio(); return; }
+    clearInterval(typer);
+    let n = 0; pfInput.value = "";
+    typer = setInterval(() => {
+      pfInput.value = DEMO.slice(0, ++n);
+      if (n >= DEMO.length) { clearInterval(typer); renderPortfolio(); }
+    }, 28);
+  }
+  function show(i) {
+    if (i >= TOUR.length) return end();
+    idx = Math.max(0, i);
+    const s = TOUR[idx];
+    squelch = true;
+    setView(s.view);
+    if (s.demo && !pfInput.value.trim()) typeDemo();
+    // the spectrum step needs a rendered portfolio even if the typing was cut short
+    if (s.sel === "#pf-spectrum-card" && document.getElementById("pf-spectrum-card").hidden) {
+      clearInterval(typer);
+      const v = pfInput.value;
+      if (!v.trim() || DEMO.startsWith(v)) pfInput.value = DEMO; // complete the demo, don't truncate it
+      renderPortfolio();
+    }
+    document.getElementById("tour-step").textContent = `${idx + 1} / ${TOUR.length}`;
+    document.getElementById("tour-title").textContent = s.title;
+    document.getElementById("tour-body").textContent = s.body;
+    document.getElementById("tour-back").disabled = idx === 0;
+    document.getElementById("tour-next").textContent = idx === TOUR.length - 1 ? "Done ✓" : "Next →";
+    requestAnimationFrame(() => {                // wait for the view to lay out
+      target(s).scrollIntoView({ block: "center", behavior: "auto" });
+      requestAnimationFrame(() => { place(true); squelch = false; });
+      arm();
+    });
+  }
+  function start() {
+    if (active) return;
+    active = true; auto = true;
+    veil.hidden = false;
+    addEventListener("keydown", onKey);
+    show(0);
+    document.getElementById("tour-next").focus();
+  }
+  function end() {
+    active = false;
+    veil.hidden = true;
+    clearTimeout(timer); clearInterval(typer);
+    removeEventListener("keydown", onKey);
+    try { localStorage.setItem("rp_tour_done", "1"); } catch (e) {}
+  }
+  function onKey(ev) {
+    if (ev.key === "Escape") end();
+    else if (ev.key === "ArrowRight") { takeControl(); show(idx + 1); }
+    else if (ev.key === "ArrowLeft") { takeControl(); show(idx - 1); }
+  }
+  document.getElementById("tour-start").addEventListener("click", start);
+  document.getElementById("tour-next").addEventListener("click", () => { takeControl(); show(idx + 1); });
+  document.getElementById("tour-back").addEventListener("click", () => { takeControl(); show(idx - 1); });
+  document.getElementById("tour-skip").addEventListener("click", end);
+  veil.addEventListener("click", ev => { if (ev.target === veil) { takeControl(); show(idx + 1); } });
+  addEventListener("scroll", () => { if (active && !squelch) requestAnimationFrame(() => place(false)); }, { passive: true });
+  addEventListener("resize", () => { if (active && !squelch) requestAnimationFrame(() => place(false)); });
+  // background tabs throttle timers and freeze rAF: hold the countdown while
+  // hidden, restart the current step cleanly when the tab comes back
+  document.addEventListener("visibilitychange", () => {
+    if (!active) return;
+    if (document.visibilityState === "hidden") clearTimeout(timer);
+    else show(idx);
+  });
+
+  let seen = "1";
+  try { seen = localStorage.getItem("rp_tour_done"); } catch (e) {}
+  // auto-offer once, on the plain homepage only — never hijack a deep link,
+  // and wait until the tab is actually being looked at
+  if (!seen && (!location.hash || location.hash === "#overview") && innerWidth >= 700) {
+    const kick = () => setTimeout(start, 900);
+    if (document.visibilityState === "visible") kick();
+    else document.addEventListener("visibilitychange", function once() {
+      if (document.visibilityState === "visible") {
+        document.removeEventListener("visibilitychange", once);
+        kick();
+      }
+    });
+  }
+})();
 </script>
 </body>
 </html>
