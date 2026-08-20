@@ -59,10 +59,10 @@ def cross_sectional_regression(
 ) -> RegressionResult:
     idx = asset_returns.index
     valid = (
-        asset_returns.notna()
+        np.isfinite(asset_returns.astype(float))
         & mktcap.reindex(idx).notna()
         & (mktcap.reindex(idx) > 0)
-        & style_exposures.reindex(idx).notna().all(axis=1)
+        & np.isfinite(style_exposures.reindex(idx).astype(float)).all(axis=1)
         & industries.reindex(idx).notna()
     )
     idx = idx[valid]

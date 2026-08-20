@@ -53,6 +53,14 @@ def test_industry_constraint_holds():
     assert abs((ind_returns * w.reindex(ind_returns.index)).sum()) < 1e-12
 
 
+def test_infinite_returns_are_excluded_not_fatal():
+    y, styles, inds, caps, true_mkt, *_ = _synthetic_cross_section(seed=2)
+    y.iloc[0], y.iloc[1] = np.inf, -np.inf  # junk price data upstream
+    res = cross_sectional_regression(y, styles, inds, caps)
+    assert res.n_assets == len(y) - 2
+    assert abs(res.factor_returns["market"] - true_mkt) < 1e-3
+
+
 def test_raises_on_thin_cross_section():
     y, styles, inds, caps, *_ = _synthetic_cross_section(n=600)
     small = y.index[:10]

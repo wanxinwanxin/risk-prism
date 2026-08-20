@@ -90,6 +90,8 @@ def build_model(
     close, volume = load_price_panel(
         list(cik_by_ticker), price_provider, start, end, progress=verbose
     )
+    close = close.where(close > 0)  # zero/negative closes are data errors, not prices
+    volume = volume.where(volume >= 0)
     estimation = apply_liquidity_filters(close, volume, config)
     coverage = coverage_universe(close, config)
     active = sorted(set(estimation) | set(coverage))

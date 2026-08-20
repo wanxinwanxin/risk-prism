@@ -18,7 +18,7 @@ def winsorize_z(s: pd.Series, z: float = 3.0, iterations: int = 2,
     standard deviation. Bounds are computed on ``fit`` rows (default: all)
     and applied to every row.
     """
-    out = s.astype(float).copy()
+    out = s.astype(float).replace([np.inf, -np.inf], np.nan)
     ref = out.loc[out.index.intersection(fit)] if fit is not None else out
     for _ in range(iterations):
         mu = ref.mean()
