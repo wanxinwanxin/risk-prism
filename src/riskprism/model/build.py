@@ -104,9 +104,15 @@ def build_model(
         )
 
     # ---- fundamentals & industries -------------------------------------
-    # Live EDGAR when reachable; the prior release's distilled store when
-    # SEC's WAF blocks this IP (common on CI runners). Fundamentals move
-    # quarterly, so a weeks-old snapshot barely changes exposures.
+    # Large universes come from SEC's nightly bulk zips (one request);
+    # per-company API calls are only a small-scale top-up. When SEC is
+    # unreachable entirely, the prior release's distilled store fills in —
+    # fundamentals move quarterly, so a weeks-old snapshot barely changes
+    # exposures.
+    try:
+        edgar.bulk_prefetch([cik_by_ticker[t] for t in active], verbose=verbose)
+    except Exception as exc:
+        log(f"bulk prefetch unavailable ({exc}); using per-company cache/API")
     fundamentals: dict[str, Fundamentals] = {}
     industries = {}
     n_live = n_fallback = 0

@@ -19,6 +19,14 @@ import requests
 TICKER_URL = "https://www.sec.gov/files/company_tickers.json"
 FACTS_URL = "https://data.sec.gov/api/xbrl/companyfacts/CIK{cik:010d}.json"
 SUBMISSIONS_URL = "https://data.sec.gov/submissions/CIK{cik:010d}.json"
+# Nightly bulk archives: one request for every company. SEC's WAF blocks
+# sustained per-company crawling (thousands of API calls), so any build
+# with a large universe MUST come through these instead.
+BULK_URLS = {
+    "facts": "https://www.sec.gov/Archives/edgar/daily-index/xbrl/companyfacts.zip",
+    "subs": "https://www.sec.gov/Archives/edgar/daily-index/bulkdata/submissions.zip",
+}
+_BULK_CACHE_PREFIX = {"facts": "facts", "subs": "subs"}
 
 _UA_HELP = (
     "SEC EDGAR requires a User-Agent identifying you with a contact email "
@@ -60,7 +68,7 @@ class EdgarClient:
     """Throttled, disk-cached EDGAR JSON client."""
 
     def __init__(self, user_agent: str | None = None, cache_dir: Path | None = None,
-                 min_interval: float = 0.12, cache_max_age_days: float = 7.0):
+                 min_interval: float = 0.25, cache_max_age_days: float = 7.0):
         ua = user_agent or os.environ.get("RISKPRISM_EDGAR_UA")
         if not ua:
             raise ValueError(_UA_HELP)
@@ -80,6 +88,9 @@ class EdgarClient:
             if age_days < self.cache_max_age_days:
                 return json.loads(path.read_text())
         if self._consecutive_blocks >= 8:
+            # WAF-blocked: cached data — even stale — always beats no data
+            if path.exists():
+                return json.loads(path.read_text())
             raise RuntimeError(
                 "EDGAR has rejected 8 requests in a row — this IP appears to be "
                 "blocked by SEC's WAF. Aborting instead of burning hours on retries."
@@ -146,16 +157,12 @@ class EdgarClient:
         return self._consecutive_blocks >= 8
 
     def company_facts(self, cik: int) -> dict | None:
-        if self.is_blocked:
-            return None
         try:
             return self._get_json(FACTS_URL.format(cik=cik), f"facts_{cik:010d}")
         except (requests.HTTPError, RuntimeError):
             return None
 
     def sic_code(self, cik: int) -> int | None:
-        if self.is_blocked:
-            return None
         try:
             meta = self._get_json(SUBMISSIONS_URL.format(cik=cik), f"subs_{cik:010d}")
         except (requests.HTTPError, RuntimeError):
@@ -165,6 +172,65 @@ class EdgarClient:
             return int(sic) if sic else None
         except (TypeError, ValueError):
             return None
+
+
+    # ---- bulk archives ---------------------------------------------------
+
+    def _extract_bulk(self, zip_path, ciks: list[int], kind: str) -> int:
+        """Extract the CIK members we need from a bulk zip into the cache."""
+        import zipfile
+
+        prefix = _BULK_CACHE_PREFIX[kind]
+        extracted = 0
+        with zipfile.ZipFile(zip_path) as z:
+            members = set(z.namelist())
+            for cik in ciks:
+                member = f"CIK{cik:010d}.json"
+                if member not in members:
+                    continue
+                (self.cache_dir / f"{prefix}_{cik:010d}.json").write_bytes(z.read(member))
+                extracted += 1
+        return extracted
+
+    def bulk_prefetch(self, ciks: list[int], min_missing: int = 200,
+                      verbose: bool = True) -> None:
+        """Populate the cache for many CIKs from SEC's nightly bulk zips.
+
+        One HTTP request per archive instead of one per company — the
+        access pattern SEC's fair-access policy is designed around.
+        Per-company crawling at universe scale reliably trips their WAF
+        and gets the IP blocked. No-op when the cache is mostly warm.
+        """
+        for kind, url in BULK_URLS.items():
+            prefix = _BULK_CACHE_PREFIX[kind]
+            missing = [
+                cik for cik in ciks
+                if not (self.cache_dir / f"{prefix}_{cik:010d}.json").exists()
+            ]
+            if len(missing) < min_missing:
+                continue
+            zip_path = self.cache_dir / f"bulk_{kind}.zip"
+            age_ok = (zip_path.exists()
+                      and (time.time() - zip_path.stat().st_mtime) / 86400
+                      < self.cache_max_age_days)
+            if not age_ok:
+                if verbose:
+                    print(f"[riskprism] downloading SEC bulk {kind} archive "
+                          f"({len(missing)} companies missing from cache)…")
+                with self.session.get(url, stream=True, timeout=120) as resp:
+                    if resp.status_code in (403, 429):
+                        raise requests.HTTPError(
+                            f"SEC bulk archive rejected ({resp.status_code}). {_UA_HELP}",
+                            response=resp)
+                    resp.raise_for_status()
+                    tmp = zip_path.with_suffix(".part")
+                    with open(tmp, "wb") as fh:
+                        for chunk in resp.iter_content(chunk_size=1 << 20):
+                            fh.write(chunk)
+                    tmp.rename(zip_path)
+            n = self._extract_bulk(zip_path, missing, kind)
+            if verbose:
+                print(f"[riskprism] bulk {kind}: extracted {n}/{len(missing)} missing companies")
 
 
 def concept_series(facts: dict, taxonomy: str, tag: str, annual_only: bool = False) -> pd.DataFrame:
