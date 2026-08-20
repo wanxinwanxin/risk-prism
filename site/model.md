@@ -15,6 +15,7 @@
 | regression weeks | 148 |
 | mean weekly R² | 0.345 |
 | price provider | yahoo |
+| fundamentals | n/a live from EDGAR |
 | frequency | W-FRI (annualized outputs) |
 
 ## How to use this model

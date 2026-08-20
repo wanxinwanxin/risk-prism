@@ -408,6 +408,7 @@ a { color: var(--accent); }
     <h2>Point your agent at this model</h2>
     <p class="sub">Reading this as an agent? The plain-markdown mirror of this build lives at <a href="model.md">/model.md</a> (indexed by <a href="llms.txt">/llms.txt</a>) — model card, factor definitions, correlations, and full coverage list, no DOM required.</p>
     <p class="sub">riskprism ships an MCP server. Install the package, download the latest artifacts, add the server — your agent can measure portfolio risk.</p>
+    <p class="sub"><b>Download the model itself</b>: every build is published as parquet artifacts — exposures, factor covariance, specific risk, factor returns, residuals, estimation-quality metadata, and the distilled point-in-time EDGAR fundamentals store — at <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">the latest release</a>. MIT/public-domain-derived; no key, no signup.</p>
     <div class="codehead"><h2 style="font-size:13px">MCP configuration</h2><button class="copy" data-copy="mcp-snippet">Copy</button></div>
     <pre class="code" id="mcp-snippet">{
   "mcpServers": {
@@ -447,7 +448,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
 </div></main>
 
 <footer><div class="wrap">
-  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT · <a href="https://github.com/wanxinwanxin/risk-prism">source</a> · <a href="model.md">model.md</a>
+  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT · <a href="https://github.com/wanxinwanxin/risk-prism">source</a> · <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">artifacts</a> · <a href="model.md">model.md</a>
 </div></footer>
 
 <div id="tooltip" role="tooltip"></div>
