@@ -260,11 +260,14 @@ def store_to_frame(store: dict[str, "Fundamentals"]) -> pd.DataFrame:
 
 
 def store_from_frame(df: pd.DataFrame) -> dict[str, "Fundamentals"]:
+    empty = pd.DataFrame(columns=["end", "filed", "val"])
     store: dict[str, Fundamentals] = {}
     for ticker, tdf in df.groupby("ticker"):
         series = {
             field: fdf[["end", "filed", "val"]].sort_values(["filed", "end"]).reset_index(drop=True)
             for field, fdf in tdf.groupby("field")
         }
+        for field in CONCEPTS:  # fields with no filings round-trip as empty
+            series.setdefault(field, empty)
         store[str(ticker)] = Fundamentals(series)
     return store
