@@ -21,6 +21,7 @@ from riskprism.artifacts import load_artifacts
 from riskprism.config import MARKET_FACTOR, STYLE_FACTORS
 from riskprism.factors.industry import INDUSTRY_PREFIX
 from riskprism.config import STYLE_FACTORS as _STYLES, ModelConfig
+from riskprism.model.baselines import comparison_payload
 from riskprism.model.validation import FULL_FACTORS, RunningRiskState, validation_summary
 
 PLACEHOLDER = "__RISKPRISM_DATA__"
@@ -164,6 +165,15 @@ def _validation_payload(val: pd.DataFrame | None) -> dict | None:
                                                sample["realized_vol_ann"],
                                                sample["group"])],
             }
+    # baseline / vendor-protocol comparison; the render must survive the
+    # FF download (or anything else here) failing
+    try:
+        comparison = comparison_payload(val)
+    except Exception as exc:
+        print(f"[riskprism] comparison block skipped: {exc}")
+        comparison = None
+    if comparison:
+        payload["comparison"] = comparison
     return payload
 
 
