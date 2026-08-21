@@ -26,6 +26,31 @@ _STRUCTURAL_STYLES = ["size", "volatility", "liquidity"]
 _MIN_FIT_ASSETS = 30
 
 
+def bayes_shrink_specific(vol: pd.Series, size: pd.Series,
+                          config: ModelConfig) -> pd.Series:
+    """Shrink specific vols toward their size-bucket mean (USE4 Bayesian
+    shrinkage, q=0.1): v = q|s - s_bar| / (delta + q|s - s_bar|), pulling
+    extreme forecasts toward the bucket mean with intensity growing in
+    their distance from it. Flattens the classic low-vol-underforecast /
+    high-vol-overforecast tilt across vol deciles (USE4: 1.08->0.92
+    unshrunk becomes ~flat at 1.0)."""
+    q, nb = config.specific_shrink_q, config.specific_shrink_buckets
+    ok = vol.notna() & (vol > 0) & size.notna()
+    if ok.sum() < 5 * nb or q <= 0:
+        return vol
+    out = vol.copy()
+    ranks = size[ok].rank(pct=True, method="first")
+    bucket = np.minimum((ranks * nb).astype(int), nb - 1)
+    for _, members in vol[ok].groupby(bucket):
+        mean, delta = float(members.mean()), float(members.std(ddof=0))
+        if not np.isfinite(delta) or delta <= 0:
+            continue
+        dist = (members - mean).abs()
+        v = q * dist / (delta + q * dist)
+        out[members.index] = v * mean + (1 - v) * members
+    return out
+
+
 @dataclass
 class SpecificRiskResult:
     vol: pd.Series           # blended, annualized
@@ -37,7 +62,9 @@ class SpecificRiskResult:
 
 def ewma_specific_vol(residuals: pd.DataFrame, config: ModelConfig
                       ) -> tuple[pd.Series, pd.Series]:
-    """Annualized EWMA vol of regression residuals, and per-asset obs counts."""
+    """Annualized EWMA vol of regression residuals (with a lag-1
+    Newey-West adjustment for serial correlation), and per-asset obs
+    counts."""
     lam = 0.5 ** (1.0 / config.specific_half_life)
     vols, counts = {}, {}
     for ticker in residuals.columns:
@@ -46,9 +73,15 @@ def ewma_specific_vol(residuals: pd.DataFrame, config: ModelConfig
         if len(e) < config.min_specific_obs:
             vols[ticker] = np.nan
             continue
-        w = lam ** np.arange(len(e) - 1, -1, -1)
+        ev = e.to_numpy()
+        w = lam ** np.arange(len(ev) - 1, -1, -1)
         w /= w.sum()
-        vols[ticker] = float(np.sqrt((w * e.to_numpy() ** 2).sum() * config.ann_factor))
+        var = float((w * ev ** 2).sum())
+        if config.nw_specific_lags >= 1 and len(ev) > 1 and var > 0:
+            g1 = float((w[1:] * ev[1:] * ev[:-1]).sum())
+            var *= float(np.clip((var + g1) / var,
+                                 config.nw_ratio_min, config.nw_ratio_max))
+        vols[ticker] = float(np.sqrt(var * config.ann_factor))
     return pd.Series(vols, dtype=float), pd.Series(counts, dtype=float)
 
 
@@ -57,8 +90,12 @@ def specific_risk(
     exposures: pd.DataFrame,
     industries: pd.Series,
     config: ModelConfig,
+    vra: float = 1.0,
 ) -> SpecificRiskResult:
-    """Blended specific vol for every asset in ``exposures``."""
+    """Blended specific vol for every asset in ``exposures``: time-series
+    EWMA (Newey-West adjusted) blended with the structural model by
+    history length, Bayesian-shrunk toward size-bucket means, then scaled
+    by the specific Volatility Regime Adjustment multiplier ``vra``."""
     idx = exposures.index
     ts_vol, n_obs = ewma_specific_vol(residuals, config)
     ts_vol = ts_vol.reindex(idx)
@@ -84,5 +121,8 @@ def specific_risk(
     w = w.where(ts_vol.notna(), 0.0)
     vol = w * ts_vol.fillna(0.0) + (1 - w) * structural
     vol = vol.fillna(structural)
+    if "size" in exposures.columns:
+        vol = bayes_shrink_specific(vol, exposures["size"], config)
+    vol = vol * vra
     return SpecificRiskResult(vol=vol, ts_vol=ts_vol, structural=structural,
                               blend_weight=w, n_obs=n_obs)

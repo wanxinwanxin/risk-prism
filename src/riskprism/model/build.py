@@ -28,8 +28,9 @@ from riskprism.model.covariance import factor_covariance
 from riskprism.model.history import delisting_return, merge_history
 from riskprism.model.regression import cross_sectional_regression
 from riskprism.model.specific import specific_risk
-from riskprism.model.benchmarks import ETF_BENCHMARKS, score_etf_week
-from riskprism.model.validation import RunningRiskState, merge_validation, score_portfolios
+from riskprism.model.benchmarks import ETF_BENCHMARKS
+from riskprism.model.revalidate import revalidate_history
+from riskprism.model.validation import merge_validation
 
 FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income", "shares_out"]
 
@@ -60,7 +61,7 @@ def build_model(
             print(f"[riskprism] {msg}")
 
     # ---- prior build (capture-forward) --------------------------------
-    prior_fr = prior_res = prior_val = prior_eh = None
+    prior_fr = prior_res = prior_eh = None
     prior_fund: dict[str, Fundamentals] = {}
     prior_industry: dict[str, str] = {}
     if prior_artifacts:
@@ -72,14 +73,19 @@ def build_model(
             prior_fund = store_from_frame(prior["fundamentals_store"])
         if prior.get("asset_meta") is not None:
             prior_industry = prior["asset_meta"]["industry"].to_dict()
-        if prior_version != config.version:
-            log(f"prior build is {prior_version}, config is {config.version}: "
-                "methodology changed, rebuilding history cold")
-        else:
+        # regression history survives risk-construction version bumps
+        # (validation is recomputed from history every build anyway);
+        # only exposure/regression definition changes force a cold rebuild
+        if prior_version == config.version or prior_version in config.compatible_prior_versions:
             prior_fr, prior_res = prior["factor_returns"], prior["residuals"]
-            prior_val = prior.get("validation")
             prior_eh = prior.get("exposure_history")
-            log(f"prior build loaded: {len(prior_fr)} weeks through {prior_fr.index[-1].date()}")
+            note = "" if prior_version == config.version else \
+                f" (prior {prior_version} regression history is compatible)"
+            log(f"prior build loaded: {len(prior_fr)} weeks through "
+                f"{prior_fr.index[-1].date()}{note}")
+        else:
+            log(f"prior build is {prior_version}, config is {config.version}: "
+                "regression definitions changed, rebuilding history cold")
 
     # ---- universe ------------------------------------------------------
     ticker_meta = candidate_tickers(edgar, max_names=max_names)
@@ -164,20 +170,11 @@ def build_model(
             {tk: fundamentals[tk].asof(date) for tk in names}
         ).T.reindex(columns=FUND_FIELDS)
 
-    # point-in-time risk state for in-loop forecast validation
-    risk_state = RunningRiskState(config)
-    trailing_fr = [] if prior_fr is None else [
-        (d, prior_fr.loc[d]) for d in prior_fr.index[-52:]
-    ]
-    if prior_fr is not None:
-        risk_state.warm_up(prior_fr, prior_res)
-
     factor_return_rows: dict[pd.Timestamp, pd.Series] = {}
     residual_rows: dict[pd.Timestamp, pd.Series] = {}
-    validation_rows: list[dict] = []
     exposure_history_rows: list[pd.DataFrame] = []
     r2s = []
-    for wk, (t, t_next) in enumerate(zip(rebal_dates[:-1], rebal_dates[1:])):
+    for t, t_next in zip(rebal_dates[:-1], rebal_dates[1:]):
         exposures, mktcap = compute_style_exposures(
             close[estimation], volume[estimation], fund_asof(estimation, t), t,
             config, industries=industries, fit=estu_idx,
@@ -195,30 +192,13 @@ def build_model(
             )
         except ValueError:
             continue
-        # score forecasts made from data through t against week t+1,
-        # BEFORE the state sees t+1 (no lookahead)
-        x_full = pd.concat(
-            [pd.Series(1.0, index=exposures.index, name=MARKET_FACTOR), exposures,
-             industry_dummies(industries.reindex(exposures.index).fillna("Other"))],
-            axis=1,
-        )
-        dr = daily_returns[(daily_returns.index > t) & (daily_returns.index <= t_next)]
-        validation_rows.extend(score_portfolios(
-            risk_state, x_full, industries, mktcap, y, t_next, wk, daily_returns=dr))
-        if trailing_fr:
-            validation_rows.extend(score_etf_week(
-                risk_state, pd.DataFrame({d: s for d, s in trailing_fr}).T,
-                etf_weekly, etf_daily, t, t_next))
         # persist formation-date exposures so historical models are
-        # reconstructible from the artifacts (see model/asof.py)
+        # reconstructible from the artifacts (see model/asof.py) and the
+        # whole validation history is re-scorable each build
         eh = exposures.astype("float32").round(4)
         eh.insert(0, "date", t)
         eh.insert(1, "mktcap", mktcap.reindex(exposures.index).astype("float32"))
         exposure_history_rows.append(eh.reset_index(names="ticker"))
-        risk_state.update(res.factor_returns, res.residuals)
-        trailing_fr.append((t_next, res.factor_returns))
-        if len(trailing_fr) > 52:
-            trailing_fr.pop(0)
         factor_return_rows[t_next] = res.factor_returns
         residual_rows[t_next] = res.residuals
         r2s.append(res.r2)
@@ -227,8 +207,6 @@ def build_model(
     new_res = pd.DataFrame(residual_rows).T.sort_index()
     factor_returns = merge_history(prior_fr, new_fr, config.history_cap_weeks).fillna(0.0)
     residuals = merge_history(prior_res, new_res, config.history_cap_weeks)
-    validation = merge_validation(prior_val, pd.DataFrame(validation_rows),
-                                  config.history_cap_weeks)
     new_eh = (pd.concat(exposure_history_rows, ignore_index=True)
               if exposure_history_rows else pd.DataFrame())
     exposure_history = merge_validation(prior_eh, new_eh, config.history_cap_weeks)
@@ -240,8 +218,20 @@ def build_model(
     log(f"regressions: {len(new_fr)} new weeks, {len(factor_returns)} total"
         + (f", mean new R2 = {np.mean(r2s):.3f}" if r2s else ""))
 
+    # ---- validation: replay the full history under the current
+    # methodology (see model/revalidate.py) — every build rescores every
+    # week, so bias statistics always grade the model version shipped ----
+    industries_all = pd.Series({**prior_industry, **industries.to_dict()})
+    validation, replay_state = revalidate_history(
+        factor_returns, residuals, exposure_history, industries_all, config,
+        daily_returns=daily_returns, etf_weekly=etf_weekly, etf_daily=etf_daily,
+    )
+    vra_f, vra_s = replay_state.vra_factor, replay_state.vra_specific
+    log(f"validation: {validation['date'].nunique() if len(validation) else 0} weeks rescored"
+        f" · VRA multipliers: factor {vra_f:.2f}, specific {vra_s:.2f}")
+
     # ---- assemble risk model (coverage universe) ------------------------
-    F = factor_covariance(factor_returns, config)
+    F = factor_covariance(factor_returns, config, vra=vra_f)
     as_of = weekly_close.index[-1]
 
     cov_exposures, cov_mktcap = compute_style_exposures(
@@ -256,7 +246,7 @@ def build_model(
         axis=1,
     ).reindex(columns=F.columns).fillna(0.0)
 
-    spec = specific_risk(residuals, X_final, industries, config)
+    spec = specific_risk(residuals, X_final, industries, config, vra=vra_s)
 
     asset_meta = pd.DataFrame({
         "in_estimation": X_final.index.isin(estimation),
@@ -280,6 +270,8 @@ def build_model(
         "fundamentals_live": n_live,
         "fundamentals_from_prior": n_fallback,
         "n_validation_weeks": int(validation["date"].nunique()) if len(validation) else 0,
+        "vra_factor": round(vra_f, 4),
+        "vra_specific": round(vra_s, 4),
         "config": config.to_dict(),
     }
     path = save_artifacts(

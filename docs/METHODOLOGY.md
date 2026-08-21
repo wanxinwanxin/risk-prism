@@ -1,7 +1,15 @@
 # PRISM-US-MH methodology
 
-Version `PRISM-US-MH-0.2`. Weekly-frequency, medium-horizon US equity
+Version `PRISM-US-MH-0.3`. Weekly-frequency, medium-horizon US equity
 fundamental factor model. All parameters live in `riskprism.config.ModelConfig`.
+
+v0.3 adds four pieces of the commercial-model recipe, each with published
+evidence behind it (see the citations inline): Newey-West variance
+adjustment, Volatility Regime Adjustment, Bayesian specific-risk
+shrinkage, and optimized portfolios in the validation panel. Exposure and
+regression definitions are unchanged from v0.2, so v0.2 regression
+history carries forward (`compatible_prior_versions`); validation is
+recomputed from history on every build regardless (see Validation below).
 
 ## Two universes
 
@@ -91,27 +99,66 @@ Weeks with fewer than 50 usable assets are skipped.
 ## Factor covariance
 
 EWMA on weekly factor returns, zero-mean convention. Volatilities use a
-13-week half-life (responsive); correlations use 26 weeks (stable). The
-combined matrix is annualized (×52) and repaired to PSD by eigenvalue
-flooring at 1e-10. Newey-West autocorrelation adjustment and eigenfactor
-risk adjustment are v2 candidates.
+13-week half-life (responsive); correlations use 26 weeks (stable).
+
+**Newey-West adjustment (v0.3)**: annualizing weekly variance by ×52
+assumes iid weekly returns; autocorrelated factor returns (momentum
+especially — our ETF validation measured a 1.40 realized/forecast vol
+ratio partly attributable to this) violate that. Per-factor variances
+carry a Bartlett-weighted Newey-West adjustment with 2 lags
+(`var_adj = var + 2·Σ_l (1−l/(L+1))·γ_l`), ratio clipped to [0.5, 2].
+Applied to variances only, which keeps V·C·V trivially PSD. USE4 uses
+the same device on daily returns with 5 vol / 2 correlation lags
+(Menchero, Orr & Wang 2011, §4.1).
+
+**Volatility Regime Adjustment (v0.3)**: each week the cross-sectional
+factor bias statistic `B_t² = mean_k (f_kt / σ_kt)²` is computed against
+the pre-update forecast vols; its EWMA (8-week half-life, roughly the
+USE4 ratio of VRA to vol half-life) gives a multiplier
+`λ_F = √(EWMA[B²])`, clipped to [0.5, 2], which scales all factor vols —
+covariance ×λ_F², correlations untouched. This is what lets the model
+catch regime shifts that half-life-bound EWMA lags: USE4's version held
+rolling bias statistics near 1.0 through 2008–09, where the unadjusted
+model swung 1.3 → 0.7 (Menchero & Morozov, "Improving Risk Forecasts
+Through Cross-Sectional Observations"). Directly targets our measured
+Mincer–Zarnowitz slope of 0.70.
+
+The combined matrix is annualized (×52) and repaired to PSD by eigenvalue
+flooring at 1e-10. Eigenfactor risk adjustment / correlation blending is
+the v0.4 candidate (see DECISIONS.md for the plan).
 
 ## Specific risk
 
 Two estimates, blended by history length:
 
 1. **Time-series**: per-asset EWMA (13-week half-life) of squared
-   regression residuals, annualized. Requires ≥ 13 observations.
+   regression residuals, with a lag-1 Newey-West adjustment (v0.3),
+   annualized. Requires ≥ 13 observations.
 2. **Structural**: each week, ln(time-series vol) is regressed
    cross-sectionally on characteristics — size, volatility, and liquidity
    exposures plus industry — over assets that have good history. The fit
    predicts specific vol for *every* asset (with a Duan smearing
    correction for the exp() retransformation).
 
-Final estimate: `σᵢ = wᵢ·TSᵢ + (1−wᵢ)·structuralᵢ` with
-`wᵢ = Tᵢ/(Tᵢ + 26)`. Assets with no residual history (IPOs, coverage-only
-names) get the pure structural prior. `asset_meta.parquet` records each
-asset's blend weight so consumers can distinguish measured from inferred.
+Blend: `σᵢ = wᵢ·TSᵢ + (1−wᵢ)·structuralᵢ` with `wᵢ = Tᵢ/(Tᵢ + 26)`.
+Assets with no residual history (IPOs, coverage-only names) get the pure
+structural prior. `asset_meta.parquet` records each asset's blend weight
+so consumers can distinguish measured from inferred.
+
+**Bayesian shrinkage (v0.3)**: blended vols are shrunk toward their
+size-decile mean with distance-dependent intensity
+`v = q·|σ−σ̄| / (Δ + q·|σ−σ̄|)`, q = 0.1 — USE4's exact device, which
+flattens the classic decile tilt (low-vol names underforecast at ~1.08,
+high-vol overforecast at ~0.92, becoming ~flat at 1.0 in their tests).
+Deviation from USE4: buckets key on the size exposure with equal-weighted
+bucket means (USE4 cap-weights within cap deciles) so the shrinkage is
+exactly reproducible from shipped exposures alone.
+
+**Specific VRA (v0.3)**: a separate multiplier λ_S from the EWMA of the
+cross-sectional specific bias statistic (equal-weighted across assets
+with ≥13 residual observations; USE4 cap-weights), applied to all
+specific vols. Both multipliers ship in `meta` (`vra_factor`,
+`vra_specific`).
 
 ## Portfolio analytics
 
@@ -123,16 +170,32 @@ first-order: `ΔP&L ≈ Σ x_k Δf_k`.
 
 ## Validation
 
-Continuous and out-of-sample by construction: at each historical week t
-the build maintains a point-in-time risk state (recursive EWMA factor
-covariance and specific risk, warmed only on data through t), forecasts
-next-week volatility for a panel of test portfolios — cap-weighted
-market, equal-weighted, top-minus-bottom style spreads, cap-weighted
-industries, random 50-name baskets — and scores z = realized / forecast
-against week t+1. Scores ship in `validation.parquet` and accrue via
-capture-forward merging.
+Continuous and out-of-sample by construction — and, since v0.3,
+**recomputed from history on every build** (`model/revalidate.py`): a
+fresh point-in-time risk state (recursive EWMA + Newey-West + VRA +
+shrinkage, warmed only on data through t) replays the entire stored
+factor-return history and rescores every week under the *current*
+methodology. Reconstruction is exact for regressed names because the
+weekly regression defines `rᵢ = Xᵢ·f + εᵢ` and the artifacts store all
+three pieces — including imputed delisting returns for names that have
+since disappeared. Validation is therefore a pure function of the
+shipped artifacts, never a mixture of scores from different model
+versions.
+
+The test panel: cap-weighted market, equal-weighted, top-minus-bottom
+style spreads, cap-weighted industries, random 50-name baskets, six real
+factor ETFs (returns-based point-in-time exposures), and — new in
+v0.3 — **portfolios optimized against the model itself**: the global
+minimum-variance portfolio and three random-alpha minimum-risk
+portfolios (Σ⁻¹α via Woodbury over the top 500 names by cap, weekly).
+Optimized portfolios are the documented worst case for risk models —
+optimizers seek out the covariance matrix's underestimated directions
+(Shepard 2009; Menchero, Wang & Orr 2011 measured bias statistics of
+1.4–1.5 on such portfolios under sample covariance matrices). Publishing
+this number is deliberately adversarial self-grading.
 
 Headline metric: the **bias statistic** std(z) per portfolio (~1.0 =
 calibrated; >1 = risk underforecast) with a ±2/√(2n) acceptance band,
-plus the |z| > 1.96 exceedance rate (target ~5%). Current numbers are on
-the explorer's Validation tab and in `/model.md` with every build.
+plus the |z| > 1.96 exceedance rate (target ~5%), realized-vol ratios
+from daily returns, and a Mincer–Zarnowitz regression. Current numbers
+are on the explorer's Validation tab and in `/model.md` with every build.

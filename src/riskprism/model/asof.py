@@ -82,7 +82,8 @@ def model_asof(artifacts: dict | str | Path, date, config: ModelConfig | None = 
     state = replay_state_through(a, date, config)
     F = pd.DataFrame(state.factor_cov_weekly() * config.ann_factor,
                      index=FULL_FACTORS, columns=FULL_FACTORS)
-    spec = np.sqrt(state.specific_var_weekly(snap.index) * config.ann_factor)
+    size = snap["size"].astype(float) if "size" in snap.columns else None
+    spec = np.sqrt(state.specific_var_weekly(snap.index, size=size) * config.ann_factor)
 
     meta = dict(a["meta"])
     meta.update({"as_of": str(date.date()), "historical": True,

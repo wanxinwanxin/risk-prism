@@ -32,7 +32,9 @@ def test_structural_model_recovers_characteristic_link():
 def test_no_history_assets_get_structural_prior():
     exposures, industries, resid, _ = _setup()
     resid.iloc[:, :10] = np.nan  # first 10 assets: zero residual history
-    res = specific_risk(resid, exposures, industries, CFG)
+    # blend arithmetic in isolation: shrinkage off
+    cfg = ModelConfig(specific_shrink_q=0.0)
+    res = specific_risk(resid, exposures, industries, cfg)
     head = res.vol.iloc[:10]
     assert head.notna().all() and (head > 0).all()
     assert (res.blend_weight.iloc[:10] == 0).all()

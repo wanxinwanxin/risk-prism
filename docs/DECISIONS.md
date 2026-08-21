@@ -91,3 +91,76 @@ short-horizon/trading use, which is out of scope for v1.
   spectrum. Free on PyPI, keeps "risk" searchable, and gives the frontend
   its visual identity. Runners-up: `beaufort`, `loadings`. Model version
   string: `PRISM-US-MH-x.y` (US, Medium Horizon).
+
+## 7. v0.3: the USE4-documented adjustments (decided 2026-08-20)
+
+Literature review (Bloomberg MAC2/MAC3 decks, Barra USE4 Methodology
+Notes, Axioma AXUS4 factsheet — links in METHODOLOGY) ranked our gaps by
+the impact the vendors measured. Implemented, in that order:
+
+1. **Volatility Regime Adjustment** (factor + specific): EWMA (8-week
+   half-life) of the cross-sectional bias statistic, applied as a vol
+   multiplier clipped to [0.5, 2]. Chosen first because USE4's published
+   evidence is dramatic (rolling bias pinned near 1.0 through 2008–09 vs
+   1.3→0.7 unadjusted) and it directly targets our measured
+   Mincer–Zarnowitz slope of 0.70.
+2. **Optimized portfolios in the validation panel**: min-variance +
+   3 random-alpha min-risk portfolios (Woodbury Σ⁻¹, top 500 by cap),
+   scored weekly like every other test portfolio. Measure before fixing:
+   this is the documented 1.4–1.5-bias failure mode and no public model
+   (commercial or open) publishes it continuously.
+3. **Newey-West variance adjustment**: Bartlett, 2 lags on factor
+   variances, 1 lag on specific — weekly ×52 annualization assumes iid;
+   momentum's measured 1.40 realized/forecast daily-vol ratio says
+   otherwise. Variance-only keeps V·C·V PSD without extra repair.
+4. **Bayesian specific shrinkage**: USE4's q=0.1 distance-dependent
+   shrinkage toward size-decile means (equal-weighted buckets on the size
+   exposure — deviation from USE4's cap-weighting, chosen so the step is
+   reproducible from shipped exposures alone).
+
+Architectural consequence: **validation is now recomputed from history on
+every build** (`model/revalidate.py`) rather than accrued across builds —
+bias statistics always grade the shipped methodology, exactly (the weekly
+regression identity r = Xf + ε makes replayed returns equal true returns
+for regressed names, delisting imputations included). v0.2 regression
+history carries forward across this version bump
+(`compatible_prior_versions`): exposure/regression definitions are
+unchanged, and discarding the prior would have re-introduced the
+survivorship bias its capture-forward rows exist to prevent.
+
+## 8. v0.4 plan: optimization-bias correction (written 2026-08-20)
+
+The remaining big documented failure mode: optimizers seek out the
+covariance matrix's underestimated directions (Shepard 2009: true vol of
+an optimized portfolio ≈ predicted/(1−K/T)). Two published fixes; we now
+measure the disease continuously (decision 7.2), so the cure is chosen on
+our own evidence:
+
+- **Phase 0 — measure (shipping now)**: watch the `opt` group's bias
+  statistics for a few builds. With K=21 factors and T≈150 effective
+  weeks, Shepard's formula predicts ≈ 1/(1−21/150) ≈ 1.16 before
+  estimation noise in specific risk — expect roughly 1.1–1.3, milder than
+  USE4's 1.4–1.6 (they have K=60+ industries and optimize harder).
+- **Phase A — eigenfactor risk adjustment** (Menchero, Wang & Orr 2011,
+  Appendix A): diagonalize F, Monte-Carlo the per-eigenfactor volatility
+  bias (simulate T weeks from F ~1,000 times — trivial at K=21), de-bias
+  eigenvariances with the paper's scaled variant (a=1.4), rotate back.
+  Implement in `model/covariance.py` behind `config.eigen_adjust`;
+  the replayed validation state gets the same treatment (adjust the
+  weekly factor_cov_weekly output).
+- **Phase B — correlation blending** (Bloomberg MAC2/MAC3, Menchero &
+  Lazanas 2019): C ← w·C_sample + (1−w)·C_PCA(J), J = ⌈μK⌉ ≈ 5
+  components + idiosyncratic diagonal, starting from Bloomberg's
+  published (w=0.8, μ=0.25). Same config-flag treatment.
+- **Decision rule**: one build per variant; compare (a) `opt`-group bias
+  statistics (closer to 1 wins), (b) non-opt portfolios' bias unchanged
+  within noise (the adjustment must not distort ordinary portfolios —
+  USE4 checked style vols for this), (c) out-of-sample realized vol of
+  the min-variance portfolio (lower wins; the De Nard–Ledoit–Wolf
+  criterion). Ship the winner; keep the loser behind its flag with the
+  comparison documented here.
+- **Non-goals**: full Ledoit-Wolf nonlinear shrinkage (K=21 is small; the
+  factor-covariance conditioning problem commercial models fight barely
+  exists at our K) and daily-returns re-estimation (a separate, larger
+  project — would change regression definitions and force a cold
+  rebuild).

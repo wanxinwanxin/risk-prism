@@ -274,6 +274,31 @@ a { color: var(--accent); }
 .cta.ghost:hover { border-color: var(--ink-2); }
 .hero-prism { flex: 0 0 auto; }
 @media (max-width: 760px) { .hero-prism { display: none; } .hero h1 { font-size: 22px; } }
+/* ---------- learn tab ---------- */
+#learn-diagram svg { display: block; min-width: 900px; }
+.ln { cursor: pointer; }
+.ln rect.box { fill: var(--surface); stroke: var(--border); stroke-width: 1.2; }
+.ln.data rect.box { fill: var(--page); stroke-dasharray: none; }
+.ln .disk { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.ln:hover rect.box, .ln:focus-visible rect.box { stroke: var(--ink-2); }
+.ln.sel rect.box { stroke: var(--accent); stroke-width: 2; }
+.ln text { fill: var(--ink); font-size: 12.5px; font-weight: 600; }
+.ln text.sub2 { fill: var(--muted); font-size: 10px; font-weight: 500; }
+.ln:focus-visible { outline: none; }
+.learn-edge { stroke: var(--grid); stroke-width: 1.4; fill: none; }
+.learn-edge.hot { stroke: var(--accent); stroke-width: 2; }
+.learn-elabel { fill: var(--muted); font-size: 9px; }
+.learn-kind {
+  display: inline-block; font: 600 10px var(--mono); letter-spacing: .08em;
+  color: var(--muted); border: 1px solid var(--border); border-radius: 999px;
+  padding: 3px 8px; margin-bottom: 6px; text-transform: uppercase;
+}
+.learn-why {
+  border-left: 3px solid var(--accent); background: var(--page);
+  border-radius: 0 8px 8px 0; padding: 10px 14px; margin-top: 14px;
+  font-size: 13px; color: var(--ink-2); line-height: 1.6;
+}
+.learn-why b { color: var(--ink); }
 /* ---------- guided tour ---------- */
 #tour-veil { position: fixed; inset: 0; z-index: 40; }
 #tour-hole {
@@ -324,6 +349,7 @@ a { color: var(--accent); }
   <button data-view="stocks" aria-selected="false">Stocks</button>
   <button data-view="validation" aria-selected="false">Validation</button>
   <button data-view="methodology" aria-selected="false">Methodology</button>
+  <button data-view="learn" aria-selected="false">Learn</button>
   <button data-view="agents" aria-selected="false">For agents</button>
 </div></nav>
 
@@ -452,7 +478,7 @@ a { color: var(--accent); }
 <section class="view" id="view-validation">
   <div class="card">
     <h2>Does the model tell the truth?</h2>
-    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time.</p>
+    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time. The panel deliberately includes the hard cases: real traded factor ETFs, and <b>portfolios optimized against the model itself</b> (marked <span style="color:var(--s-size)">opt</span>) — optimizers hunt the covariance matrix's underestimated directions, so these are expected to run above 1 until the v0.4 eigenfactor work lands. Every build rescores the whole history under the current methodology.</p>
     <div id="val-hero"></div>
   </div>
   <div class="grid2">
@@ -495,7 +521,7 @@ a { color: var(--accent); }
     <h2>Against the commercial models — on their own protocols</h2>
     <p class="sub" style="margin-bottom:10px">The vendors can't be forced onto one standard, so we conform to theirs: each row runs <b>this model under that vendor's published test protocol</b> and puts the result next to what the vendor reports about itself. Periods and universes still differ — that caveat can't be engineered away with public data — but the statistic, horizon, and portfolio construction match.</p>
     <div class="tscroll" id="val-vendor-table"></div>
-    <p class="sub" style="margin-top:8px">The shared failure modes are telling: commercial research documents that <b>optimized and extreme-tilt portfolios are underforecast</b> (Shepard 2009 — compare our style spreads) and that <b>models lag volatility regime shifts</b> — USE4's answers (Volatility Regime Adjustment, eigenfactor adjustment) are the natural v0.3 roadmap here. One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
+    <p class="sub" style="margin-top:8px">v0.3 adopted two of USE4's documented remedies: the <b>Volatility Regime Adjustment</b> (their version held rolling bias near 1.0 through 2008–09 while the unadjusted model swung 1.3&nbsp;→&nbsp;0.7; ours targets the Mincer–Zarnowitz slope of ~0.7 measured in v0.2) and <b>Bayesian specific-risk shrinkage</b> (q&nbsp;=&nbsp;0.1 toward size-decile means — flattened their 1.08→0.92 decile tilt), plus Newey-West variance adjustments. The failure mode left standing is the one the literature calls hardest: <b>portfolios optimized against the model are underforecast</b> (Shepard 2009: true vol ≈ predicted/(1−K/T); MSCI measured bias 1.4–1.5 pre-eigenfactor-adjustment). We now measure it on ourselves — the <span style="color:var(--s-size)">opt</span> rows above — and the eigenfactor / correlation-blending fix is the v0.4 plan (<a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a>). One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
   </div>
 </section>
 
@@ -534,7 +560,7 @@ a { color: var(--accent); }
       <figure class="anim" id="anim-ewma">
         <figcaption>Memory in motion: each week a new observation arrives on the right; old ones fade at the half-life rate, and the volatility estimate breathes with the flow.</figcaption>
       </figure>
-      <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, blended with a structural cross-sectional model by history length). F is repaired to positive semi-definite by eigenvalue flooring.</p>
+      <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, blended with a structural cross-sectional model by history length, then Bayesian-shrunk toward its size-decile mean). Variances carry Newey-West serial-correlation adjustments; F is repaired to positive semi-definite by eigenvalue flooring; and both blocks are scaled by Volatility Regime Adjustment multipliers — EWMAs of how large returns actually ran versus forecast — so the model catches regime shifts the half-life would lag. The Learn tab walks through every step.</p>
     </div>
   </div>
   <div class="card">
@@ -546,6 +572,21 @@ a { color: var(--accent); }
       <li><b>First-order stress tests</b>: exposure × shock, no convexity, no specific returns.</li>
       <li>Full methodology and every parameter: <a id="meth-repo-link" href="#">docs/METHODOLOGY.md on GitHub</a>.</li>
     </ul>
+  </div>
+</section>
+
+<section class="view" id="view-learn">
+  <div class="card">
+    <h2>How raw filings become a risk forecast</h2>
+    <p class="sub">The whole pipeline, left to right — data enters as SEC filings and daily prices, a risk model leaves as open artifacts. <b>Click any box</b> for what it does, an animation of the idea, and the published research behind it. Rounded boxes with a disk glyph are data; sharp boxes are transforms.</p>
+    <div class="tscroll" id="learn-diagram"></div>
+  </div>
+  <div class="card" id="learn-detail">
+    <span class="learn-kind" id="learn-kind"></span>
+    <h2 id="learn-title"></h2>
+    <p class="sub" id="learn-what" style="margin-bottom:10px"></p>
+    <figure class="anim" id="learn-anim"><figcaption id="learn-cap"></figcaption></figure>
+    <div class="learn-why" id="learn-why"></div>
   </div>
 </section>
 
@@ -666,7 +707,7 @@ function setView(name) {
   requestAnimationFrame(() => dispatchEvent(new Event("resize")));
 }
 tabs.forEach(b => b.addEventListener("click", () => setView(b.dataset.view)));
-const VIEWS = ["overview", "portfolio", "stocks", "validation", "methodology", "agents"];
+const VIEWS = ["overview", "portfolio", "stocks", "validation", "methodology", "learn", "agents"];
 const initial = location.hash.slice(1);
 if (VIEWS.includes(initial)) setView(initial);
 window.addEventListener("hashchange", () => {
@@ -1278,6 +1319,7 @@ renderStockTable();
       : p.group === "style" ? `var(--s-${p.name.replace("style_", "")})`
       : p.group === "industry" ? "var(--s-industry)"
       : p.group === "etf" ? "var(--s-quality)"
+      : p.group === "opt" ? "var(--s-size)"
       : p.group === "equal" ? "var(--accent)" : "var(--s-specific)";
     const plabel = p => p.name.replace("style_", "").replace("industry_", "");
 
@@ -2043,6 +2085,675 @@ renderStockTable();
   }
 }
 
+// ---------- learn tab: clickable pipeline + per-stage explainers ----------
+(() => {
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const mulberry = seed => () => {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let z = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    z = (z + Math.imul(z ^ (z >>> 7), 61 | z)) ^ z;
+    return ((z ^ (z >>> 14)) >>> 0) / 4294967296;
+  };
+  const gauss = rng => Math.sqrt(-2 * Math.log(rng() + 1e-12)) * Math.cos(2 * Math.PI * rng());
+  const ease = u => u < 0 ? 0 : u > 1 ? 1 : u * u * (3 - 2 * u);
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const mono = px => `${px}px ${css("--mono")}`;
+  const sans = (px, w) => `${w || 500} ${px}px ${css("--sans")}`;
+  const VRA_F = (DATA.meta || {}).vra_factor || 1.0;
+  const VRA_S = (DATA.meta || {}).vra_specific || 1.0;
+
+  // --- sources cited across stages -----------------------------------------
+  const SRC = {
+    use4: ['Menchero, Orr & Wang (2011), <i>The Barra US Equity Model (USE4): Methodology Notes</i>, MSCI', 'https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf'],
+    eigen: ['Menchero, Wang & Orr (2011), <i>Eigen-Adjusted Covariance Matrices</i>, MSCI', 'https://www.top1000funds.com/wp-content/uploads/2011/06/Eigenfactor_Adjusted_Covariance_Matrices_May2011.pdf'],
+    shepard: ['Shepard (2009), <i>Second Order Risk</i>, arXiv:0908.2455', 'https://arxiv.org/abs/0908.2455'],
+    shumway: ['Shumway (1997), <i>The Delisting Bias in CRSP Data</i>, Journal of Finance 52(1)', 'https://doi.org/10.1111/j.1540-6261.1997.tb03818.x'],
+    ff: ['Fama & French industry definitions, Ken French Data Library', 'https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/data_library.html'],
+    mz: ['Mincer & Zarnowitz (1969), <i>The Evaluation of Economic Forecasts</i>, NBER', 'https://www.nber.org/books-and-chapters/economic-forecasts-and-expectations-analysis-forecasting-behavior-and-performance'],
+    bbg: ['Menchero (Bloomberg), <i>Multi-Asset Risk Models — Overcoming the Curse of Dimensionality</i>, Berkeley CDAR deck', 'https://web.archive.org/web/2024id_/https://cdar.berkeley.edu/sites/default/files/New-MAC2-Slide-Deck.pdf'],
+    edgarsrc: ['SEC EDGAR bulk data & fair-access policy', 'https://www.sec.gov/os/accessing-edgar-data'],
+    meth: ['riskprism METHODOLOGY.md — full parameter list & survivorship audit', 'https://github.com/wanxinwanxin/risk-prism/blob/main/docs/METHODOLOGY.md'],
+  };
+  const cite = (...keys) => keys.map(k =>
+    `<a href="${SRC[k][1]}" target="_blank" rel="noopener">${SRC[k][0]}</a>`).join(' · ');
+
+  // === per-stage animations =================================================
+  // Each is (ctx, W, H, t) with t in seconds looping.
+
+  function drawEdgar(ctx, W, H, t) {
+    const ml = 46, mr = 20, y0 = H * 0.68, u = ease((t % 10) / 8.6);
+    const cursor = ml + u * (W - ml - mr);
+    ctx.strokeStyle = css("--grid"); ctx.beginPath();
+    ctx.moveTo(ml, y0); ctx.lineTo(W - mr, y0); ctx.stroke();
+    const stamps = [0.10, 0.24, 0.38, 0.55, 0.72, 0.88];
+    const vals = [3.1, 3.1, 3.4, 3.4, 3.4, 4.0, 4.2];
+    let lastIdx = 0;
+    stamps.forEach((s, i) => {
+      const x = ml + s * (W - ml - mr), passed = cursor >= x;
+      if (passed) lastIdx = i + 1;
+      ctx.fillStyle = passed ? css("--accent") : css("--muted");
+      ctx.fillRect(x - 1.5, y0 - 8, 3, 16);
+      ctx.font = mono(9.5); ctx.textAlign = "center";
+      ctx.fillStyle = css("--muted");
+      ctx.fillText(i % 4 === 3 ? "10-K" : "10-Q", x, y0 + 20);
+    });
+    // the value the model is allowed to see: steps only at filed dates
+    ctx.strokeStyle = css("--s-value"); ctx.lineWidth = 2; ctx.beginPath();
+    let px = ml, pv = vals[0];
+    const yv = v => H * 0.42 - (v - 3) * H * 0.22;
+    ctx.moveTo(ml, yv(pv));
+    stamps.forEach((s, i) => {
+      const x = ml + s * (W - ml - mr);
+      if (x > cursor) return;
+      ctx.lineTo(x, yv(pv)); pv = vals[i + 1]; ctx.lineTo(x, yv(pv)); px = x;
+    });
+    ctx.lineTo(cursor, yv(pv)); ctx.stroke(); ctx.lineWidth = 1;
+    ctx.fillStyle = css("--ink"); ctx.font = mono(12); ctx.textAlign = "left";
+    ctx.fillText(`book equity the model may use: $${vals[lastIdx].toFixed(1)}B`, ml, 16);
+    ctx.fillStyle = css("--muted"); ctx.font = sans(10.5);
+    ctx.fillText("a number exists only after its filing date — never at the fiscal period it describes", ml, 30);
+    // model clock
+    ctx.strokeStyle = css("--ink-2"); ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(cursor, 38); ctx.lineTo(cursor, y0 + 6); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--ink-2"); ctx.font = mono(10); ctx.textAlign = "center";
+    ctx.fillText("model clock", cursor, y0 + 34);
+  }
+
+  function drawPrices(ctx, W, H, t) {
+    const ml = 40, mr = 16, u = ease((t % 8) / 7);
+    const rng = mulberry(7); let p = 100; const path = [100];
+    for (let i = 1; i < 120; i++) { p *= 1 + gauss(rng) * 0.013 + 0.0006; path.push(p); }
+    const n = Math.max(10, Math.floor(u * 120));
+    const xs = i => ml + i / 119 * (W - ml - mr);
+    const lo = Math.min(...path) * 0.99, hi = Math.max(...path) * 1.01;
+    const yp = v => 12 + (1 - (v - lo) / (hi - lo)) * (H * 0.5 - 12);
+    for (let i = 5; i < 120; i += 5) { // Fridays
+      ctx.strokeStyle = css("--grid");
+      ctx.beginPath(); ctx.moveTo(xs(i), 10); ctx.lineTo(xs(i), H * 0.52); ctx.stroke();
+    }
+    ctx.strokeStyle = css("--s-market"); ctx.lineWidth = 1.8; ctx.beginPath();
+    for (let i = 0; i < n; i++) ctx[i ? "lineTo" : "moveTo"](xs(i), yp(path[i]));
+    ctx.stroke(); ctx.lineWidth = 1;
+    const y0 = H * 0.82;
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath(); ctx.moveTo(ml, y0); ctx.lineTo(W - mr, y0); ctx.stroke();
+    for (let i = 5; i < n; i += 5) {
+      const r = path[i] / path[i - 5] - 1;
+      const h2 = Math.min(Math.abs(r) * 900, H * 0.16);
+      ctx.fillStyle = r >= 0 ? css("--s-value") : css("--s-leverage");
+      ctx.fillRect(xs(i) - 3, r >= 0 ? y0 - h2 : y0, 6, h2);
+    }
+    ctx.fillStyle = css("--muted"); ctx.font = sans(10.5); ctx.textAlign = "left";
+    ctx.fillText("daily closes (gridlines = Fridays)", ml, H * 0.58);
+    ctx.fillText("Friday-to-Friday weekly returns — the model's raw material", ml, H - 4);
+  }
+
+  function drawUniverse(ctx, W, H, t) {
+    const rng = mulberry(21), u = (t % 9) / 9;
+    const gateY = H * 0.5, n = 64;
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath(); ctx.moveTo(12, gateY); ctx.lineTo(W - 12, gateY); ctx.stroke();
+    ctx.font = sans(10.5); ctx.fillStyle = css("--muted"); ctx.textAlign = "left";
+    ctx.fillText("all live EDGAR registrants", 14, 14);
+    ctx.fillText("price ≥ $2 · ADV ≥ $1M · 26w history", 14, gateY - 6);
+    for (let i = 0; i < n; i++) {
+      const passes = rng() > 0.28, x0 = 20 + rng() * (W - 40);
+      const lag = rng() * 0.5, uu = ease((u - lag) / 0.5);
+      if (uu <= 0) continue;
+      const xEnd = passes ? W * 0.28 + rng() * W * 0.18 : W * 0.68 + rng() * W * 0.18;
+      const y = 22 + uu * (H - 48), x = x0 + ease(Math.max(0, uu - 0.5) * 2) * (xEnd - x0);
+      ctx.fillStyle = passes ? css("--accent") : css("--muted");
+      ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.arc(x, y, 3.2, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+    ctx.textAlign = "center"; ctx.font = sans(11.5, 600);
+    ctx.fillStyle = css("--accent");
+    ctx.fillText(`estimation universe (${m.n_estimation ?? "~2,800"})`, W * 0.34, H - 8);
+    ctx.fillStyle = css("--muted");
+    ctx.fillText(`coverage-only — risk via priors (${(m.n_assets ?? 3000) - (m.n_estimation ?? 2800)})`, W * 0.74, H - 8);
+  }
+
+  function drawStyles(ctx, W, H, t) {
+    const u = (t % 10) / 10, ml = 30, mr = 16, y0 = H * 0.78;
+    const rng = mulberry(5);
+    const raw = Array.from({ length: 400 }, () => gauss(rng) * (rng() < 0.06 ? 3.4 : 1));
+    const phase = u < 0.36 ? 0 : u < 0.7 ? 1 : 2;
+    const wu = ease((u - 0.36) / 0.2); // winsor progress
+    const bins = new Array(33).fill(0);
+    raw.forEach(v => {
+      let z = v;
+      if (phase >= 1) { const cap = 3 + (1 - wu) * 3; z = Math.max(-cap, Math.min(cap, z)); }
+      const b = Math.round((z + 6) / 12 * 32);
+      if (b >= 0 && b <= 32) bins[b]++;
+    });
+    const bw = (W - ml - mr) / 33, mx = Math.max(...bins);
+    const x3l = ml + ((-3 + 6) / 12) * (W - ml - mr), x3r = ml + ((3 + 6) / 12) * (W - ml - mr);
+    bins.forEach((c, i) => {
+      const x = ml + i * bw, h2 = c / mx * H * 0.55;
+      const inside = x >= x3l - bw && x <= x3r;
+      ctx.fillStyle = inside ? css("--s-momentum") : css("--s-leverage");
+      ctx.fillRect(x, y0 - h2, bw - 1.5, h2);
+    });
+    [x3l, x3r].forEach(x => {
+      ctx.strokeStyle = css("--ink-2"); ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.moveTo(x, y0 - H * 0.6); ctx.lineTo(x, y0); ctx.stroke();
+      ctx.setLineDash([]);
+    });
+    ctx.font = mono(10); ctx.fillStyle = css("--muted"); ctx.textAlign = "center";
+    ctx.fillText("−3σ", x3l, y0 + 14); ctx.fillText("+3σ", x3r, y0 + 14);
+    ctx.textAlign = "left"; ctx.font = sans(11);
+    ctx.fillStyle = css("--ink");
+    const msg = phase === 0 ? "1 · raw descriptor — fat tails, data errors, scale all over the place"
+      : phase === 1 ? "2 · winsorize: fold everything beyond ±3σ back to the boundary"
+      : "3 · standardize: cap-weighted mean 0, equal-weighted std 1 — exposures become comparable σ-units";
+    ctx.fillText(msg, ml, 16);
+    if (phase === 2) {
+      const x = ml + ((1.3 + 6) / 12) * (W - ml - mr);
+      ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y0 - H * 0.5); ctx.lineTo(x, y0); ctx.stroke(); ctx.lineWidth = 1;
+      ctx.fillStyle = css("--accent"); ctx.font = mono(11); ctx.textAlign = "center";
+      ctx.fillText("one stock: +1.3σ momentum", x, y0 - H * 0.55);
+    }
+  }
+
+  function drawIndustry(ctx, W, H, t) {
+    const u = ease((t % 8) / 5), rng = mulberry(13), n = 48, cols = 12;
+    const labels = ["NoDur", "Durbl", "Manuf", "Enrgy", "Chems", "BusEq", "Telcm", "Utils", "Shops", "Hlth", "Money", "Other"];
+    for (let i = 0; i < n; i++) {
+      const home = i % cols, stackPos = Math.floor(i / cols);
+      const x0 = 20 + rng() * (W - 40), y0 = 14 + rng() * (H * 0.3);
+      const x1 = 14 + home * (W - 28) / cols + (W - 28) / cols / 2;
+      const y1 = H - 34 - stackPos * 13;
+      const x = x0 + u * (x1 - x0), y = y0 + u * (y1 - y0);
+      ctx.fillStyle = css("--s-industry"); ctx.globalAlpha = 0.5 + 0.5 * u;
+      ctx.fillRect(x - 5, y - 5, 10, 10);
+      ctx.globalAlpha = 1;
+      if (u < 0.4) {
+        ctx.font = mono(7); ctx.fillStyle = css("--muted"); ctx.textAlign = "center";
+        ctx.fillText(String(2800 + Math.floor(rng() * 5000)), x, y - 8);
+      }
+    }
+    if (u > 0.6) {
+      ctx.font = mono(8.5); ctx.fillStyle = css("--muted"); ctx.textAlign = "center";
+      labels.forEach((l, j) => ctx.fillText(l, 14 + j * (W - 28) / cols + (W - 28) / cols / 2, H - 8));
+    }
+    ctx.font = sans(11); ctx.fillStyle = css("--ink"); ctx.textAlign = "left";
+    ctx.fillText(u < 0.4 ? "four-digit SIC codes from each filer's EDGAR record…" : "…mapped to 12 Fama-French groups → one-hot industry exposures", 14, H * 0.06 + 4);
+  }
+
+  function drawDelist(ctx, W, H, t) {
+    const u = (t % 9) / 9, half = W / 2;
+    const panel = (x0, title, prices, imputed, color, note) => {
+      const iw = half - 40, y0 = H * 0.72, n = prices.length;
+      ctx.font = sans(11, 600); ctx.fillStyle = css("--ink"); ctx.textAlign = "left";
+      ctx.fillText(title, x0, 18);
+      ctx.strokeStyle = css("--grid");
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + iw, y0); ctx.stroke();
+      const hi = Math.max(...prices) * 1.15;
+      ctx.strokeStyle = css("--ink-2"); ctx.lineWidth = 1.6; ctx.beginPath();
+      prices.forEach((p, i) => ctx[i ? "lineTo" : "moveTo"](x0 + i / (n + 2) * iw, y0 - p / hi * (H * 0.44)));
+      ctx.stroke(); ctx.lineWidth = 1;
+      const lx = x0 + (n - 1) / (n + 2) * iw, ly = y0 - prices[n - 1] / hi * (H * 0.44);
+      ctx.fillStyle = css("--muted"); ctx.font = mono(9.5);
+      ctx.fillText("last trade", lx - 22, ly - 8);
+      if (u > 0.45) {
+        const uu = ease((u - 0.45) / 0.3);
+        ctx.fillStyle = color; ctx.globalAlpha = uu;
+        const bx = x0 + n / (n + 2) * iw;
+        const bh = Math.abs(imputed) * 200 * (H / 220);
+        ctx.fillRect(bx, imputed < 0 ? ly : ly - 1.5, 14, imputed < 0 ? Math.min(bh, y0 - ly) : 3);
+        ctx.font = mono(11);
+        ctx.fillText(`${imputed >= 0 ? "+" : ""}${(imputed * 100).toFixed(0)}% imputed`, bx - 20, y0 + 16);
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+      ctx.fillText(note, x0, H - 6);
+    };
+    const rngA = mulberry(3); const pA = [8, 7, 6.2, 5, 3.8, 3.1, 2.4, 2.1].map(p => p * (1 + gauss(rngA) * 0.03));
+    const pB = [30, 31, 30, 33, 36, 37.5, 38, 38.2];
+    panel(24, "last price $2.10 — under $5", pA, -0.30, css("--s-leverage"), "failure-shaped exit → −30% (Shumway 1997)");
+    panel(half + 16, "last price $38 — deal close", pB, 0.0, css("--s-value"), "merger — final price already reflects the terms → 0%");
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath(); ctx.moveTo(half, 10); ctx.lineTo(half, H - 10); ctx.stroke();
+  }
+
+  function drawRegress(ctx, W, H, t) {
+    const u = ease(((t % 10) - 1) / 3), rng = mulberry(17);
+    const ml = 40, mr = 16, mt = 24, mb = 26;
+    const slope = -0.011, n = 60;
+    const pts = Array.from({ length: n }, () => {
+      const x = Math.max(-2.5, Math.min(2.5, gauss(rng)));
+      const cap = Math.exp(rng() * 4);
+      return { x, cap, y: x * slope + gauss(rng) * 0.02 / Math.sqrt(Math.sqrt(cap)) };
+    });
+    const xs = v => ml + (v + 2.7) / 5.4 * (W - ml - mr);
+    const ys = v => mt + (0.055 - v) / 0.11 * (H - mt - mb);
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath(); ctx.moveTo(ml, ys(0)); ctx.lineTo(W - mr, ys(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xs(0), mt); ctx.lineTo(xs(0), H - mb); ctx.stroke();
+    pts.forEach(p => {
+      ctx.fillStyle = css("--s-market"); ctx.globalAlpha = 0.55;
+      ctx.beginPath(); ctx.arc(xs(p.x), ys(p.y), 1.5 + Math.sqrt(p.cap) * 0.9, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+    });
+    const k = u * slope;
+    ctx.strokeStyle = css("--s-momentum"); ctx.lineWidth = 2.4;
+    ctx.beginPath(); ctx.moveTo(xs(-2.6), ys(-2.6 * k)); ctx.lineTo(xs(2.6), ys(2.6 * k)); ctx.stroke();
+    ctx.lineWidth = 1;
+    if (u > 0.99) {
+      [pts[4], pts[11], pts[23]].forEach(p => {
+        ctx.strokeStyle = css("--s-specific");
+        ctx.beginPath(); ctx.moveTo(xs(p.x), ys(p.y)); ctx.lineTo(xs(p.x), ys(p.x * slope)); ctx.stroke();
+      });
+      ctx.fillStyle = css("--s-specific"); ctx.font = mono(10); ctx.textAlign = "left";
+      ctx.fillText("ε — specific returns", xs(pts[23].x) + 8, (ys(pts[23].y) + ys(pts[23].x * slope)) / 2);
+    }
+    ctx.fillStyle = css("--ink"); ctx.font = mono(11.5); ctx.textAlign = "left";
+    ctx.fillText(`slope = this week's momentum factor return: ${(k * 100).toFixed(2)}%`, ml, 14);
+    ctx.fillStyle = css("--muted"); ctx.font = sans(10);
+    ctx.fillText("dot size ∝ √(market cap) — the WLS regression weight; x = exposure, y = weekly return", ml, H - 6);
+  }
+
+  function drawHistory(ctx, W, H, t) {
+    const u = (t % 10) / 10, rows = 26, colsF = 8, colsR = 14;
+    const shown = Math.max(3, Math.floor(u * rows));
+    const rng = mulberry(29);
+    const cell = Math.min((H - 46) / rows, 8);
+    const fx = 60, rxx = W * 0.5;
+    ctx.font = sans(10.5, 600); ctx.fillStyle = css("--ink"); ctx.textAlign = "left";
+    ctx.fillText("factor returns f (weeks ↓)", fx, 14);
+    ctx.fillText("residuals ε (stocks →)", rxx, 14);
+    const dead = 9, deadAt = 16;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < colsF; c++) {
+        const v = gauss(rng) * 0.8;
+        if (r >= shown) continue;
+        ctx.fillStyle = v >= 0 ? css("--heat-pos") : css("--heat-neg");
+        ctx.globalAlpha = Math.min(Math.abs(v), 1) * 0.9 + 0.08;
+        ctx.fillRect(fx + c * (cell + 1), 22 + r * (cell + 1), cell, cell);
+      }
+      for (let c = 0; c < colsR; c++) {
+        const v = gauss(rng) * 0.8;
+        if (r >= shown) continue;
+        const gone = c === dead && r >= deadAt;
+        ctx.globalAlpha = gone ? 0 : Math.min(Math.abs(v), 1) * 0.7 + 0.06;
+        ctx.fillStyle = css("--s-industry");
+        ctx.fillRect(rxx + c * (cell + 1), 22 + r * (cell + 1), cell, cell);
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (shown > deadAt) {
+      const x = rxx + dead * (cell + 1) + cell / 2;
+      ctx.fillStyle = css("--s-leverage"); ctx.font = mono(10); ctx.textAlign = "center";
+      ctx.fillText("✝", x, 22 + deadAt * (cell + 1) + 8);
+      ctx.font = sans(9.5); ctx.textAlign = "left"; ctx.fillStyle = css("--muted");
+      ctx.fillText("a delisted stock's history stays —", rxx, 30 + rows * (cell + 1));
+      ctx.fillText("that's what kills survivorship bias going forward", rxx, 42 + rows * (cell + 1));
+    }
+    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "left";
+    ctx.fillText("each build appends new weeks; history capped at 156", fx, 30 + rows * (cell + 1));
+  }
+
+  function drawFcov(ctx, W, H, t) {
+    const u = (t % 12) / 12, ml = 40, mr = 130, y0 = H * 0.66;
+    const rng = mulberry(41), n = 46;
+    const shock = i => (i > 30 && i <= 38) ? 2.6 : 1;
+    const rets = Array.from({ length: n }, (_, i) => gauss(rng) * 0.012 * shock(i));
+    const shown = Math.max(6, Math.floor(u * n));
+    const bw = (W - ml - mr) / n;
+    let ew = 0, wsum = 0, lam = Math.pow(0.5, 1 / 13), l2 = 1, lamV = Math.pow(0.5, 1 / 8);
+    ctx.strokeStyle = css("--grid");
+    ctx.beginPath(); ctx.moveTo(ml, y0); ctx.lineTo(W - mr, y0); ctx.stroke();
+    let prevVar = 0;
+    for (let i = 0; i < shown; i++) {
+      const age = shown - 1 - i, wgt = Math.pow(lam, age);
+      ew += wgt * rets[i] * rets[i]; wsum += wgt;
+      const curVar = ew / Math.max(wsum, 1e-9);
+      if (i > 12) {
+        const b2 = rets[i] * rets[i] / Math.max(prevVar, 1e-9);
+        l2 = lamV * l2 + (1 - lamV) * Math.min(b2, 9);
+      }
+      prevVar = curVar;
+      const h2 = Math.min(Math.abs(rets[i]) / 0.045 * (H * 0.5), H * 0.5);
+      ctx.fillStyle = css("--s-size");
+      ctx.globalAlpha = Math.max(0.08, wgt);
+      ctx.fillRect(ml + i * bw, rets[i] >= 0 ? y0 - h2 : y0, Math.max(2, bw - 2), h2);
+      ctx.globalAlpha = 1;
+    }
+    const vol = Math.sqrt(ew / Math.max(wsum, 1e-9) * 52);
+    const lamNow = Math.max(0.5, Math.min(2, Math.sqrt(l2)));
+    ctx.strokeStyle = css("--accent"); ctx.setLineDash([4, 3]);
+    const bandY = y0 - Math.min(vol * lamNow / 3.2, 0.98) * H * 0.5;
+    ctx.beginPath(); ctx.moveTo(ml, bandY); ctx.lineTo(W - mr, bandY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = css("--ink"); ctx.font = mono(11); ctx.textAlign = "left";
+    ctx.fillText(`EWMA vol ${(vol * 100).toFixed(0)}%`, W - mr + 8, y0 - 30);
+    ctx.fillStyle = lamNow > 1.1 ? css("--s-leverage") : css("--ink-2");
+    ctx.fillText(`× VRA λ = ${lamNow.toFixed(2)}`, W - mr + 8, y0 - 14);
+    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+    ctx.fillText("forecast band", W - mr + 8, bandY + 4);
+    ctx.fillText("opacity = EWMA weight (13w half-life);", ml, H - 18);
+    ctx.fillText("shock cluster arrives → λ climbs before the half-life can catch up", ml, H - 6);
+    ctx.fillStyle = css("--ink"); ctx.font = sans(10.5);
+    ctx.fillText(`this build ships λ_factor = ${VRA_F.toFixed(2)}`, ml, 14);
+  }
+
+  function drawSpecific(ctx, W, H, t) {
+    const u = ease(((t % 10) - 2.5) / 3), ml = 46, mr = 16, mt = 22, mb = 30;
+    const rng = mulberry(53), nb = 10, perB = 9;
+    const meanFor = b => 0.55 - b * 0.032;
+    ctx.strokeStyle = css("--grid");
+    for (let b = 0; b < nb; b++) {
+      const x = ml + (b + 0.5) / nb * (W - ml - mr);
+      const ym = mt + (1 - meanFor(b) / 0.75) * (H - mt - mb);
+      ctx.strokeStyle = css("--ink-2");
+      ctx.beginPath(); ctx.moveTo(x - 14, ym); ctx.lineTo(x + 14, ym); ctx.stroke();
+      for (let i = 0; i < perB; i++) {
+        const raw = meanFor(b) + gauss(rng) * 0.11;
+        const mean = meanFor(b), dist = Math.abs(raw - mean);
+        const v = 0.1 * dist / (0.08 + 0.1 * dist);
+        const now = raw + u * v * (mean - raw);
+        const y = mt + (1 - Math.max(now, 0.03) / 0.75) * (H - mt - mb);
+        ctx.fillStyle = css("--s-volatility"); ctx.globalAlpha = 0.75;
+        ctx.beginPath(); ctx.arc(x - 10 + (i / perB) * 20, y, 2.6, 0, 7); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "center";
+      ctx.fillText(String(b + 1), x, H - 16);
+    }
+    ctx.fillStyle = css("--muted"); ctx.font = sans(10); ctx.textAlign = "left";
+    ctx.fillText("size decile (1 = smallest) — bars are decile means", ml, H - 4);
+    ctx.fillStyle = css("--ink"); ctx.font = sans(11);
+    ctx.fillText(u < 0.05 ? "raw per-stock specific vols: noisy, extremes are mostly estimation error"
+      : `Bayesian shrinkage (q = 0.1): each vol pulled toward its decile mean — harder the further out it sits · then × λ_specific = ${VRA_S.toFixed(2)}`, ml, 14);
+    ctx.save(); ctx.translate(14, (H + 10) / 2); ctx.rotate(-Math.PI / 2);
+    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "center";
+    ctx.fillText("specific vol (ann.)", 0, 0); ctx.restore();
+  }
+
+  function drawAssemble(ctx, W, H, t) {
+    const u = (t % 9) / 9, cy = H * 0.46;
+    const uIn = ease(u / 0.4), uSig = ease((u - 0.45) / 0.25), uSpec = ease((u - 0.72) / 0.25);
+    const box = (x, y, w2, h2, color, lbl, sub) => {
+      ctx.fillStyle = color; ctx.globalAlpha = 0.16; ctx.fillRect(x, y, w2, h2); ctx.globalAlpha = 1;
+      ctx.strokeStyle = color; ctx.strokeRect(x, y, w2, h2);
+      ctx.fillStyle = css("--ink"); ctx.font = mono(12); ctx.textAlign = "center";
+      ctx.fillText(lbl, x + w2 / 2, y + h2 / 2 + 4);
+      if (sub) { ctx.fillStyle = css("--muted"); ctx.font = sans(8.5); ctx.fillText(sub, x + w2 / 2, y + h2 + 11); }
+    };
+    const gap = 12, xX = W * 0.06 + (1 - uIn) * -30;
+    box(xX, cy - 52, 34, 104, css("--s-market"), "X", "n × 21 exposures");
+    box(xX + 34 + gap, cy - 26, 52, 52, css("--s-momentum"), "F", "factor cov");
+    box(xX + 98 + gap, cy - 17, 104, 34, css("--s-market"), "Xᵀ", "");
+    ctx.fillStyle = css("--ink"); ctx.font = mono(15); ctx.textAlign = "center";
+    ctx.fillText("+", xX + 218, cy + 5);
+    box(xX + 232, cy - 52, 104, 104, css("--s-specific"), "diag(s²)", "specific, per stock");
+    if (uSig > 0) {
+      ctx.globalAlpha = uSig;
+      ctx.fillText("=", xX + 352, cy + 5);
+      box(xX + 366, cy - 52, 104, 104, css("--accent"), "Σ", "n × n — never stored, always composed");
+      ctx.globalAlpha = 1;
+    }
+    if (uSpec > 0) {
+      ctx.globalAlpha = uSpec;
+      ctx.fillStyle = css("--ink"); ctx.font = mono(12.5); ctx.textAlign = "left";
+      const xr = Math.min(xX + 490, W - 190);
+      ctx.fillText("σ(w) = √(wᵀΣw)", xr, cy - 10);
+      ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+      ctx.fillText("your portfolio in, one number out —", xr, cy + 8);
+      ctx.fillText("then split back into the spectrum", xr, cy + 20);
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawValidate(ctx, W, H, t) {
+    const u = (t % 12) / 12, ml = 36, mrPanel = W * 0.3, y0 = H * 0.5;
+    const rng = mulberry(61), n = 40, shown = Math.max(4, Math.floor(u * n));
+    const bw = (W - ml - mrPanel - 20) / n;
+    const zs = [];
+    for (let i = 0; i < n; i++) {
+      const sig = 0.02 * (1 + 0.3 * Math.sin(i / 6));
+      const z = gauss(rng), r = z * sig;
+      if (i >= shown) continue;
+      zs.push(z);
+      const x = ml + i * bw;
+      const bh = 1.96 * sig / 0.075 * (H * 0.42);
+      ctx.fillStyle = css("--accent"); ctx.globalAlpha = 0.14;
+      ctx.fillRect(x, y0 - bh, Math.max(2, bw - 1.5), 2 * bh);
+      ctx.globalAlpha = 1;
+      const y = y0 - r / 0.075 * (H * 0.42);
+      ctx.fillStyle = Math.abs(z) > 1.96 ? css("--s-leverage") : css("--ink-2");
+      ctx.beginPath(); ctx.arc(x + bw / 2, y, 2.2, 0, 7); ctx.fill();
+    }
+    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "left";
+    ctx.fillText("band = ±1.96 × forecast vol, set BEFORE the week · dot = what happened", ml, H - 6);
+    const bias = zs.length > 3 ? Math.sqrt(zs.reduce((a, z) => a + z * z, 0) / (zs.length - 1)) : 1;
+    const exc = zs.length ? zs.filter(z => Math.abs(z) > 1.96).length / zs.length : 0;
+    const px = W - mrPanel + 6;
+    ctx.fillStyle = css("--ink"); ctx.font = mono(13); ctx.textAlign = "left";
+    ctx.fillText(`bias = ${bias.toFixed(2)}`, px, y0 - 22);
+    ctx.font = mono(11);
+    ctx.fillText(`|z|>1.96: ${(exc * 100).toFixed(0)}%`, px, y0 - 4);
+    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+    ctx.fillText("calibrated ⇒ bias ≈ 1,", px, y0 + 16);
+    ctx.fillText("tails ≈ 5% — no cherry-", px, y0 + 28);
+    ctx.fillText("picking possible: every", px, y0 + 40);
+    ctx.fillText("week is scored, in public", px, y0 + 52);
+    ctx.fillStyle = css("--ink"); ctx.font = sans(10.5);
+    ctx.fillText("every historical week: forecast first, reality lands, z = return / forecast", ml, 14);
+  }
+
+  function drawShip(ctx, W, H, t) {
+    const u = (t % 8) / 8;
+    const srcX = W * 0.17, srcY = H / 2;
+    ctx.strokeStyle = css("--ink-2");
+    ctx.strokeRect(srcX - 52, srcY - 34, 104, 68);
+    ctx.fillStyle = css("--ink"); ctx.font = sans(11, 600); ctx.textAlign = "center";
+    ctx.fillText("weekly build", srcX, srcY - 12);
+    ctx.fillStyle = css("--muted"); ctx.font = mono(9);
+    ctx.fillText("GitHub Actions", srcX, srcY + 4);
+    ctx.fillText("Mondays 06:00 UTC", srcX, srcY + 18);
+    const outs = [
+      ["explorer (this site)", "humans", css("--s-market"), H * 0.2],
+      ["model.md + llms.txt + MCP", "AI agents", css("--s-quality"), H * 0.5],
+      ["parquet artifacts (release)", "python / quants", css("--s-value"), H * 0.8],
+    ];
+    outs.forEach(([lbl, who, color, y], i) => {
+      const x1 = W * 0.62;
+      ctx.strokeStyle = color; ctx.setLineDash([5, 4]);
+      ctx.lineDashOffset = -u * 36 - i * 3;
+      ctx.beginPath(); ctx.moveTo(srcX + 54, srcY);
+      ctx.bezierCurveTo(W * 0.4, srcY, W * 0.4, y, x1 - 6, y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = css("--ink"); ctx.font = sans(11, 600); ctx.textAlign = "left";
+      ctx.fillText(lbl, x1, y + 1);
+      ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+      ctx.fillText("→ " + who, x1, y + 14);
+    });
+    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "left";
+    ctx.fillText("same numbers to everyone — no key, no signup, MIT", srcX - 52, H - 6);
+  }
+
+  // === node metadata ========================================================
+  const NODES = {
+    edgar: { kind: "data", col: 0, row: 0, title: "SEC EDGAR bulk data", short: ["SEC EDGAR", "filings, point-in-time"],
+      what: "Every US public company's financial statements, downloaded as SEC's nightly bulk archives (companyfacts.zip + submissions.zip — two requests, not thousands). Each number carries its filing date, and the model is only allowed to see it after that date: fundamentals are point-in-time by construction.",
+      why: "Using a number before the market could see it (lookahead) fakes forecasting skill. Commercial models standardize on point-in-time descriptor data for exactly this reason, and the SEC's fair-access policy makes the bulk archives the sanctioned way to read EDGAR at scale.",
+      src: ["edgarsrc", "use4"], anim: drawEdgar, aspect: 0.36, loop: 10,
+      cap: "The model clock sweeps forward; a fundamental becomes usable only when its filing lands — never at the fiscal period it describes." },
+    prices: { kind: "data", col: 0, row: 1, title: "Daily prices & volume", short: ["Daily prices", "pluggable provider"],
+      what: "Daily closes and volumes for every candidate ticker, via a pluggable provider (Yahoo's chart API by default). Aggregated to Friday-to-Friday weekly returns — the model's dependent variable — plus daily returns kept for realized-volatility validation. Raw prices are never redistributed; only derived factor data ships.",
+      why: "Weekly frequency is the medium-horizon design choice: enough cross-sections to estimate 21 factors, slow enough that microstructure noise and asynchronous closes wash out. Commercial vendors run daily (USE4) — that's our documented trade-off, revisited if a short-horizon variant ever ships.",
+      src: ["meth", "use4"], anim: drawPrices, aspect: 0.36, loop: 8,
+      cap: "Daily closes compound into Friday-to-Friday weekly returns; the daily path is kept for higher-powered realized-vol checks." },
+    universe: { kind: "proc", col: 1, row: 0, title: "Universe filters", short: ["Universe filters", "estimation vs coverage"],
+      what: "Two universes, on purpose. The estimation universe (price ≥ $2, median dollar volume ≥ $1M, 26+ weeks of history) supplies clean cross-sections for the factor regressions. The coverage universe is everything alive at ≥ $1 — including week-old IPOs — and inherits risk through the factor structure plus structural priors.",
+      why: "Penny stocks and illiquid names inject noise into factor estimation, but users still hold them — so estimate on the clean set, cover everyone. This split is standard practice: USE4 draws its estimation universe from a curated index parent for the same reason.",
+      src: ["use4", "meth"], anim: drawUniverse, aspect: 0.4, loop: 9,
+      cap: "Every live registrant falls through the liquidity sieve: passers estimate the factors, the rest still get covered via priors." },
+    styles: { kind: "proc", col: 1, row: 1, title: "Style descriptors", short: ["Style descriptors", "winsorize · standardize"],
+      what: "Seven characteristics per stock — size, value, momentum, volatility, liquidity, quality, leverage — computed from prices and point-in-time fundamentals. Each is winsorized at ±3σ (data errors and true outliers folded to the boundary), then standardized to cap-weighted mean 0 and equal-weighted std 1.",
+      why: "The standardization convention is load-bearing: cap-weighted mean 0 makes the market portfolio style-neutral (so the market factor is really the market), and equal-weighted std 1 stops mega-caps from defining the scale. This is USE4's exact recipe (§2.2), descriptor for descriptor.",
+      src: ["use4"], anim: drawStyles, aspect: 0.4, loop: 10,
+      cap: "Raw descriptor → fold outliers at ±3σ → re-center and re-scale: every exposure becomes 'how many σ from the market on this trait'." },
+    industry: { kind: "proc", col: 1, row: 2, title: "Industry map", short: ["Industry map", "SIC → Fama-French 12"],
+      what: "Each filer's four-digit SIC code from EDGAR maps to one of the 12 Fama-French industry groups, becoming a one-hot exposure. Coarser than the 39–68 GICS industries commercial models use — deliberately.",
+      why: "FF12 is public domain (GICS is licensed), stable, and coarse enough that no industry is ever 'thin' — USE4 documents avoiding thin industries because a factor estimated on a handful of names is noise. The cost is less granular industry risk; the audit trail is the win.",
+      src: ["ff", "use4"], anim: drawIndustry, aspect: 0.38, loop: 8,
+      cap: "Thousands of SIC codes collapse into 12 broad groups — every group deep enough to estimate a real factor return." },
+    delist: { kind: "proc", col: 1, row: 3, title: "Delisting imputation", short: ["Delisting returns", "the survivorship fix"],
+      what: "When a stock stops trading, it doesn't silently vanish: its final week gets an imputed return — −30% if its last price was under $5 (failure-shaped exits), 0% otherwise (mergers, where the last price already reflects deal terms) — and all its history stays in the dataset.",
+      why: "Datasets that quietly drop the dead overstate returns and understate risk — the classic CRSP delisting bias Shumway quantified (~−30% average for performance delistings). Our own audit: ~8%/yr of active filers cease filing; ignoring them would bias factor means by up to ~2.5bp/week.",
+      src: ["shumway", "meth"], anim: drawDelist, aspect: 0.36, loop: 9,
+      cap: "Two exits, two treatments: a sub-$5 fade gets −30%; a deal-price exit gets 0%. Either way the name's history survives." },
+    regress: { kind: "proc", col: 2, row: 0, title: "Weekly WLS regression", short: ["Weekly regression", "returns → factor payoffs"],
+      what: "Every Friday, that week's stock returns are regressed on the exposures known at the start of the week: r = f_mkt + Σ X·f_style + Σ I·f_industry + ε. Weights ∝ √(market cap); industries are constrained to cap-weighted zero so the intercept IS the cap-weighted market return. The coefficients are that week's factor returns; the leftovers are each stock's specific return.",
+      why: "√cap weighting is the USE4 assumption that specific variance scales inversely with √cap — large caps have less noisy returns, so they anchor the fit. The constraint solves the exact collinearity between market and industries while keeping every factor interpretable as a real portfolio.",
+      src: ["use4"], anim: drawRegress, aspect: 0.42, loop: 10,
+      cap: "One week, one cross-section: the fitted slope is the factor's payoff that week; vertical gaps are the specific returns ε." },
+    history: { kind: "data", col: 2, row: 1, title: "Factor-return & residual history", short: ["f + ε history", "156-week archive"],
+      what: "The regression's outputs accumulate week by week: a 156-week archive of factor returns and per-stock residuals, plus formation-date exposure snapshots. Capture-forward: each weekly build appends to the prior release rather than refetching — so names that delist keep their rows forever.",
+      why: "This archive IS the model's memory — covariances, specific risks, validation and historical model reconstruction all derive from it. Appending (rather than rebuilding from currently-fetchable prices) is what makes history survivorship-free from launch onward.",
+      src: ["meth", "shumway"], anim: drawHistory, aspect: 0.4, loop: 10,
+      cap: "Rows accrue weekly. When a stock dies (✝), its column stops — but its past stays, unlike a refetched price panel." },
+    fcov: { kind: "proc", col: 2, row: 2, title: "Factor covariance", short: ["Factor covariance", "EWMA · NW · VRA"],
+      what: "Factor vols from a 13-week-half-life EWMA (responsive), correlations from 26 weeks (stable), combined and repaired to positive semi-definite. Variances carry a 2-lag Newey-West adjustment for serial correlation, and everything is scaled by the Volatility Regime Adjustment: an EWMA of how big returns actually were versus forecast.",
+      why: "Half-life EWMA alone lags regime shifts — USE4's unadjusted model underforecast going into 2008 (bias ~1.3) and overforecast after (~0.7); their VRA held it near 1.0 throughout. Our measured Mincer-Zarnowitz slope of 0.70 showed the same disease, so v0.3 adopted the same cure. Newey-West fixes the ×52 annualization, which silently assumes weeks are independent.",
+      src: ["use4", "meth"], anim: drawFcov, aspect: 0.4, loop: 12,
+      cap: "Bars fade at the 13-week half-life; when a shock cluster lands, the VRA multiplier λ lifts the whole forecast band before the EWMA can catch up." },
+    specific: { kind: "proc", col: 2, row: 3, title: "Specific risk", short: ["Specific risk", "blend · shrink · VRA"],
+      what: "Each stock's own residual EWMA, blended with a structural model (specific vol regressed on size, volatility, liquidity, industry) by history length — so IPOs get a sensible prior instead of nothing. Blended vols are then Bayesian-shrunk toward their size-decile mean (q = 0.1) and scaled by the specific VRA multiplier.",
+      why: "Individual vol estimates are noisy: the stocks that look least risky are mostly the luckiest, so unshrunk models underforecast low-vol names and overforecast high-vol ones (USE4 measured 1.08 → 0.92 across deciles; shrinkage flattened it to ~1.0). The structural blend is the EUE3/USE4 answer to thin histories.",
+      src: ["use4"], anim: drawSpecific, aspect: 0.4, loop: 10,
+      cap: "Each dot is one stock's estimated specific vol; shrinkage pulls it toward its decile's mean — gently near the middle, hard at the extremes." },
+    assemble: { kind: "proc", col: 3, row: 0, title: "Assembly: Σ = XFXᵀ + D", short: ["Σ = XFXᵀ + D", "the whole point"],
+      what: "The full n×n covariance of ~3,000 stocks is never estimated directly — it's composed: exposures spread 21 factors' covariance across every stock (XFXᵀ), plus each stock's own specific variance on the diagonal. Any portfolio's risk is then one quadratic form, computed in your browser.",
+      why: "Estimating 3,000×3,000 ≈ 4.5M covariances from 156 weeks is hopeless (T ≪ n); 21 factors need only 231. This dimension reduction is the founding insight of factor risk models — and why a laptop (or a web page) can price portfolio risk at all.",
+      src: ["use4", "bbg"], anim: drawAssemble, aspect: 0.34, loop: 9,
+      cap: "Three small pieces compose the giant matrix nobody could estimate directly — then your weights pass through it and out comes one number." },
+    validate: { kind: "proc", col: 3, row: 1, title: "Validation replay", short: ["Validation replay", "graded weekly, in public"],
+      what: "Every build replays a fresh point-in-time model over the whole history and rescores every week: forecast first, reality lands, z = return / forecast. The panel includes market, style spreads, industries, random baskets, six real factor ETFs — and portfolios optimized against the model itself, the documented worst case.",
+      why: "std(z) ≈ 1 is the industry-standard bias statistic (USE4 Appendix A); Mincer-Zarnowitz regressions test the same thing with more power. Optimized portfolios matter because optimizers hunt the covariance matrix's underestimated directions — MSCI measured bias 1.4–1.5 there. No other public model, commercial or open, publishes this continuously.",
+      src: ["use4", "shepard", "mz", "eigen"], anim: drawValidate, aspect: 0.38, loop: 12,
+      cap: "The band is drawn before each week happens; the dot is what happened. Calibrated ⇒ dots escape the band ~5% of the time." },
+    ship: { kind: "data", col: 3, row: 2, title: "Artifacts, explorer, MCP", short: ["Open artifacts", "humans · agents · code"],
+      what: "Every Monday the pipeline reruns and ships the same model three ways: this explorer for people, /model.md + llms.txt + an MCP server for AI agents, and versioned parquet artifacts (exposures, covariance, specific risk, full histories) for anyone's code. MIT, no key, no signup.",
+      why: "The hybrid-data decision: raw prices are never redistributed, but everything derived — factor returns, exposures, risk — is open. A risk model you can't inspect is a black box; one that regenerates and regrades itself in public every week is a lab notebook.",
+      src: ["meth"], anim: drawShip, aspect: 0.36, loop: 8,
+      cap: "One weekly build, three audiences — and the validation that grades it ships in the same release." },
+  };
+
+  // === diagram ==============================================================
+  const EDGES = [
+    ["edgar", "styles", "fundamentals"], ["edgar", "industry", "SIC"],
+    ["prices", "universe", "price · volume"], ["prices", "styles", "returns"],
+    ["prices", "delist", "last trade"],
+    ["universe", "regress", "estimation names"], ["styles", "regress", "X"],
+    ["industry", "regress", "dummies"], ["delist", "regress", "imputed r"],
+    ["regress", "history", "f, ε weekly"],
+    ["history", "fcov", "factor returns"], ["history", "specific", "residuals"],
+    ["fcov", "assemble", "F"], ["specific", "assemble", "diag(s²)"],
+    ["history", "validate", "point-in-time replay"],
+    ["assemble", "ship", "Σ"], ["validate", "ship", "scores"],
+  ];
+  const NW = 208, NH = 52, COLX = [16, 300, 588, 886], VW = 1150;
+  const ROWY = [
+    [92, 300],                    // col 0
+    [36, 158, 280, 402],          // col 1
+    [36, 158, 280, 402],          // col 2
+    [64, 224, 384],               // col 3
+  ];
+  const pos = id => {
+    const nd = NODES[id];
+    return { x: COLX[nd.col], y: ROWY[nd.col][nd.row] };
+  };
+  let svg = `<svg viewBox="0 0 ${VW} 480" width="100%" role="img" aria-label="riskprism pipeline: data sources through transforms to shipped artifacts">`;
+  svg += `<defs><marker id="larr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--muted)"/></marker></defs>`;
+  for (const [a, b, lbl] of EDGES) {
+    const pa = pos(a), pb = pos(b);
+    const x1 = pa.x + NW, y1 = pa.y + NH / 2, x2 = pb.x - 4, y2 = pb.y + NH / 2;
+    const dx = Math.max(34, (x2 - x1) / 2);
+    svg += `<path class="learn-edge" data-from="${a}" data-to="${b}" marker-end="url(#larr)" d="M${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}"/>`;
+    if (lbl) svg += `<text class="learn-elabel" x="${(x1 + x2) / 2}" y="${(y1 + y2) / 2 - 4}" text-anchor="middle">${lbl}</text>`;
+  }
+  for (const [id, nd] of Object.entries(NODES)) {
+    const { x, y } = pos(id);
+    svg += `<g class="ln ${nd.kind === "data" ? "data" : ""}" data-node="${id}" tabindex="0" role="button" aria-label="${nd.title}">`;
+    svg += `<rect class="box" x="${x}" y="${y}" width="${NW}" height="${NH}" rx="${nd.kind === "data" ? 14 : 6}"/>`;
+    if (nd.kind === "data") svg += `<ellipse class="disk" cx="${x + 18}" cy="${y + NH / 2}" rx="6" ry="9"/>`;
+    svg += `<text x="${x + (nd.kind === "data" ? 32 : 14)}" y="${y + 21}">${nd.short[0]}</text>`;
+    svg += `<text class="sub2" x="${x + (nd.kind === "data" ? 32 : 14)}" y="${y + 37}">${nd.short[1]}</text>`;
+    svg += `</g>`;
+  }
+  svg += `</svg>`;
+  document.getElementById("learn-diagram").innerHTML = svg;
+
+  // === detail panel =========================================================
+  let disposeAnim = null;
+  function mountAnim(drawFn, aspect, loop) {
+    const fig = document.getElementById("learn-anim");
+    if (disposeAnim) disposeAnim();
+    fig.querySelectorAll("canvas,button.play").forEach(e => e.remove());
+    const canvas = document.createElement("canvas");
+    const btn = document.createElement("button");
+    btn.className = "play";
+    fig.prepend(btn); fig.prepend(canvas);
+    const ctx = canvas.getContext("2d");
+    let playing = false, start = 0, raf = null, W = 0, H = 0;
+    function size() {
+      if (!fig.clientWidth) return; // hidden tab: resize event retries
+      const dpr = devicePixelRatio || 1;
+      W = fig.clientWidth; H = Math.round(W * aspect);
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      canvas.style.height = H + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    const render = t => { ctx.clearRect(0, 0, W, H); drawFn(ctx, W, H, t); };
+    function frame(now) {
+      if (!start) start = now;
+      render(((now - start) / 1000) % loop);
+      if (playing) raf = requestAnimationFrame(frame);
+    }
+    function set(p) {
+      playing = p; btn.textContent = p ? "❚❚ Pause" : "▶ Play";
+      if (p) { start = 0; raf = requestAnimationFrame(frame); }
+      else if (raf) cancelAnimationFrame(raf);
+    }
+    btn.addEventListener("click", () => set(!playing));
+    const onResize = () => { size(); if (!playing) render(loop * 0.65); };
+    addEventListener("resize", onResize);
+    size();
+    if (reduced) { render(loop * 0.65); set(false); } else set(true);
+    disposeAnim = () => { if (raf) cancelAnimationFrame(raf); removeEventListener("resize", onResize); };
+  }
+
+  function select(id) {
+    const nd = NODES[id];
+    document.querySelectorAll("#learn-diagram .ln").forEach(g =>
+      g.classList.toggle("sel", g.dataset.node === id));
+    document.querySelectorAll("#learn-diagram .learn-edge").forEach(e =>
+      e.classList.toggle("hot", e.dataset.from === id || e.dataset.to === id));
+    document.getElementById("learn-kind").textContent = nd.kind === "data" ? "data" : "transform";
+    document.getElementById("learn-title").textContent = nd.title;
+    document.getElementById("learn-what").textContent = nd.what;
+    document.getElementById("learn-cap").textContent = nd.cap;
+    document.getElementById("learn-why").innerHTML =
+      `<b>Why we do it this way</b> — ${nd.why}<br><span style="font-size:11.5px">Sources: ${cite(...nd.src)}</span>`;
+    mountAnim(nd.anim, nd.aspect, nd.loop);
+  }
+  document.querySelectorAll("#learn-diagram .ln").forEach(g => {
+    const go = () => {
+      select(g.dataset.node);
+      document.getElementById("learn-detail").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
+    };
+    g.addEventListener("click", go);
+    g.addEventListener("keydown", ev => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); go(); } });
+  });
+  select("edgar");
+})();
+
 // ---------- agents: copy buttons ----------
 document.querySelectorAll(".copy").forEach(b => b.addEventListener("click", async () => {
   await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
@@ -2083,6 +2794,8 @@ document.getElementById("hero-try").addEventListener("click", () => {
       body: `Every weekly forecast is scored against what actually happened — no cherry-picking, this page regenerates with every build.${etfNote}` },
     { view: "methodology", sel: "#explainer", title: "New to factor models?",
       body: "Six animated scenes build the whole idea from scratch — thousands of stocks down to a handful of factors and back — using live numbers from the current build." },
+    { view: "learn", sel: "#learn-diagram", title: "Every pipeline step, explained",
+      body: "A clickable map of the whole machine: pick any stage for what it does, an animation of the idea, and the published research it's based on." },
     { view: "agents", sel: "#view-agents .card", title: "Built for AI agents too",
       body: "The whole model mirrors as plain markdown at /model.md, ships an MCP server, and every weekly build is a free download. That's the tour — poke anything." },
   ];
