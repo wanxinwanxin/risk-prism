@@ -629,6 +629,47 @@ a { color: var(--accent); }
       <li>Full methodology and every parameter: <a id="meth-repo-link" href="#">docs/METHODOLOGY.md on GitHub</a>.</li>
     </ul>
   </div>
+  <div class="card" id="roadmap">
+    <h2>Roadmap — the honest gap to the commercial models</h2>
+    <p class="sub" style="max-width:80ch">The plan is organized around one question: what separates this model from Barra, Axioma, and Bloomberg — and which of those gaps can be closed with public, redistributable data? Gaps that can't are listed as explicit non-goals rather than quietly ignored. Snapshot as of v0.6.</p>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Dimension</th><th>riskprism today</th><th>Commercial typical</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Estimation universe</td><td>~2,800 liquid names</td><td>Axioma AXUS4 ~2,900</td><td><b>at parity</b></td></tr>
+          <tr><td>Estimation frequency</td><td>daily cross-sections</td><td>daily</td><td><b>at parity</b> (since v0.5)</td></tr>
+          <tr><td>Validation</td><td>public, reproducible, re-scored weekly</td><td>whitepaper snapshots</td><td><b>our advantage</b></td></tr>
+          <tr><td>Coverage universe</td><td>~3,000 (self-imposed cap)</td><td>8,000–9,000 US names</td><td>closable — EDGAR has ~8,000 candidates</td></tr>
+          <tr><td>Factors</td><td>20 (market + 7 styles + FF12)</td><td>70–80 (12+ styles + 60+ GICS industries)</td><td>partially closable — public schemes reach FF48</td></tr>
+          <tr><td>Horizons</td><td>one (medium)</td><td>short / medium / long variants</td><td>closable — same engine, different half-lives</td></tr>
+          <tr><td>Live track record</td><td>~3y replayed, weeks live</td><td>25–30 years</td><td>only time closes this</td></tr>
+          <tr><td>Descriptor data</td><td>prices + SEC EDGAR</td><td>+ analyst estimates, GICS</td><td>partly a non-goal, see below</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div>
+        <h2 style="font-size:14px">Next, in order</h2>
+        <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
+          <li><b>v0.7 — beta split.</b> Market Sensitivity separated from Residual Volatility (the one structural style every commercial model has that we lack); rework leverage, now the weakest calibrated style.</li>
+          <li><b>v0.8 — growth &amp; dividend yield.</b> The v0.6 fundamentals ingestion already carries the descriptors these need. Every addition gated on the QC battery: %-significant, VIF, stability, style-portfolio bias.</li>
+          <li><b>v0.9 — FF30 industries and coverage toward all ~8,000 EDGAR names.</b> Estimation stays liquidity-screened; the eigenfactor A/B gets re-run at higher K.</li>
+          <li><b>v1.0 — stability.</b> Frozen artifact schema, PyPI, versioned model registry, one year of uninterrupted live weekly record.</li>
+          <li><b>Later:</b> short-horizon variant, Fama-French validation panels, longer archive, hosted API (historical artifacts stay free), liquidity &amp; crowding metrics.</li>
+        </ul>
+      </div>
+      <div>
+        <h2 style="font-size:14px">Non-goals — and why</h2>
+        <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
+          <li><b>Analyst-estimate descriptors</b> (forward E/P, revisions): IBES-class data is proprietary. The one systematic sacrifice vs commercial value/growth factors, taken knowingly — a redistributable data chain is the point.</li>
+          <li><b>GICS industries</b>: licensed. Fama-French schemes are public domain and auditable; we go deeper into FF granularity instead.</li>
+          <li><b>ESG factors</b>: no public, redistributable, point-in-time ESG data clears the bar above.</li>
+          <li><b>Production SLA</b>: research software with a weekly public build, not a guaranteed risk system.</li>
+        </ul>
+        <p class="hint" style="margin-top:10px">Full version: <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/ROADMAP.md">docs/ROADMAP.md</a>.</p>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section class="view" id="view-learn">
