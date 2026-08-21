@@ -1550,7 +1550,8 @@ renderStockTable();
       if (vnow === "v0.5") journey.push([vnow, mvRow ? mvRow.bias : 1.09, "daily estimation"]);
       else {
         journey.push(["v0.5", 1.09, "daily estimation"]);
-        if (mvRow) journey.push([vnow, mvRow.bias, "current build"]);
+        const label = { "v0.6": "+ composites" }[vnow] || "current build";
+        if (mvRow) journey.push([vnow, mvRow.bias, label]);
       }
       const hl = ((DATA.meta.config || {}).vol_half_life) || 84;
       const lam = Math.pow(0.5, 1 / hl);
@@ -1684,7 +1685,7 @@ renderStockTable();
   s += box(760, 236, 192, 64, false, ["Specific risk s", "\`blend · shrink · VRA"]);
   s += box(492, 352, 300, 62, false, ["Model artifacts", "X, F, s + factor return history", "\`parquet · weekly release"]);
   s += box(94, 352, 260, 62, false, ["Consumers", "MCP agents · Python · this page"]);
-  s += arrow(184, 75, 264, 140, "book equity, ROE, leverage, shares", 250, 116);
+  s += arrow(184, 75, 264, 140, "book equity, earnings, cash flow, sales", 250, 116);
   s += arrow(184, 245, 264, 182, "returns, momentum, vol, ADV", 248, 206);
   s += arrow(454, 161, 524, 161, "X each Friday", 489, 116);
   s += arrow(720, 140, 760, 78, "factor returns f", 706, 108);
@@ -1699,11 +1700,11 @@ renderStockTable();
   // style definitions table
   const DEFS = {
     size: ["ln(market cap)", "small caps move together, and differently"],
-    value: ["book equity / market cap", "cheap vs. expensive is a shared bet"],
+    value: ["composite: book, earnings, cash flow, sales / price", "cheap vs. expensive is a shared bet"],
     momentum: ["12-month return, skipping last month", "winners keep co-moving — until they crash"],
     volatility: ["252-day return std", "high-beta names amplify every market move"],
     liquidity: ["ln(dollar volume / market cap)", "heavily traded names share flow shocks"],
-    quality: ["ROE from annual filings", "profitability is a flight-to-safety axis"],
+    quality: ["composite: ROE, ROA, OCF/assets, gross margin", "profitability is a flight-to-safety axis"],
     leverage: ["liabilities / assets", "balance-sheet risk concentrates in rate moves"],
   };
   let dt = `<table><thead><tr><th>Factor</th><th>Descriptor</th><th>Why it's a risk factor</th><th class="num">Ann. vol</th></tr></thead><tbody>`;
@@ -2596,8 +2597,8 @@ renderStockTable();
       src: ["use4", "meth"], anim: drawUniverse, aspect: 0.4, loop: 9,
       cap: "Every live registrant falls through the liquidity sieve: passers estimate the factors, the rest still get covered via priors." },
     styles: { kind: "proc", col: 1, row: 1, title: "Style descriptors", short: ["Style descriptors", "winsorize · standardize"],
-      what: "Seven characteristics per stock — size, value, momentum, volatility, liquidity, quality, leverage — computed from prices and point-in-time fundamentals. Each is winsorized at ±3σ (data errors and true outliers folded to the boundary), then standardized to cap-weighted mean 0 and equal-weighted std 1.",
-      why: "The standardization convention is load-bearing: cap-weighted mean 0 makes the market portfolio style-neutral (so the market factor is really the market), and equal-weighted std 1 stops mega-caps from defining the scale. This is USE4's exact recipe (§2.2), descriptor for descriptor.",
+      what: "Seven characteristics per stock — size, value, momentum, volatility, liquidity, quality, leverage — computed from prices and point-in-time fundamentals. Value and quality are multi-descriptor composites (book/earnings/cash-flow/sales yields; ROE, ROA, OCF/assets, gross margin): each descriptor is z-scored, the composite averages the z-scores a filer actually has, and the result is re-standardized. Everything is winsorized at ±3σ (data errors and true outliers folded to the boundary), then standardized to cap-weighted mean 0 and equal-weighted std 1.",
+      why: "The standardization convention is load-bearing: cap-weighted mean 0 makes the market portfolio style-neutral (so the market factor is really the market), and equal-weighted std 1 stops mega-caps from defining the scale. Composites are how USE4 and Axioma make fundamental factors robust — one noisy or unfiled XBRL tag shouldn't erase a stock's value signal. This is USE4's exact recipe (§2.2).",
       src: ["use4"], anim: drawStyles, aspect: 0.4, loop: 10,
       cap: "Raw descriptor → fold outliers at ±3σ → re-center and re-scale: every exposure becomes 'how many σ from the market on this trait'." },
     industry: { kind: "proc", col: 1, row: 2, title: "Industry map", short: ["Industry map", "SIC → Fama-French 12"],

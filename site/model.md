@@ -8,12 +8,12 @@
 
 | field | value |
 |---|---|
-| model version | PRISM-US-MH-0.5 |
+| model version | PRISM-US-MH-0.6 |
 | as of | 2026-08-21 |
 | assets covered | 2987 |
 | estimation universe | 2774 |
 | regression weeks | 713 |
-| mean weekly R² | 0.156 |
+| mean weekly R² | 0.159 |
 | price provider | yahoo |
 | fundamentals | 2837 live from EDGAR |
 | frequency | W-FRI (annualized outputs) |
@@ -66,13 +66,13 @@ snapshots as static JSON under [/history/index.json](/history/index.json).
 
 | factor | descriptor | current ann. vol |
 |---|---|---|
-| market | intercept — cap-weighted market return | 17.3% |
-| size | ln(market cap) | 4.1% |
-| value | book equity / market cap | 34.7% |
+| market | intercept — cap-weighted market return | 17.4% |
+| size | ln(market cap) | 4.2% |
+| value | composite: book/price, earnings/price, cash flow/price, sales/price | 3.1% |
 | momentum | 12-month return, skipping the most recent month | 9.8% |
-| volatility | 252-day daily return std, annualized | 13.3% |
-| liquidity | ln(63-day median dollar volume / market cap) | 3.7% |
-| quality | ROE: annual net income / book equity | 0.7% |
+| volatility | 252-day daily return std, annualized | 13.2% |
+| liquidity | ln(63-day median dollar volume / market cap) | 3.8% |
+| quality | composite: ROE, ROA, operating cash flow/assets, gross margin | 3.1% |
 | leverage | total liabilities / total assets | 5.6% |
 
 Style exposures are winsorized at ±3σ and standardized to cap-weighted
@@ -101,14 +101,14 @@ to zero for identification.
 
 | | market | size | value | momentum | volatility | liquidity | quality | leverage |
 |---|---|---|---|---|---|---|---|---|
-| **market** | 1.00 | 0.26 | 0.10 | 0.29 | 0.61 | -0.18 | -0.01 | 0.05 |
-| **size** | 0.26 | 1.00 | 0.32 | 0.31 | 0.49 | 0.28 | -0.03 | -0.10 |
-| **value** | 0.10 | 0.32 | 1.00 | 0.23 | 0.21 | -0.01 | 0.03 | 0.00 |
-| **momentum** | 0.29 | 0.31 | 0.23 | 1.00 | 0.24 | -0.03 | -0.02 | 0.03 |
-| **volatility** | 0.61 | 0.49 | 0.21 | 0.24 | 1.00 | 0.09 | -0.02 | -0.07 |
-| **liquidity** | -0.18 | 0.28 | -0.01 | -0.03 | 0.09 | 1.00 | -0.08 | -0.05 |
-| **quality** | -0.01 | -0.03 | 0.03 | -0.02 | -0.02 | -0.08 | 1.00 | 0.22 |
-| **leverage** | 0.05 | -0.10 | 0.00 | 0.03 | -0.07 | -0.05 | 0.22 | 1.00 |
+| **market** | 1.00 | 0.24 | 0.13 | 0.28 | 0.61 | -0.18 | 0.08 | 0.04 |
+| **size** | 0.24 | 1.00 | 0.33 | 0.33 | 0.49 | 0.29 | -0.13 | -0.12 |
+| **value** | 0.13 | 0.33 | 1.00 | 0.27 | 0.20 | 0.01 | -0.08 | 0.01 |
+| **momentum** | 0.28 | 0.33 | 0.27 | 1.00 | 0.23 | -0.03 | -0.14 | 0.05 |
+| **volatility** | 0.61 | 0.49 | 0.20 | 0.23 | 1.00 | 0.09 | 0.00 | -0.07 |
+| **liquidity** | -0.18 | 0.29 | 0.01 | -0.03 | 0.09 | 1.00 | -0.15 | -0.06 |
+| **quality** | 0.08 | -0.13 | -0.08 | -0.14 | 0.00 | -0.15 | 1.00 | 0.09 |
+| **leverage** | 0.04 | -0.12 | 0.01 | 0.05 | -0.07 | -0.06 | 0.09 | 1.00 |
 
 ## Factor quality
 
@@ -118,26 +118,26 @@ statistically significant (|t| > 2) — the standard relevance check
 
 | factor | % periods significant | mean absolute t |
 |---|---|---|
-| market | 86% | 10.8 |
-| volatility | 83% | 7.3 |
+| market | 87% | 10.8 |
+| volatility | 82% | 7.0 |
 | momentum | 75% | 6.0 |
+| ind_Hlth | 71% | 4.4 |
 | ind_Enrgy | 71% | 4.7 |
-| ind_Hlth | 71% | 4.5 |
-| ind_BusEq | 70% | 4.3 |
+| ind_BusEq | 70% | 4.1 |
 | liquidity | 62% | 3.3 |
-| ind_Other | 60% | 3.6 |
-| ind_Money | 60% | 3.3 |
-| size | 59% | 3.2 |
-| ind_Utils | 58% | 3.2 |
+| ind_Other | 59% | 3.5 |
+| ind_Money | 59% | 3.3 |
+| size | 57% | 3.1 |
+| ind_Utils | 57% | 3.1 |
 | ind_Manuf | 55% | 2.9 |
-| ind_Telcm | 53% | 2.6 |
 | ind_Durbl | 52% | 2.6 |
-| ind_NoDur | 51% | 2.7 |
+| ind_Telcm | 52% | 2.6 |
+| ind_NoDur | 51% | 2.6 |
+| quality | 48% | 2.3 |
 | ind_Shops | 46% | 2.4 |
 | ind_Chems | 40% | 2.6 |
 | leverage | 33% | 1.7 |
-| value | 4% | 0.6 |
-| quality | 1% | 0.5 |
+| value | 11% | 1.0 |
 
 ## Coverage (2987 tickers)
 
@@ -151,43 +151,43 @@ realized return / forecast vol. A calibrated model gives std(z) — the
 **bias statistic** — of ~1.0 (>1 underforecasts risk, <1 overforecasts)
 and |z| > 1.96 about 5% of the time.
 
-Overall: **bias statistic 1.05**, |z|>1.96 rate 6.0%, 121 weeks × 3992 portfolio-scores.
+Overall: **bias statistic 1.05**, |z|>1.96 rate 6.4%, 121 weeks × 3992 portfolio-scores.
 
 | portfolio | bias stat | \|z\|>1.96 | mean forecast vol | mean realized vol | vol ratio |
 |---|---|---|---|---|---|
-| equal_weight | 0.92 | 3.3% | 18.9% | 18.7% | 0.98 |
+| equal_weight | 0.91 | 4.1% | 19.0% | 18.7% | 0.97 |
 | IWM | 0.87 | 4.1% | 22.2% | 21.3% | 0.95 |
-| MTUM | 1.00 | 5.8% | 20.4% | 24.0% | 1.16 |
-| QUAL | 0.94 | 2.5% | 14.6% | 15.0% | 1.02 |
-| SPY | 0.97 | 4.1% | 15.0% | 16.2% | 1.07 |
-| USMV | 0.98 | 1.7% | 10.5% | 10.8% | 1.02 |
-| VLUE | 1.08 | 8.3% | 16.2% | 18.7% | 1.14 |
-| industry_BusEq | 0.98 | 4.1% | 22.5% | 23.8% | 1.04 |
-| industry_Chems | 0.75 | 0.8% | 19.7% | 17.5% | 0.86 |
+| MTUM | 1.00 | 6.6% | 20.5% | 24.0% | 1.16 |
+| QUAL | 0.93 | 3.3% | 14.7% | 15.0% | 1.02 |
+| SPY | 0.96 | 4.1% | 15.1% | 16.2% | 1.06 |
+| USMV | 0.97 | 1.7% | 10.6% | 10.8% | 1.01 |
+| VLUE | 1.07 | 7.4% | 16.3% | 18.7% | 1.14 |
+| industry_BusEq | 0.96 | 4.1% | 22.9% | 23.8% | 1.02 |
+| industry_Chems | 0.74 | 0.8% | 20.0% | 17.5% | 0.85 |
 | industry_Durbl | 0.98 | 5.0% | 26.9% | 28.9% | 1.06 |
-| industry_Enrgy | 0.97 | 2.5% | 23.3% | 23.1% | 0.97 |
-| industry_Hlth | 1.06 | 6.6% | 15.6% | 16.4% | 1.05 |
-| industry_Manuf | 0.98 | 4.1% | 19.9% | 22.4% | 1.11 |
-| industry_Money | 1.11 | 8.3% | 14.9% | 17.5% | 1.16 |
-| industry_NoDur | 1.04 | 6.6% | 14.9% | 16.3% | 1.09 |
-| industry_Shops | 1.00 | 6.6% | 16.4% | 17.6% | 1.07 |
-| industry_Telcm | 1.03 | 7.5% | 17.5% | 18.0% | 1.02 |
-| industry_Utils | 0.94 | 4.1% | 15.9% | 15.5% | 0.96 |
-| market | 1.03 | 3.3% | 18.0% | 21.3% | 1.14 |
-| opt_alpha1 | 1.17 | 5.8% | 1.1% | 1.4% | 1.24 |
+| industry_Enrgy | 0.97 | 2.5% | 23.4% | 23.1% | 0.97 |
+| industry_Hlth | 1.05 | 6.6% | 15.6% | 16.4% | 1.04 |
+| industry_Manuf | 0.97 | 4.1% | 20.0% | 22.4% | 1.10 |
+| industry_Money | 1.09 | 8.3% | 15.1% | 17.5% | 1.15 |
+| industry_NoDur | 1.03 | 6.6% | 15.0% | 16.3% | 1.08 |
+| industry_Shops | 1.00 | 5.8% | 16.5% | 17.6% | 1.06 |
+| industry_Telcm | 1.02 | 7.5% | 17.6% | 18.0% | 1.02 |
+| industry_Utils | 0.93 | 4.1% | 16.0% | 15.5% | 0.96 |
+| market | 1.02 | 4.1% | 18.0% | 21.3% | 1.14 |
+| opt_alpha1 | 1.16 | 5.8% | 1.1% | 1.4% | 1.24 |
 | opt_alpha2 | 1.08 | 7.4% | 1.1% | 1.3% | 1.14 |
 | opt_alpha3 | 1.24 | 10.7% | 1.1% | 1.3% | 1.17 |
-| opt_minvar | 1.08 | 6.6% | 4.7% | 5.5% | 1.15 |
-| random_1 | 0.92 | 4.1% | 20.1% | 19.7% | 0.97 |
-| random_2 | 0.91 | 4.1% | 20.3% | 20.2% | 0.97 |
-| random_3 | 0.89 | 4.1% | 20.5% | 19.8% | 0.94 |
-| style_leverage | 1.48 | 20.7% | 9.7% | 13.8% | 1.38 |
-| style_liquidity | 1.00 | 5.0% | 14.6% | 18.2% | 1.18 |
-| style_momentum | 1.03 | 4.1% | 15.5% | 22.8% | 1.40 |
-| style_quality | 1.26 | 12.4% | 13.9% | 16.9% | 1.20 |
-| style_size | 1.13 | 10.7% | 13.9% | 14.4% | 1.01 |
-| style_value | 1.00 | 5.8% | 14.3% | 15.2% | 1.01 |
-| style_volatility | 0.97 | 8.3% | 27.4% | 29.9% | 1.07 |
+| opt_minvar | 1.07 | 5.0% | 4.6% | 5.3% | 1.14 |
+| random_1 | 0.91 | 4.1% | 19.9% | 19.7% | 0.98 |
+| random_2 | 0.91 | 4.1% | 19.9% | 20.2% | 1.00 |
+| random_3 | 0.89 | 4.1% | 20.1% | 19.8% | 0.97 |
+| style_leverage | 1.47 | 19.8% | 9.8% | 13.8% | 1.37 |
+| style_liquidity | 1.06 | 7.4% | 13.9% | 18.2% | 1.25 |
+| style_momentum | 1.04 | 5.8% | 15.4% | 22.8% | 1.40 |
+| style_quality | 1.14 | 11.6% | 15.9% | 18.1% | 1.12 |
+| style_size | 1.16 | 9.9% | 13.7% | 14.4% | 1.02 |
+| style_value | 1.24 | 15.7% | 14.7% | 19.4% | 1.28 |
+| style_volatility | 0.98 | 8.3% | 27.2% | 29.9% | 1.08 |
 
 The vol ratio compares average realized variance (from daily returns
 within each week) to average forecast variance, in vol units — an
@@ -213,7 +213,7 @@ RV-based check with far more statistical power than z-scores alone.
    blending (sample weight 0.8, Bloomberg's published parameters,
    suppressing the noise directions optimizers exploit), annualized
    ×252, repaired to PSD, then scaled by the factor Volatility
-   Regime Adjustment multiplier (this build: 1.0694) — an EWMA
+   Regime Adjustment multiplier (this build: 1.0751) — an EWMA
    (42w half-life) of the cross-sectional bias statistic, so the
    model catches vol-regime shifts the raw half-life would lag.
 6. Specific risk: each asset's EWMA residual vol (lag-1 Newey-West
@@ -222,7 +222,7 @@ RV-based check with far more statistical power than z-scores alone.
    w = T/(T + 126d); assets without history get the pure structural
    prior. Blended vols are Bayesian-shrunk (q = 0.1) toward their
    size-decile mean and scaled by the specific VRA multiplier
-   (this build: 0.9379).
+   (this build: 0.9378).
 7. Capture-forward history: each weekly build appends to the prior
    build's factor returns and residuals; names that stop trading get
    an imputed delisting return in their final week and keep their
