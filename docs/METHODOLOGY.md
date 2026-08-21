@@ -1,6 +1,6 @@
 # PRISM-US-MH methodology
 
-Version `PRISM-US-MH-0.5`. Medium-horizon US equity fundamental factor
+Version `PRISM-US-MH-0.6`. Medium-horizon US equity fundamental factor
 model: **weekly formation, daily estimation** — exposures form on
 Fridays, cross-sectional regressions run on every trading day. All
 parameters live in `riskprism.config.ModelConfig`.
@@ -17,8 +17,10 @@ weekly gave ~75 (26-week half-life) — the mechanism behind commercial
 models' conditioning advantage. The switch changed the regression data
 unit, so v0.5 rebuilt history cold (`compatible_prior_versions` is empty;
 the weekly capture-forward history was entirely cold-start at the time,
-so nothing survivorship-free was lost). Validation is recomputed from
-history on every build regardless (see Validation below).
+so nothing survivorship-free was lost). **v0.6 rebuilt value and quality
+as multi-descriptor composites** (DECISIONS.md §11) — an exposure-
+definition change, hence another cold rebuild. Validation is recomputed
+from history on every build regardless (see Validation below).
 
 ## Two universes
 
@@ -79,19 +81,32 @@ second order.
 Raw descriptors, each winsorized at ±3σ (two passes), standardized to
 cap-weighted mean 0 / equal-weighted std 1, missing → 0:
 
-| Factor | Descriptor |
+| Factor | Descriptor(s) |
 |---|---|
 | size | ln(market cap) |
-| value | book equity / market cap (book > 0 only) |
+| value | composite: book/price (book > 0), earnings/price, operating cash flow/price, sales/price |
 | momentum | 12-month return skipping the most recent month (252d window, 21d skip) |
 | volatility | 252-day daily return std, annualized (≥126 obs) |
 | liquidity | ln(63-day median dollar volume / market cap) |
-| quality | ROE: annual (10-K FY) net income / book equity |
+| quality | composite: ROE, ROA, operating cash flow/assets, gross margin |
 | leverage | total liabilities / total assets |
 
+Value and quality are multi-descriptor composites (v0.6): each
+descriptor is z-scored on the estimation universe, the composite is the
+mean of the z-scores the name actually has (a missing XBRL tag drops
+out of the mean instead of pulling the score toward 0), and the
+composite is winsorized and re-standardized. Gross margin uses the
+GrossProfit tag with (Revenues − CostOfRevenue) as fallback. This is
+the USE4/Axioma construction; the single-descriptor v0.5 versions
+measured significant in only 4% (value) and 1% (quality) of daily
+cross-sections — the composite's job is to make these axes carry real
+covariance information.
+
 Fundamentals are point-in-time: values are used only after their EDGAR
-`filed` date. Net income uses annual filings only (durations of 300–400
-days) to avoid mixing quarterly and cumulative XBRL values.
+`filed` date. Flow concepts — net income, operating cash flow,
+revenues, gross profit, cost of revenue — use annual filings only
+(durations of 300–400 days) to avoid mixing quarterly and cumulative
+XBRL values.
 
 ## Industries
 

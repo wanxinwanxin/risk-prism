@@ -277,3 +277,74 @@ free conditioning insurance for the v0.6 factor expansion; (c) eigen's
 trade-off turns mild but remains a trade (helps minvar/styles ~0.05,
 worsens random/equal ~0.03) — still off by default. MZ slope healed from
 0.81 to 1.02 with the frequency switch alone.
+
+## 11. v0.6: value and quality become multi-descriptor composites (decided 2026-08-21)
+
+**Decision.** Rebuild the two weakest style factors as composites, exactly
+the USE4/Axioma construction:
+
+- **value** = mean of available z-scores of book/price (book > 0),
+  earnings/price, operating-cash-flow/price, sales/price
+- **quality** = mean of available z-scores of ROE, ROA, operating cash
+  flow/assets, gross margin (GrossProfit tag, falling back to
+  Revenues − CostOfRevenue)
+
+Each descriptor is winsorized and z-scored on the estimation universe;
+the composite averages only the z-scores a filer actually has (a missing
+XBRL tag drops out of the mean rather than pulling the score to 0), is
+industry-median imputed at the descriptor level, then winsorized and
+re-standardized. K is unchanged (20) — this changes the *meaning* of two
+columns of X, not the factor count, which keeps the change attributable.
+
+**Why these two first.** The v0.5 factor-QC table measured value
+significant in 4% of the 713 daily cross-sections and quality in 1% —
+against market 86%, volatility 83%, momentum 75%. Both were
+single-descriptor (B/P and ROE): the axes existed but carried almost no
+independent return variance. Commercial models never run these factors
+single-descriptor; USE4's value and earnings-quality factors and
+Axioma's value/profitability blocks are all descriptor composites.
+
+**Data feasibility (verified on SEC bulk archives before building):**
+OCF tag ~98% of filers, Revenues ~76% (plus contract-revenue fallbacks),
+GrossProfit ~46% direct but ~60%+ with the CostOfRevenue fallback.
+Consensus-estimate descriptors (forward E/P) are skipped — IBES-class
+data is proprietary, and staying redistributable is the project's spine.
+
+**Cost.** Exposure definitions changed → v0.5 daily factor returns are
+not commensurable → `compatible_prior_versions = ()` and a cold rebuild.
+Still nearly free (capture-forward history barely exceeds provider
+lookback), and it gets more expensive every week — the same "never
+cheaper than now" argument as §10.
+
+**Gate (measured after the rebuild, below).** Ship if: value/quality
+%-significant rises materially; mean daily R² does not fall; validation
+scoreboard (bias, MZ slope, opt rows) does not degrade; style-portfolio
+bias stats for value/quality do not worsen.
+
+### §11 result (measured 2026-08-21): gate passed, shipped
+
+Cold rebuild, 713 daily regressions over the same 149 weeks, 121 scored:
+
+- **quality: 1.6% → 49.2% of cross-sections significant** — the composite
+  turned a dead axis into a mid-table factor (between liquidity 62% and
+  the median industry). Its style-portfolio bias improved 1.26 → 1.14.
+- **value: 4.1% → 11.7%** — a 3× improvement but still the weakest style.
+  Its style-portfolio bias moved 1.00 → 1.24: the honest reading is that
+  v0.5's perfect 1.00 was the calibration of a factor with nothing to
+  forecast, while the composite axis now carries real variance the young
+  EWMA history is still learning. Watch item, not a rollback trigger —
+  same band as leverage (1.47), and every aggregate stayed put.
+- Mean daily R² 0.156 → 0.159. VIF: value 1.03, quality 1.23. The new
+  quality axis anti-correlates with volatility (ρ = −0.39), the classic
+  profitability/low-vol relationship — expected, not collinear.
+- Scoreboard unmoved: overall bias 1.05 → 1.05, min-var opt 1.08 → 1.07,
+  ETFs 0.97, market 1.02, MZ slope 1.02 → 1.10.
+- Exposure correlation with v0.5: value 0.67 (B/P still the spine),
+  quality 0.12 (ROE alone was mostly noise; the axis genuinely changed).
+
+Remaining value gap is plausibly structural for this window (2024–2026
+had no sustained value rotation) and partly the missing forward-E/P
+descriptor (IBES-class, proprietary, deliberately skipped). Next levers
+if it stays weak: dividend yield as a separate factor (v0.7 candidate)
+and a longer history. Leverage (34% significant, bias 1.47) is now the
+weakest calibrated style and the next QC target.
