@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>riskprism</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,3 30,29 2,29' fill='none' stroke='%232a78d6' stroke-width='3' stroke-linejoin='round'/%3E%3Cline x1='9' y1='29' x2='30' y2='13' stroke='%23eb6834' stroke-width='2.5'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
 :root {
@@ -260,6 +261,26 @@ a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .spectrum .slice { transition: flex-basis .25s ease; }
 }
+/* ---------- validation tab ---------- */
+.vsec { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 26px 4px 10px; }
+.vsec .n { font: 600 11px var(--mono); letter-spacing: .1em; color: var(--accent); }
+.vsec .q { font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+.vrubric { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 4px; }
+.vrubric .fz { font: 600 12.5px var(--mono); background: var(--page); border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px; }
+.vrubric .arr { font-size: 12px; color: var(--muted); }
+.vrubric .chip2 { font: 500 11.5px var(--mono); color: var(--ink-2); border: 1px dashed var(--border); border-radius: 999px; padding: 5px 11px; }
+.vscore { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px; }
+@media (max-width: 820px) { .vscore { grid-template-columns: repeat(2, 1fr); } }
+.vscore .cell { background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+.vscore .k { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.vscore .v { font: 600 27px/1.25 var(--sans); letter-spacing: -0.01em; }
+.vscore .v small { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.vscore .t { font: 500 11px var(--mono); color: var(--muted); margin-top: 2px; }
+.vstats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.vstats .cell { background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 9px 13px; }
+.vstats .k { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.vstats .v { font: 600 19px/1.3 var(--sans); }
+.vstats .v small { font-size: 11px; color: var(--muted); font-weight: 500; font-family: var(--mono); }
 /* ---------- homepage hero ---------- */
 .hero { display: flex; gap: 30px; align-items: center; padding: 26px 26px 24px; }
 .hero-copy { flex: 1 1 auto; min-width: 0; }
@@ -478,50 +499,85 @@ a { color: var(--accent); }
 <section class="view" id="view-validation">
   <div class="card">
     <h2>Does the model tell the truth?</h2>
-    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time. The panel deliberately includes the hard cases: real traded factor ETFs, and <b>portfolios optimized against the model itself</b> (marked <span style="color:var(--s-size)">opt</span>) — optimizers hunt the covariance matrix's underestimated directions, so these run above 1 by construction. v0.5's switch to daily estimation dissolved most of it (min-variance bias 1.36 → ~1.1) by an order-of-magnitude jump in effective observations; the residual is documented, not hidden, and the API's <span style="font-family:var(--mono)">optimized=true</span> flag applies the matching Shepard correction. Every build rescores the whole history under the current methodology.</p>
+    <p class="sub" style="max-width:80ch">Every week the model writes down a volatility forecast for a panel of test portfolios — factor portfolios, real traded ETFs, and portfolios built specifically to exploit its weaknesses — using only information available at the time, then gets graded against what actually happened. Nothing is cherry-picked: every build re-scores the <b>entire</b> history under the current methodology, and this page is the full report card.</p>
+    <div class="vrubric" aria-label="How forecasts are graded">
+      <span class="fz">z = realized return ÷ forecast vol</span>
+      <span class="arr">honest forecasts make z standard normal, so →</span>
+      <span class="chip2">std(z) = 1.00 — the “bias statistic”</span>
+      <span class="chip2">|z| &gt; 1.96 in ~5% of weeks</span>
+      <span class="chip2">realized variance tracks forecast 1:1</span>
+    </div>
     <div id="val-hero"></div>
   </div>
+  <div id="val-body">
+
+  <div class="vsec"><span class="n">TEST 1</span><span class="q">Are the error bars the right size?</span></div>
   <div class="grid2">
     <div class="card">
       <h2>Bias statistic by portfolio</h2>
-      <p class="sub">1.0 = calibrated · above the band = risk underforecast · below = overforecast. Band is ±2 standard errors.</p>
+      <p class="sub">1.0 = calibrated. Above the grey ±2-standard-error band, risk was underforecast; below it, overforecast. The <span style="color:var(--s-size)">opt</span> rows are a deliberate hard case — Test&nbsp;3 tells their story.</p>
       <div id="val-bias-chart"></div>
     </div>
     <div class="card">
-      <h2>Distribution of forecast errors</h2>
-      <p class="sub">All portfolio-week z-scores against the standard normal a calibrated model would produce.</p>
+      <h2>The distribution of surprises</h2>
+      <p class="sub">Every portfolio-week z-score, pooled, against the bell curve a calibrated model would produce.</p>
       <div id="val-zhist"></div>
     </div>
   </div>
-  <div class="card" id="val-rv-card" hidden>
-    <h2>Forecast vol vs realized vol</h2>
-    <p class="sub">A second, higher-powered check: each week's realized volatility is measured directly from daily returns and plotted against what the model forecast. Calibrated forecasts hug the diagonal.</p>
-    <div id="val-rv-scatter" style="max-width:560px"></div>
-    <p class="sub" id="val-rv-note" style="margin-top:8px"></p>
-  </div>
+
+  <div class="vsec"><span class="n">TEST 2</span><span class="q">Does it move when risk moves?</span></div>
   <div class="card" id="val-ts-card" hidden>
-    <h2>Forecast vs realized vol through time</h2>
+    <h2>Forecast vs realized, week by week</h2>
     <p class="sub">Pick any test portfolio — including real, traded factor ETFs scored via point-in-time returns-based exposures — and watch the forecast track (or lag) realized volatility.</p>
     <div class="controls">
       <select id="val-ts-pick" aria-label="Portfolio" style="font:13px var(--mono);color:var(--ink);background:var(--page);border:1px solid var(--border);border-radius:8px;padding:7px 10px"></select>
     </div>
     <div id="val-ts-chart"></div>
   </div>
+  <div class="card" id="val-rv-card" hidden>
+    <h2>…and all weeks at once</h2>
+    <div class="grid2" style="align-items:center">
+      <div id="val-rv-scatter"></div>
+      <div>
+        <p class="sub">Each dot is one portfolio-week: realized volatility, measured from that week's daily returns, against what the model forecast. Calibrated forecasts hug the diagonal — dots above it are weeks the market was wilder than predicted.</p>
+        <div id="val-rv-note"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="vsec"><span class="n">TEST 3</span><span class="q">What about portfolios built to beat it?</span></div>
+  <div class="card">
+    <h2>The adversarial case — optimizing against the model itself</h2>
+    <p class="sub" style="max-width:80ch">An optimizer hunts the covariance matrix's underestimated directions, so portfolios optimized against a risk model always run hotter than it predicts — the literature's hardest failure mode (MSCI measured bias 1.4–1.5 on its own). Rather than hide from it, every week we optimize a minimum-variance portfolio and three random-alpha portfolios against our own matrix and grade them like everything else — the <span style="color:var(--s-size)">opt</span> rows in Test&nbsp;1.</p>
+    <div class="grid2" style="align-items:center">
+      <div id="val-opt-chart"></div>
+      <div>
+        <p class="sub"><b>v0.3</b> measured the damage honestly: min-variance portfolios ran 36% hotter than forecast. <b>v0.4</b> A/B-tested both published matrix-side cures and shipped the one that did no collateral damage, for a modest gain. <b>v0.5</b> found the real cure was more data: daily regressions multiplied effective observations ~10×, and the bias collapsed onto the theoretical floor.</p>
+        <p class="sub" style="margin-bottom:0">That floor is Shepard (2009)'s prediction — true vol ≈ forecast ÷ (1 − K/N<sub>eff</sub>) — and since no finite history can beat it, the API applies it instead: pass <span style="font-family:var(--mono)">optimized=true</span> and reported vols are scaled by exactly this factor. Full evidence: <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a> §9–10.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="vsec"><span class="n">TEST 4</span><span class="q">Could anything simpler — or anything commercial — do better?</span></div>
+  <div class="card" id="val-cmp-card" hidden>
+    <h2>Public baselines, same harness</h2>
+    <p class="sub" style="max-width:80ch">Every classic public-methodology forecaster, replayed point-in-time over the <b>same portfolios and the same weeks</b>, graded with the same statistics. One asymmetry to keep in mind: each baseline needs that portfolio's own trailing return history, while the factor model prices any weight vector cold — matching the univariate baselines on their home turf is the bar.</p>
+    <div class="tscroll" id="val-cmp-table"></div>
+    <p class="hint" id="val-cmp-note" style="margin-top:8px"></p>
+  </div>
+  <div class="card">
+    <h2>The commercial models, on their own protocols</h2>
+    <p class="sub" style="max-width:80ch">The vendors' forecasts are proprietary and their licenses forbid published benchmarks, so they can't sit in the table above. What we can do is conform to <i>them</i>: each row runs this model under that vendor's published test protocol, next to what the vendor reports about itself. Periods and universes still differ — that caveat can't be engineered away with public data.</p>
+    <div class="tscroll" id="val-vendor-table"></div>
+    <p class="hint" style="margin-top:10px">Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>. Two of USE4's documented remedies — the volatility regime adjustment and Bayesian specific-risk shrinkage — already run inside this model (see Methodology). The full decision history, with measured evidence for every remedy adopted or rejected: <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a>.</p>
+  </div>
+
+  <div class="vsec"><span class="n">APPENDIX</span><span class="q">Every number behind the charts</span></div>
   <div class="card">
     <h2>Full results</h2>
     <div class="tscroll" id="val-table"></div>
   </div>
-  <div class="card" id="val-cmp-card" hidden>
-    <h2>Could a simpler public method have done as well?</h2>
-    <p class="sub">The commercial models can't sit in this table — their forecasts are proprietary and their licenses forbid published benchmarks. What <i>can</i> sit here is every classic public-methodology forecaster, replayed point-in-time over the <b>same test portfolios and the same weeks</b>, graded with the same statistics on one shared sample. One asymmetry to keep in mind: each baseline needs that portfolio's own trailing return history, while the factor model prices any weight vector cold — that coverage is the product; matching the univariate baselines on their home turf is the calibration bar.</p>
-    <div class="tscroll" id="val-cmp-table"></div>
-    <p class="sub" id="val-cmp-note" style="margin-top:8px"></p>
-  </div>
-  <div class="card">
-    <h2>Against the commercial models — on their own protocols</h2>
-    <p class="sub" style="margin-bottom:10px">The vendors can't be forced onto one standard, so we conform to theirs: each row runs <b>this model under that vendor's published test protocol</b> and puts the result next to what the vendor reports about itself. Periods and universes still differ — that caveat can't be engineered away with public data — but the statistic, horizon, and portfolio construction match.</p>
-    <div class="tscroll" id="val-vendor-table"></div>
-    <p class="sub" style="margin-top:8px">v0.3 adopted two of USE4's documented remedies: the <b>Volatility Regime Adjustment</b> (their version held rolling bias near 1.0 through 2008–09 while the unadjusted model swung 1.3&nbsp;→&nbsp;0.7; ours targets the Mincer–Zarnowitz slope of ~0.7 measured in v0.2) and <b>Bayesian specific-risk shrinkage</b> (q&nbsp;=&nbsp;0.1 toward size-decile means — flattened their 1.08→0.92 decile tilt), plus Newey-West variance adjustments. The failure mode left standing is the one the literature calls hardest: <b>portfolios optimized against the model are underforecast</b> (Shepard 2009: true vol ≈ predicted/(1−K/T); MSCI measured bias 1.4–1.5 pre-eigenfactor-adjustment). We measure it on ourselves — the <span style="color:var(--s-size)">opt</span> rows above — and attacked it in two documented rounds. v0.4 A/B-tested both published matrix-side cures in the weekly-estimation era: eigenfactor adjustment reproduced MSCI's ~40% small-eigenfactor bias exactly but overcorrected broad portfolios at 75 effective observations; blending helped mildly (1.36&nbsp;→&nbsp;1.29). <b>v0.5's daily estimation was the real cure</b>: ~10× the effective observations collapsed min-var bias to ~1.1, exactly Shepard's 1/(1−K/N_eff) prediction — and that analytic correction now ships as the <span style="font-family:var(--mono)">optimized=true</span> reporting flag for anyone optimizing against the model (full evidence in <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a> §9–10). One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
+
   </div>
 </section>
 
@@ -1307,12 +1363,24 @@ renderStockTable();
   const heroEl = document.getElementById("val-hero");
   if (!V) {
     heroEl.innerHTML = `<p class="hint">This build carries no validation history yet — it appears with the next model release.</p>`;
+    document.getElementById("val-body").hidden = true;
   } else {
-    const ok = V.overall_bias >= 0.85 && V.overall_bias <= 1.15;
+    const grade = (v, lo, hi) => v == null ? "var(--ink)" : (v >= lo && v <= hi ? "var(--delta-good)" : "var(--delta-bad)");
+    const mzSlope = V.rv ? V.rv.mz_slope : null;
     heroEl.innerHTML = `
-      <div class="hero-vol">
-        <span class="num" style="color:${ok ? "var(--delta-good)" : "var(--delta-bad)"}">${V.overall_bias.toFixed(2)}</span>
-        <span class="split">overall bias statistic · |z|&gt;1.96 in ${(V.exceed_95 * 100).toFixed(1)}% of weeks (target ~5%) · ${V.n_scores.toLocaleString()} scores over ${V.n_weeks} weeks</span>
+      <div class="vscore">
+        <div class="cell"><div class="k">Bias statistic</div>
+          <div class="v" style="color:${grade(V.overall_bias, 0.85, 1.15)}">${V.overall_bias.toFixed(2)}</div>
+          <div class="t">ideal 1.00 · error bars right-sized</div></div>
+        <div class="cell"><div class="k">Extreme weeks</div>
+          <div class="v" style="color:${grade(V.exceed_95, 0.02, 0.10)}">${(V.exceed_95 * 100).toFixed(1)}<small>%</small></div>
+          <div class="t">ideal ~5% · weeks with |z| &gt; 1.96</div></div>
+        <div class="cell"><div class="k">Tracking slope</div>
+          <div class="v" style="color:${grade(mzSlope, 0.75, 1.25)}">${mzSlope != null ? mzSlope.toFixed(2) : "—"}</div>
+          <div class="t">ideal 1.00 · realized variance on forecast</div></div>
+        <div class="cell"><div class="k">Graded sample</div>
+          <div class="v">${V.n_scores.toLocaleString()}</div>
+          <div class="t">forecasts over ${V.n_weeks} weeks</div></div>
       </div>`;
 
     const pcolor = p => p.group === "market" ? "var(--s-market)"
@@ -1463,8 +1531,59 @@ renderStockTable();
       s += `<text x="14" y="${(S - mbv) / 2}" font-size="11" fill="var(--ink-2)" text-anchor="middle" transform="rotate(-90 14 ${(S - mbv) / 2})">realized vol →</text>`;
       s += `</svg>`;
       document.getElementById("val-rv-scatter").innerHTML = s;
-      document.getElementById("val-rv-note").innerHTML =
-        `Mincer–Zarnowitz on variances: slope <b>${V.rv.mz_slope.toFixed(2)}</b> (1.0 = ideal), R² <b>${V.rv.r2.toFixed(2)}</b> · overall vol ratio √(mean RV / mean forecast var) = <b>${V.rv.vol_ratio.toFixed(2)}</b>. Points above the diagonal are weeks the market was wilder than forecast.`;
+      document.getElementById("val-rv-note").innerHTML = `
+        <div class="vstats">
+          <div class="cell"><div class="k">MZ slope</div><div class="v">${V.rv.mz_slope.toFixed(2)} <small>ideal 1.00</small></div></div>
+          <div class="cell"><div class="k">MZ R²</div><div class="v">${V.rv.r2.toFixed(2)}</div></div>
+          <div class="cell"><div class="k">Vol ratio</div><div class="v">${V.rv.vol_ratio.toFixed(2)} <small>realized ÷ forecast</small></div></div>
+        </div>
+        <p class="hint" style="margin-top:10px">Mincer–Zarnowitz: regress realized on forecast variance. Slope 1 means forecasts move one-for-one with realized risk; below 1 means the model damps — over-forecasting quiet weeks and under-forecasting wild ones.</p>`;
+    }
+
+    // the adversarial-case journey: min-variance opt bias by model version.
+    // v0.3/v0.4 values are frozen measurements from DECISIONS.md §9-10; the
+    // latest point reads live from this build's validation.
+    {
+      const journey = [["v0.3", 1.36, "weekly estimation"], ["v0.4", 1.29, "+ corr blending"]];
+      const mvRow = V.portfolios.find(p => p.name === "opt_minvar");
+      const vnow = "v" + String(DATA.meta.model_version || "").split("-").pop();
+      if (vnow === "v0.5") journey.push([vnow, mvRow ? mvRow.bias : 1.09, "daily estimation"]);
+      else {
+        journey.push(["v0.5", 1.09, "daily estimation"]);
+        if (mvRow) journey.push([vnow, mvRow.bias, "current build"]);
+      }
+      const hl = ((DATA.meta.config || {}).vol_half_life) || 84;
+      const lam = Math.pow(0.5, 1 / hl);
+      const floor = 1 / (1 - FACTORS.length * (1 - lam) / (1 + lam));
+      const W = 460, H = 230, ml = 44, mr = 14, mt = 18, mb = 40;
+      const lo = 0.93, hi = Math.max(1.45, ...journey.map(j => j[1])) + 0.06;
+      const xp = i => ml + (i + 0.5) / journey.length * (W - ml - mr);
+      const yp = v => mt + (hi - v) / (hi - lo) * (H - mt - mb);
+      let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Bias on minimum-variance portfolios optimized against the model, by version: falling from ${journey[0][1]} to the Shepard theory floor of ${floor.toFixed(2)}.">`;
+      [1.2, 1.4].forEach(v => {
+        if (v < hi) s += `<line x1="${ml}" y1="${yp(v)}" x2="${W - mr}" y2="${yp(v)}" stroke="var(--grid)"/>`;
+      });
+      [1.0, 1.2, 1.4].forEach(v => {
+        if (v < hi) s += `<text class="mono" x="${ml - 7}" y="${yp(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${v.toFixed(1)}</text>`;
+      });
+      s += `<line x1="${ml}" y1="${yp(1)}" x2="${W - mr}" y2="${yp(1)}" stroke="var(--muted)" stroke-width="1.3"/>`;
+      s += `<text x="${ml + 6}" y="${yp(1) + 14}" font-size="10.5" fill="var(--muted)">calibrated = 1.0</text>`;
+      s += `<line x1="${ml}" y1="${yp(floor)}" x2="${W - mr}" y2="${yp(floor)}" stroke="var(--s-size)" stroke-width="1.2" stroke-dasharray="5 4" opacity="0.8"/>`;
+      s += `<text x="${ml + 6}" y="${yp(floor) - 6}" font-size="10.5" style="fill:var(--s-size)">Shepard floor 1/(1−K/N<tspan baseline-shift="sub" font-size="8">eff</tspan>) ≈ ${floor.toFixed(2)}</text>`;
+      s += `<polyline points="${journey.map((j, i) => `${xp(i).toFixed(1)},${yp(j[1]).toFixed(1)}`).join(" ")}" fill="none" stroke="var(--s-size)" stroke-width="2.2"/>`;
+      journey.forEach((j, i) => {
+        s += `<circle data-i="${i}" cx="${xp(i)}" cy="${yp(j[1])}" r="5" style="fill:var(--s-size)"/>`;
+        s += `<text class="mono" x="${xp(i)}" y="${yp(j[1]) - 12}" text-anchor="middle" font-size="12" font-weight="600" fill="var(--ink)">${j[1].toFixed(2)}</text>`;
+        s += `<text x="${xp(i)}" y="${H - 22}" text-anchor="middle" font-size="11.5" font-weight="600" fill="var(--ink)">${j[0]}</text>`;
+        s += `<text x="${xp(i)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${j[2]}</text>`;
+      });
+      s += `</svg>`;
+      const holder = document.getElementById("val-opt-chart");
+      holder.innerHTML = s;
+      holder.querySelectorAll("circle").forEach(c => {
+        const j = journey[+c.dataset.i];
+        hover(c, () => `<div class="t">${j[0]} — ${j[2]}</div>min-variance bias statistic <span class="mono">${j[1].toFixed(2)}</span>`);
+      });
     }
 
     // same-harness baseline comparison: rows = stats, columns = models
