@@ -38,6 +38,13 @@ Tools exposed: `get_model_info`, `get_portfolio_risk`, `get_factor_exposures`,
 `stress_test`, `check_coverage`. Weights are portfolio weights (shorts
 negative); volatilities are annualized decimals.
 
+## Get the latest model (no key, no signup)
+
+```bash
+pip install git+https://github.com/wanxinwanxin/risk-prism
+mkdir -p artifacts && curl -L https://github.com/wanxinwanxin/risk-prism/releases/latest/download/riskprism-artifacts.tar.gz | tar xz -C artifacts
+```
+
 ## For humans (Python)
 
 ```python
