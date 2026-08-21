@@ -172,3 +172,52 @@ def test_revalidate_reconstructs_and_scores():
     # calibrated world: overall bias near 1
     bias = validation["z"].std()
     assert 0.75 < bias < 1.3
+
+
+# ------------------------------------------- v0.4: optimization-bias fixes
+def test_blend_preserves_unit_diag_and_psd():
+    fr = _fr(t=150, seed=9, ar=0.1)
+    from riskprism.model.covariance import estimate_weekly_cov, pca_blend_corr
+    cfg = ModelConfig()
+    cov = estimate_weekly_cov(fr.to_numpy(), cfg, blend=False)
+    d = np.sqrt(np.diag(cov))
+    Cb = pca_blend_corr(cov / np.outer(d, d), cfg)
+    assert np.allclose(np.diag(Cb), 1.0)
+    assert np.abs(Cb).max() <= 1.0 + 1e-12
+    vals = np.linalg.eigvalsh((Cb + Cb.T) / 2)
+    assert vals.min() > -1e-10  # convex blend of PSD matrices
+
+
+def test_blend_weight_one_is_identity():
+    from riskprism.model.covariance import pca_blend_corr
+    rng = np.random.default_rng(2)
+    A = rng.normal(0, 1, (12, 20))
+    C = np.corrcoef(A.T)
+    out = pca_blend_corr(C, ModelConfig(blend_weight=1.0))
+    assert np.allclose(out, C, atol=1e-12)
+
+
+def test_eigen_profile_shape_and_adjustment():
+    from riskprism.model.covariance import (eigen_adjust, eigen_bias_profile,
+                                            estimate_weekly_cov)
+    cfg = ModelConfig(eigen_adjust_sims=100, eigen_adjust_a=1.0)
+    fr = _fr(t=150, seed=4)
+    cov = estimate_weekly_cov(fr.to_numpy(), cfg, blend=False)
+    v = eigen_bias_profile(cov, 150, cfg, seed=1)
+    # the USE4 signature: small eigenfactors substantially underestimated,
+    # large ones nearly unbiased
+    assert v[:4].mean() > 1.15
+    assert v[:4].mean() > v[-4:].mean() + 0.1
+    adj = eigen_adjust(cov, v)
+    assert np.linalg.eigvalsh((adj + adj.T) / 2).min() > -1e-12
+    # adjustment raises total variance (it only inflates eigenvariances)
+    assert np.trace(adj) >= np.trace(cov)
+
+
+def test_factor_covariance_modes_all_psd():
+    fr = _fr(t=150, seed=5, ar=0.2)
+    for mode in ["none", "blend", "eigen"]:
+        cfg = ModelConfig(factor_cov_adjust=mode, eigen_adjust_sims=50)
+        F = factor_covariance(fr, cfg).to_numpy()
+        assert np.linalg.eigvalsh(F).min() >= 0
+        assert np.isfinite(F).all()

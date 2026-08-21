@@ -51,9 +51,10 @@ def model_asof(artifacts: dict | str | Path, date, config: ModelConfig | None = 
 
     ``date`` must be one of `available_dates` (a weekly formation Friday).
     Covers the estimation universe as of that week. Not identical to the
-    final batch estimator (recursive EWMA vs. windowed; specific risk is
-    pure time-series here, no structural blend) — it is exactly the model
-    the in-build validation was scored with.
+    final batch estimator (recursive EWMA vs. windowed; specific risk here
+    is the time-series estimate with shrinkage and VRA, no structural
+    blend) — it is exactly the model the shipped validation was scored
+    with, adjustments (NW, blending, VRA, shrinkage) included.
     """
     config = config or ModelConfig()
     a = artifacts if isinstance(artifacts, dict) else load_artifacts(artifacts)
@@ -88,6 +89,7 @@ def model_asof(artifacts: dict | str | Path, date, config: ModelConfig | None = 
     meta = dict(a["meta"])
     meta.update({"as_of": str(date.date()), "historical": True,
                  "n_assets": int(len(X)),
-                 "note": "reconstructed point-in-time model (recursive EWMA, "
-                         "time-series specific risk); industries as of final build"})
+                 "note": "reconstructed point-in-time model (recursive EWMA with "
+                         "NW/blending/VRA/shrinkage, time-series specific risk); "
+                         "industries as of final build"})
     return RiskModel(X, F, spec, meta, asset_meta=None)

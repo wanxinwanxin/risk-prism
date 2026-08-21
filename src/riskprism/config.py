@@ -24,11 +24,11 @@ class ModelConfig:
     a new model version.
     """
 
-    version: str = "PRISM-US-MH-0.3"
+    version: str = "PRISM-US-MH-0.4"
     # Prior versions whose regression/exposure definitions match this one:
     # their factor-return history may be appended to (risk construction on
     # top differs, but validation is recomputed from history every build).
-    compatible_prior_versions: tuple = ("PRISM-US-MH-0.2",)
+    compatible_prior_versions: tuple = ("PRISM-US-MH-0.2", "PRISM-US-MH-0.3")
     frequency: str = "W-FRI"
     ann_factor: float = 52.0
 
@@ -37,6 +37,19 @@ class ModelConfig:
     vol_half_life: int = 13
     specific_half_life: int = 13
     eig_floor: float = 1e-10
+
+    # Optimization-bias correction on the factor covariance:
+    # "blend" = Bloomberg-style correlation blending (shipped default,
+    # their published w=0.8 / 25% of components), "eigen" = eigenfactor
+    # risk adjustment (Menchero/Wang/Orr 2011 — implemented but off: at
+    # K=20 weekly it overcorrects broad portfolios), "none" = off.
+    # Full A/B evidence in docs/DECISIONS.md §9.
+    factor_cov_adjust: str = "blend"
+    eigen_adjust_sims: int = 200
+    eigen_adjust_a: float = 1.4
+    eigen_refresh_weeks: int = 26  # state replay: recompute profile this often
+    blend_weight: float = 0.8
+    blend_components_frac: float = 0.25
 
     # Newey-West serial-correlation adjustment of variances (Bartlett
     # weights; ratio clipped for robustness). Weekly returns need fewer

@@ -21,6 +21,8 @@ import pandas as pd
 
 from riskprism.config import MARKET_FACTOR, STYLE_FACTORS, ModelConfig
 from riskprism.factors.industry import INDUSTRIES, INDUSTRY_PREFIX
+from riskprism.model.covariance import (eigen_adjust, eigen_bias_profile,
+                                        pca_blend_corr)
 from riskprism.model.specific import bayes_shrink_specific
 
 FULL_FACTORS = [MARKET_FACTOR, *STYLE_FACTORS,
@@ -68,6 +70,9 @@ class RunningRiskState:
         # bias statistics; multiplier lambda = sqrt of these
         self._vra_f2 = 1.0
         self._vra_s2 = 1.0
+        # eigenfactor bias profile cache (recomputed periodically)
+        self._eigen_v = None
+        self._eigen_at = -10_000
 
     # ---- volatility regime multipliers ---------------------------------
     @property
@@ -171,9 +176,20 @@ class RunningRiskState:
         corr = self._s_corr / np.outer(d, d)
         np.clip(corr, -1.0, 1.0, out=corr)
         np.fill_diagonal(corr, 1.0)
+        if self.config.factor_cov_adjust == "blend":
+            corr = pca_blend_corr(corr, self.config)
         vols = np.sqrt(self._nw_factor_var())
         cov = corr * np.outer(vols, vols)
         cov = (cov + cov.T) / 2
+        if self.config.factor_cov_adjust == "eigen":
+            # the bias profile drifts slowly with T; refresh periodically
+            # (deterministically seeded so replays are reproducible)
+            if (self._eigen_v is None
+                    or self.n_weeks - self._eigen_at >= self.config.eigen_refresh_weeks):
+                T = min(self.n_weeks, self.config.history_cap_weeks)
+                self._eigen_v = eigen_bias_profile(cov, T, self.config, seed=self.n_weeks)
+                self._eigen_at = self.n_weeks
+            cov = eigen_adjust(cov, self._eigen_v)
         vals, vecs = np.linalg.eigh(cov)
         vals = np.clip(vals, 0, None)
         return (vecs @ np.diag(vals) @ vecs.T) * self.vra_factor ** 2

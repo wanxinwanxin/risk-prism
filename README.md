@@ -86,10 +86,11 @@ riskprism-site --artifacts artifacts --out site   # index.html + model.md + llms
 |---|---|
 | Horizon | Medium (weekly returns, annualized outputs) |
 | Estimation | Cross-sectional WLS (√cap weights), cap-weighted industry constraint |
-| Factor covariance | EWMA — vol half-life 13w, correlation half-life 26w, PSD-repaired |
-| Specific risk | EWMA residual vol blended with a structural (characteristic-based) prior by history length |
+| Factor covariance | EWMA — vol half-life 13w, correlation half-life 26w — with Newey-West variance adjustment, rank-5 correlation blending (Bloomberg's published parameters), PSD repair, and a Volatility Regime Adjustment multiplier |
+| Specific risk | EWMA residual vol (NW-adjusted) blended with a structural (characteristic-based) prior by history length, Bayesian-shrunk toward size-decile means (q=0.1), with its own VRA multiplier |
 | Universe | Estimation: price ≥ $2, ADV ≥ $1M, 26w+ history · Coverage: everything alive ≥ $1, priors fill the gaps |
 | History | Capture-forward: weekly builds append to the prior release; delistings imputed, survivorship bias decays out |
+| Validation | Recomputed from full history every build: bias statistics, Mincer–Zarnowitz, realized-vol ratios — on market/style/industry/random baskets, six real factor ETFs, and portfolios optimized against the model itself |
 
 Full methodology in [docs/METHODOLOGY.md](docs/METHODOLOGY.md); design
 decisions and their rationale in [docs/DECISIONS.md](docs/DECISIONS.md).

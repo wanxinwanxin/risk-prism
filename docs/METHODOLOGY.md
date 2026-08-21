@@ -1,14 +1,17 @@
 # PRISM-US-MH methodology
 
-Version `PRISM-US-MH-0.3`. Weekly-frequency, medium-horizon US equity
+Version `PRISM-US-MH-0.4`. Weekly-frequency, medium-horizon US equity
 fundamental factor model. All parameters live in `riskprism.config.ModelConfig`.
 
-v0.3 adds four pieces of the commercial-model recipe, each with published
-evidence behind it (see the citations inline): Newey-West variance
+v0.3 added four pieces of the commercial-model recipe, each with
+published evidence behind it (citations inline): Newey-West variance
 adjustment, Volatility Regime Adjustment, Bayesian specific-risk
-shrinkage, and optimized portfolios in the validation panel. Exposure and
-regression definitions are unchanged from v0.2, so v0.2 regression
-history carries forward (`compatible_prior_versions`); validation is
+shrinkage, and optimized portfolios in the validation panel. v0.4 adds
+Bloomberg-style correlation blending after A/B-testing it against the
+eigenfactor risk adjustment on our own validation panel (results and the
+eigenfactor negative result in DECISIONS.md §9). Exposure and regression
+definitions are unchanged since v0.2, so regression history carries
+forward across these bumps (`compatible_prior_versions`); validation is
 recomputed from history on every build regardless (see Validation below).
 
 ## Two universes
@@ -43,9 +46,12 @@ Consequence: history recorded after launch is survivorship-free by
 construction, and because the EWMA half-lives are 13/26 weeks, the biased
 cold-start history decays out of the live model within ~18–24 months.
 Weeks recorded before launch remain biased; factor-return *means* are
-affected more than the covariances the model ships. A methodology version
-bump discards prior history (cold rebuild) rather than appending across
-incompatible definitions.
+affected more than the covariances the model ships. A version bump that
+changes exposure or regression definitions discards prior history (cold
+rebuild); bumps that only change risk construction on top (v0.3, v0.4)
+keep appending — the prior versions listed in
+`config.compatible_prior_versions` — because validation is recomputed
+from history under the current methodology every build anyway.
 
 ### Severity, quantified (audit 2026-08-20, `scripts/survivorship_audit.py`)
 
@@ -123,9 +129,22 @@ model swung 1.3 → 0.7 (Menchero & Morozov, "Improving Risk Forecasts
 Through Cross-Sectional Observations"). Directly targets our measured
 Mincer–Zarnowitz slope of 0.70.
 
+**Correlation blending (v0.4)**: the correlation matrix is blended with
+its own rank-5 PCA reconstruction (plus an idiosyncratic diagonal
+restoring unit diagonals) at Bloomberg's published parameters — w = 0.8
+sample weight, J = ⌈K/4⌉ = 5 components (Menchero, Bloomberg MAC2/MAC3).
+This suppresses the noise in the matrix's small directions that
+optimizers exploit: min-variance-portfolio bias 1.36 → 1.29 with no
+measurable effect on any other test portfolio. The eigenfactor risk
+adjustment (Menchero, Wang & Orr 2011) is implemented behind
+`config.factor_cov_adjust="eigen"` but off by default: our Monte-Carlo
+reproduces their ~40% small-eigenfactor underestimation exactly, yet at
+K=20 weekly factors the adjustment's mid-rank inflation over-forecasts
+broad portfolios (equal-weight/random biases fall to ~0.8) — a negative
+result documented in DECISIONS.md §9.
+
 The combined matrix is annualized (×52) and repaired to PSD by eigenvalue
-flooring at 1e-10. Eigenfactor risk adjustment / correlation blending is
-the v0.4 candidate (see DECISIONS.md for the plan).
+flooring at 1e-10.
 
 ## Specific risk
 

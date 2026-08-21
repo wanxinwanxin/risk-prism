@@ -478,7 +478,7 @@ a { color: var(--accent); }
 <section class="view" id="view-validation">
   <div class="card">
     <h2>Does the model tell the truth?</h2>
-    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time. The panel deliberately includes the hard cases: real traded factor ETFs, and <b>portfolios optimized against the model itself</b> (marked <span style="color:var(--s-size)">opt</span>) — optimizers hunt the covariance matrix's underestimated directions, so these are expected to run above 1 until the v0.4 eigenfactor work lands. Every build rescores the whole history under the current methodology.</p>
+    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time. The panel deliberately includes the hard cases: real traded factor ETFs, and <b>portfolios optimized against the model itself</b> (marked <span style="color:var(--s-size)">opt</span>) — optimizers hunt the covariance matrix's underestimated directions, so these run above 1 by construction; v0.4's correlation blending trims the worst case and the rest is documented, not hidden. Every build rescores the whole history under the current methodology.</p>
     <div id="val-hero"></div>
   </div>
   <div class="grid2">
@@ -521,7 +521,7 @@ a { color: var(--accent); }
     <h2>Against the commercial models — on their own protocols</h2>
     <p class="sub" style="margin-bottom:10px">The vendors can't be forced onto one standard, so we conform to theirs: each row runs <b>this model under that vendor's published test protocol</b> and puts the result next to what the vendor reports about itself. Periods and universes still differ — that caveat can't be engineered away with public data — but the statistic, horizon, and portfolio construction match.</p>
     <div class="tscroll" id="val-vendor-table"></div>
-    <p class="sub" style="margin-top:8px">v0.3 adopted two of USE4's documented remedies: the <b>Volatility Regime Adjustment</b> (their version held rolling bias near 1.0 through 2008–09 while the unadjusted model swung 1.3&nbsp;→&nbsp;0.7; ours targets the Mincer–Zarnowitz slope of ~0.7 measured in v0.2) and <b>Bayesian specific-risk shrinkage</b> (q&nbsp;=&nbsp;0.1 toward size-decile means — flattened their 1.08→0.92 decile tilt), plus Newey-West variance adjustments. The failure mode left standing is the one the literature calls hardest: <b>portfolios optimized against the model are underforecast</b> (Shepard 2009: true vol ≈ predicted/(1−K/T); MSCI measured bias 1.4–1.5 pre-eigenfactor-adjustment). We now measure it on ourselves — the <span style="color:var(--s-size)">opt</span> rows above — and the eigenfactor / correlation-blending fix is the v0.4 plan (<a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a>). One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
+    <p class="sub" style="margin-top:8px">v0.3 adopted two of USE4's documented remedies: the <b>Volatility Regime Adjustment</b> (their version held rolling bias near 1.0 through 2008–09 while the unadjusted model swung 1.3&nbsp;→&nbsp;0.7; ours targets the Mincer–Zarnowitz slope of ~0.7 measured in v0.2) and <b>Bayesian specific-risk shrinkage</b> (q&nbsp;=&nbsp;0.1 toward size-decile means — flattened their 1.08→0.92 decile tilt), plus Newey-West variance adjustments. The failure mode left standing is the one the literature calls hardest: <b>portfolios optimized against the model are underforecast</b> (Shepard 2009: true vol ≈ predicted/(1−K/T); MSCI measured bias 1.4–1.5 pre-eigenfactor-adjustment). We measure it on ourselves — the <span style="color:var(--s-size)">opt</span> rows above — and v0.4 A/B-tested both published cures on this validation panel: MSCI's eigenfactor adjustment reproduced their ~40% small-eigenfactor bias exactly but overcorrects broad portfolios at our K=20 weekly scale (an honest negative result), so <b>Bloomberg-style correlation blending</b> (their published w=0.8, J=5) shipped instead — min-var bias 1.36&nbsp;→&nbsp;1.29 with zero effect on other portfolios; the residual is largely specific-risk estimation noise no factor-matrix fix can reach (full evidence table in <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a> §9). One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
   </div>
 </section>
 
@@ -628,7 +628,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
   </div>
   <div class="card">
     <h2>The model in one paragraph</h2>
-    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives); specific risk blends per-stock residual EWMA with a structural characteristics model. Everything here is computed in your browser from the published artifacts — no server.</p>
+    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives) with Newey-West variance adjustment, rank-5 correlation blending, and a Volatility Regime Adjustment multiplier; specific risk blends per-stock residual EWMA with a structural characteristics model, Bayesian-shrunk toward size-decile means, with its own VRA. Everything here is computed in your browser from the published artifacts — no server.</p>
   </div>
 </section>
 
@@ -1561,8 +1561,8 @@ renderStockTable();
   s += box(8, 210, 176, 70, false, ["Price provider", "daily adjusted bars", "\`yahoo / tiingo / stooq"]);
   s += box(264, 122, 190, 78, false, ["Universe & exposures", `${m.n_assets} stocks pass filters`, "\`7 styles + 12 industries"]);
   s += box(524, 122, 196, 78, true, ["Weekly WLS regression", `${m.n_periods} weeks · mean R² ${r2txt}`, "\`cap-wtd industry sum = 0"]);
-  s += box(760, 30, 192, 64, false, ["Factor covariance F", "\`EWMA 13w vol · 26w corr"]);
-  s += box(760, 236, 192, 64, false, ["Specific risk s", "\`EWMA residuals + shrinkage"]);
+  s += box(760, 30, 192, 64, false, ["Factor covariance F", "\`EWMA · NW · blend · VRA"]);
+  s += box(760, 236, 192, 64, false, ["Specific risk s", "\`blend · shrink · VRA"]);
   s += box(492, 352, 300, 62, false, ["Model artifacts", "X, F, s + factor return history", "\`parquet · weekly release"]);
   s += box(94, 352, 260, 62, false, ["Consumers", "MCP agents · Python · this page"]);
   s += arrow(184, 75, 264, 140, "book equity, ROE, leverage, shares", 250, 116);
@@ -1836,7 +1836,7 @@ renderStockTable();
             ctx.fillText("Σ ε ≈ 0", W * 0.86, mid - 118);
           }
         } },
-      { dur: 9, cap: `<b>6 · Weeks become risk.</b> Repeat scene 3 for 150 Fridays and each factor's payoffs pile into a distribution — its volatility (momentum: ● <span style="font-family:var(--mono)">${pct(volMom)}</span>/yr) and its correlations with every other factor: the matrix F. Your exposures pass through it — Σ = XFXᵀ + diag(s²) — and total risk splits into the spectrum. That's the prism.`,
+      { dur: 9, cap: `<b>6 · Weeks become risk.</b> Repeat scene 3 for ${m.n_periods} Fridays and each factor's payoffs pile into a distribution — its volatility (momentum: ● <span style="font-family:var(--mono)">${pct(volMom)}</span>/yr) and its correlations with every other factor: the matrix F. Your exposures pass through it — Σ = XFXᵀ + diag(s²) — and total risk splits into the spectrum. That's the prism.`,
         draw(ctx, W, H, u) {
           const k = Math.max(3, Math.floor(ease(Math.min(1, u * 1.4)) * payoffs.length));
           const bins = new Array(21).fill(0);
@@ -1932,123 +1932,6 @@ renderStockTable();
     size();
     render(reduced ? 1 : 0.92);
   })();
-
-  // --- 1. one week of the regression -------------------------------------
-  {
-    const rng = mulberry(7);
-    const N = 110, beta = 0.013, noise = 0.02;
-    const pts = Array.from({ length: N }, () => {
-      const x = Math.max(-2.8, Math.min(2.8, gauss(rng)));
-      return { x, y: 0.002 + beta * x + noise * gauss(rng), r: 2 + rng() * 2.5 };
-    });
-    makeAnim("anim-regression", (ctx, W, H, t) => {
-      const ml = 46, mr = 16, mt = 14, mb = 26;
-      const xp = v => ml + (v + 3) / 6 * (W - ml - mr);
-      const yp = v => mt + (0.07 - v) / 0.14 * (H - mt - mb);
-      ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(ml, yp(0)); ctx.lineTo(W - mr, yp(0)); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(xp(0), mt); ctx.lineTo(xp(0), H - mb); ctx.stroke();
-      ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans");
-      ctx.textAlign = "center";
-      ctx.fillText("momentum exposure (σ) →", (ml + W - mr) / 2, H - 8);
-      ctx.save(); ctx.translate(14, (mt + H - mb) / 2); ctx.rotate(-Math.PI / 2);
-      ctx.fillText("this week's return", 0, 0); ctx.restore();
-
-      const nShow = Math.floor(ease(t / 2) * N);
-      const slopeU = ease((t - 2.2) / 3.2);
-      const slope = beta * slopeU, icept = 0.002 * slopeU;
-      const residU = ease((t - 6) / 1.6);
-      const labelU = ease((t - 8) / 1.2);
-
-      if (residU > 0) {
-        ctx.strokeStyle = css("--s-specific"); ctx.lineWidth = 1.4;
-        for (let i = 0; i < Math.floor(residU * 40); i++) {
-          const p = pts[i * 2];
-          ctx.beginPath(); ctx.moveTo(xp(p.x), yp(p.y));
-          ctx.lineTo(xp(p.x), yp(icept + slope * p.x)); ctx.stroke();
-        }
-      }
-      ctx.fillStyle = css("--s-market");
-      for (let i = 0; i < nShow; i++) {
-        const p = pts[i];
-        ctx.globalAlpha = 0.75;
-        ctx.beginPath(); ctx.arc(xp(p.x), yp(p.y), p.r, 0, 7); ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-      if (slopeU > 0.01) {
-        ctx.strokeStyle = css("--s-momentum"); ctx.lineWidth = 2.5;
-        ctx.beginPath(); ctx.moveTo(xp(-2.9), yp(icept - slope * 2.9));
-        ctx.lineTo(xp(2.9), yp(icept + slope * 2.9)); ctx.stroke();
-      }
-      if (labelU > 0) {
-        ctx.globalAlpha = labelU;
-        ctx.fillStyle = css("--ink");
-        ctx.font = "600 13px " + css("--mono");
-        ctx.textAlign = "left";
-        ctx.fillText("slope = momentum factor return = +1.3%", ml + 8, mt + 16);
-        ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans");
-        ctx.fillText("vertical sticks = ε, each stock's specific return", ml + 8, mt + 32);
-        ctx.globalAlpha = 1;
-      }
-    }, { loop: 11 });
-  }
-
-  // --- 2. the prism -------------------------------------------------------
-  {
-    // real variance shares from this build: the mega-cap preset
-    const w = {}; ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"].forEach(t2 => { if (t2 in TIDX) w[t2] = 0.2; });
-    const r = computeRisk(Object.keys(w).length >= 3 ? w : { [T[0]]: 0.5, [T[1]]: 0.5 });
-    const classes = [];
-    const add = (name, v, color) => { if (v > 0) classes.push({ name, v, color }); };
-    add("market", r.contrib[FACTORS.indexOf(MKT)], css("--s-market") || "#2a78d6");
-    STYLES.forEach(f => add(f, r.contrib[FACTORS.indexOf(f)], `var:${f}`));
-    add("industries", FACTORS.reduce((a, f, k) => a + (f.startsWith("ind_") ? r.contrib[k] : 0), 0), "ind");
-    add("specific", r.svar, "spec");
-    const tot = classes.reduce((a, c) => a + c.v, 0);
-    classes.forEach(c => c.share = c.v / tot);
-    const colorOf = c => c.color === "ind" ? css("--s-industry")
-      : c.color === "spec" ? css("--s-specific")
-      : c.color.startsWith("var:") ? css(`--s-${c.color.slice(4)}`) : c.color;
-
-    makeAnim("anim-prism", (ctx, W, H, t) => {
-      const cy = H / 2, px = W * 0.42, pw = H * 0.42;
-      const beamU = ease(t / 1.8);
-      const splitU = ease((t - 1.8) / 2.6);
-      const labelU = ease((t - 4.2) / 1.4);
-      // incoming beam: total variance
-      ctx.strokeStyle = css("--ink-2"); ctx.lineWidth = 8; ctx.lineCap = "round";
-      ctx.globalAlpha = 0.85;
-      ctx.beginPath(); ctx.moveTo(W * 0.05, cy);
-      ctx.lineTo(W * 0.05 + beamU * (px - W * 0.05 - pw * 0.35), cy); ctx.stroke();
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = css("--muted"); ctx.font = "11.5px " + css("--sans"); ctx.textAlign = "left";
-      ctx.fillText(`total variance (${pct(r.tvol)} vol)`, W * 0.05, cy - 12);
-      // prism
-      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.8; ctx.lineJoin = "round";
-      ctx.beginPath(); ctx.moveTo(px, cy - pw * 0.62);
-      ctx.lineTo(px + pw * 0.55, cy + pw * 0.5); ctx.lineTo(px - pw * 0.55, cy + pw * 0.5);
-      ctx.closePath(); ctx.stroke();
-      // spectrum
-      if (splitU > 0) {
-        const spread = H * 0.6;
-        let acc = 0;
-        classes.forEach(c => {
-          const mid = acc + c.share / 2; acc += c.share;
-          const y1 = cy + (mid - 0.5) * spread * splitU;
-          const x0 = px + pw * 0.28, x1 = x0 + splitU * (W - x0 - W * 0.16);
-          ctx.strokeStyle = colorOf(c);
-          ctx.lineWidth = Math.min(H * 0.2, Math.max(2, c.share * H * 0.42));
-          ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, y1); ctx.stroke();
-          if (labelU > 0 && c.share > 0.03) {
-            ctx.globalAlpha = labelU;
-            ctx.fillStyle = css("--ink"); ctx.font = "600 11.5px " + css("--mono");
-            ctx.fillText(` ${c.name} ${Math.round(c.share * 100)}%`, x1 + 4, y1 + 4);
-            ctx.globalAlpha = 1;
-          }
-        });
-      }
-    }, { aspect: 0.36, loop: 9 });
-  }
 
   // --- 3. EWMA memory -----------------------------------------------------
   {
@@ -2484,7 +2367,7 @@ renderStockTable();
       if (sub) { ctx.fillStyle = css("--muted"); ctx.font = sans(8.5); ctx.fillText(sub, x + w2 / 2, y + h2 + 11); }
     };
     const gap = 12, xX = W * 0.06 + (1 - uIn) * -30;
-    box(xX, cy - 52, 34, 104, css("--s-market"), "X", "n × 21 exposures");
+    box(xX, cy - 52, 34, 104, css("--s-market"), "X", "n × 20 exposures");
     box(xX + 34 + gap, cy - 26, 52, 52, css("--s-momentum"), "F", "factor cov");
     box(xX + 98 + gap, cy - 17, 104, 34, css("--s-market"), "Xᵀ", "");
     ctx.fillStyle = css("--ink"); ctx.font = mono(15); ctx.textAlign = "center";
@@ -2585,7 +2468,7 @@ renderStockTable();
       cap: "The model clock sweeps forward; a fundamental becomes usable only when its filing lands — never at the fiscal period it describes." },
     prices: { kind: "data", col: 0, row: 1, title: "Daily prices & volume", short: ["Daily prices", "pluggable provider"],
       what: "Daily closes and volumes for every candidate ticker, via a pluggable provider (Yahoo's chart API by default). Aggregated to Friday-to-Friday weekly returns — the model's dependent variable — plus daily returns kept for realized-volatility validation. Raw prices are never redistributed; only derived factor data ships.",
-      why: "Weekly frequency is the medium-horizon design choice: enough cross-sections to estimate 21 factors, slow enough that microstructure noise and asynchronous closes wash out. Commercial vendors run daily (USE4) — that's our documented trade-off, revisited if a short-horizon variant ever ships.",
+      why: "Weekly frequency is the medium-horizon design choice: enough cross-sections to estimate 20 factors, slow enough that microstructure noise and asynchronous closes wash out. Commercial vendors run daily (USE4) — that's our documented trade-off, revisited if a short-horizon variant ever ships.",
       src: ["meth", "use4"], anim: drawPrices, aspect: 0.36, loop: 8,
       cap: "Daily closes compound into Friday-to-Friday weekly returns; the daily path is kept for higher-powered realized-vol checks." },
     universe: { kind: "proc", col: 1, row: 0, title: "Universe filters", short: ["Universe filters", "estimation vs coverage"],
@@ -2618,9 +2501,9 @@ renderStockTable();
       why: "This archive IS the model's memory — covariances, specific risks, validation and historical model reconstruction all derive from it. Appending (rather than rebuilding from currently-fetchable prices) is what makes history survivorship-free from launch onward.",
       src: ["meth", "shumway"], anim: drawHistory, aspect: 0.4, loop: 10,
       cap: "Rows accrue weekly. When a stock dies (✝), its column stops — but its past stays, unlike a refetched price panel." },
-    fcov: { kind: "proc", col: 2, row: 2, title: "Factor covariance", short: ["Factor covariance", "EWMA · NW · VRA"],
-      what: "Factor vols from a 13-week-half-life EWMA (responsive), correlations from 26 weeks (stable), combined and repaired to positive semi-definite. Variances carry a 2-lag Newey-West adjustment for serial correlation, and everything is scaled by the Volatility Regime Adjustment: an EWMA of how big returns actually were versus forecast.",
-      why: "Half-life EWMA alone lags regime shifts — USE4's unadjusted model underforecast going into 2008 (bias ~1.3) and overforecast after (~0.7); their VRA held it near 1.0 throughout. Our measured Mincer-Zarnowitz slope of 0.70 showed the same disease, so v0.3 adopted the same cure. Newey-West fixes the ×52 annualization, which silently assumes weeks are independent.",
+    fcov: { kind: "proc", col: 2, row: 2, title: "Factor covariance", short: ["Factor covariance", "EWMA · NW · blend · VRA"],
+      what: "Factor vols from a 13-week-half-life EWMA (responsive), correlations from 26 weeks (stable), combined and repaired to positive semi-definite. Variances carry a 2-lag Newey-West adjustment for serial correlation; the correlation matrix is blended with its own rank-5 PCA reconstruction (Bloomberg's published w = 0.8) to suppress the noise directions optimizers exploit; and everything is scaled by the Volatility Regime Adjustment: an EWMA of how big returns actually were versus forecast.",
+      why: "Half-life EWMA alone lags regime shifts — USE4's unadjusted model underforecast going into 2008 (bias ~1.3) and overforecast after (~0.7); their VRA held it near 1.0 throughout. Our measured Mincer-Zarnowitz slope of 0.70 showed the same disease, so v0.3 adopted the same cure (slope now 0.8). Newey-West fixes the ×52 annualization, which silently assumes weeks are independent; blending is Bloomberg's production answer to optimizers exploiting covariance noise — we A/B'd it against MSCI's eigenfactor adjustment on our own validation and shipped the one that did no collateral damage.",
       src: ["use4", "meth"], anim: drawFcov, aspect: 0.4, loop: 12,
       cap: "Bars fade at the 13-week half-life; when a shock cluster lands, the VRA multiplier λ lifts the whole forecast band before the EWMA can catch up." },
     specific: { kind: "proc", col: 2, row: 3, title: "Specific risk", short: ["Specific risk", "blend · shrink · VRA"],
@@ -2629,8 +2512,8 @@ renderStockTable();
       src: ["use4"], anim: drawSpecific, aspect: 0.4, loop: 10,
       cap: "Each dot is one stock's estimated specific vol; shrinkage pulls it toward its decile's mean — gently near the middle, hard at the extremes." },
     assemble: { kind: "proc", col: 3, row: 0, title: "Assembly: Σ = XFXᵀ + D", short: ["Σ = XFXᵀ + D", "the whole point"],
-      what: "The full n×n covariance of ~3,000 stocks is never estimated directly — it's composed: exposures spread 21 factors' covariance across every stock (XFXᵀ), plus each stock's own specific variance on the diagonal. Any portfolio's risk is then one quadratic form, computed in your browser.",
-      why: "Estimating 3,000×3,000 ≈ 4.5M covariances from 156 weeks is hopeless (T ≪ n); 21 factors need only 231. This dimension reduction is the founding insight of factor risk models — and why a laptop (or a web page) can price portfolio risk at all.",
+      what: "The full n×n covariance of ~3,000 stocks is never estimated directly — it's composed: exposures spread 20 factors' covariance across every stock (XFXᵀ), plus each stock's own specific variance on the diagonal. Any portfolio's risk is then one quadratic form, computed in your browser.",
+      why: "Estimating 3,000×3,000 ≈ 4.5M covariances from 156 weeks is hopeless (T ≪ n); 20 factors need only 210. This dimension reduction is the founding insight of factor risk models — and why a laptop (or a web page) can price portfolio risk at all.",
       src: ["use4", "bbg"], anim: drawAssemble, aspect: 0.34, loop: 9,
       cap: "Three small pieces compose the giant matrix nobody could estimate directly — then your weights pass through it and out comes one number." },
     validate: { kind: "proc", col: 3, row: 1, title: "Validation replay", short: ["Validation replay", "graded weekly, in public"],

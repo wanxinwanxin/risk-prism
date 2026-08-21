@@ -137,13 +137,13 @@ measure the disease continuously (decision 7.2), so the cure is chosen on
 our own evidence:
 
 - **Phase 0 — measure (shipping now)**: watch the `opt` group's bias
-  statistics for a few builds. With K=21 factors and T≈150 effective
-  weeks, Shepard's formula predicts ≈ 1/(1−21/150) ≈ 1.16 before
+  statistics for a few builds. With K=20 factors and T≈150 effective
+  weeks, Shepard's formula predicts ≈ 1/(1−20/150) ≈ 1.15 before
   estimation noise in specific risk — expect roughly 1.1–1.3, milder than
   USE4's 1.4–1.6 (they have K=60+ industries and optimize harder).
 - **Phase A — eigenfactor risk adjustment** (Menchero, Wang & Orr 2011,
   Appendix A): diagonalize F, Monte-Carlo the per-eigenfactor volatility
-  bias (simulate T weeks from F ~1,000 times — trivial at K=21), de-bias
+  bias (simulate T weeks from F ~1,000 times — trivial at K=20), de-bias
   eigenvariances with the paper's scaled variant (a=1.4), rotate back.
   Implement in `model/covariance.py` behind `config.eigen_adjust`;
   the replayed validation state gets the same treatment (adjust the
@@ -159,8 +159,57 @@ our own evidence:
   the min-variance portfolio (lower wins; the De Nard–Ledoit–Wolf
   criterion). Ship the winner; keep the loser behind its flag with the
   comparison documented here.
-- **Non-goals**: full Ledoit-Wolf nonlinear shrinkage (K=21 is small; the
+- **Non-goals**: full Ledoit-Wolf nonlinear shrinkage (K=20 is small; the
   factor-covariance conditioning problem commercial models fight barely
   exists at our K) and daily-returns re-estimation (a separate, larger
   project — would change regression definitions and force a cold
   rebuild).
+
+## 9. v0.4 result: correlation blending ships; eigenfactor adjustment is an honest negative (decided 2026-08-21)
+
+Executed the §8 plan. Both cures implemented in `model/covariance.py`
+(`config.factor_cov_adjust`: "blend" / "eigen" / "none"), A/B'd by full
+validation replay over the same 123 scored weeks. Bias statistics by
+group (1.0 = calibrated; minvar = the global min-variance portfolio
+optimized against the model):
+
+| variant | minvar | opt avg | style | market | random | equal | industry |
+|---|---|---|---|---|---|---|---|
+| none (v0.3) | 1.36 | 1.20 | 1.16 | 1.04 | 0.93 | 0.98 | 0.99 |
+| eigen a=1.4 | 0.98 | 1.11 | 0.92 | 0.97 | **0.75** | **0.77** | 0.86 |
+| eigen a=1.0 | 1.04 | 1.13 | 0.97 | 0.99 | **0.80** | **0.81** | 0.89 |
+| eigen, median/trace/tapered variants | 1.06–1.29 | 1.12–1.19 | 0.99–1.10 | ~1.0 | 0.81–0.87 | 0.83–0.90 | 0.90–0.97 |
+| **blend w=0.8, J=5 (shipped)** | **1.29** | **1.18** | 1.16 | 1.04 | 0.94 | 0.99 | 0.99 |
+
+Findings:
+
+- The eigenfactor Monte-Carlo reproduces USE4's headline exactly — our
+  smallest eigenfactors are underestimated ~41% (they report ~40%) — and
+  the adjustment does fix the optimized portfolios and even the style
+  spreads. But at K=20 factors and an effective T≈37 weeks (13-week vol
+  half-life), the profile inflates *mid-rank* eigenvalues ~20%, and broad
+  long-only portfolios (equal-weight, random baskets) that were
+  calibrated become badly over-forecast. Robustified profiles (median
+  ratios, trace-preserving, rank-tapered) do not rescue it: the
+  mid-rank variance eigen adds overlaps directions real portfolios hold.
+  USE4's setting (K=65+, daily returns, effective T≈1000) does not
+  transfer to a small-K weekly model. Eigen stays implemented behind the
+  flag for anyone who wants it.
+- Correlation blending at Bloomberg's *published* parameters (w=0.8,
+  J=⌈K/4⌉=5 — deliberately not tuned on our own validation) improves the
+  optimized portfolios modestly with zero measurable effect on any other
+  group. Shipped as the v0.4 default.
+- The residual minvar bias (~1.29) is consistent with Shepard's
+  second-order risk arising substantially from *specific*-risk
+  estimation noise (the optimizer selects the luckiest low-s² names),
+  which no factor-covariance adjustment can reach. Candidate future
+  work: stronger specific shrinkage, or reporting Shepard's analytic
+  1/(1−K/T) correction alongside optimized-portfolio forecasts. The
+  weekly `opt` validation rows keep measuring it either way.
+- The out-of-sample realized vol of the min-variance portfolio was
+  *lowest under the unadjusted matrix* (4.6% vs 4.8–4.9% adjusted) — at
+  our scale the optimization bias manifests as understated forecasts,
+  not as materially worse optimized portfolios.
+
+Version bumped to PRISM-US-MH-0.4; 0.2/0.3 regression history carries
+forward (`compatible_prior_versions`), validation rescored as always.
