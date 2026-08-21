@@ -19,7 +19,7 @@ import pandas as pd
 
 from riskprism.artifacts import load_artifacts
 from riskprism.config import MARKET_FACTOR, STYLE_FACTORS
-from riskprism.factors.industry import INDUSTRY_PREFIX
+from riskprism.factors.industry import INDUSTRY_PREFIX, industry_dummies
 from riskprism.config import STYLE_FACTORS as _STYLES, ModelConfig
 from riskprism.model.baselines import comparison_payload
 from riskprism.model.validation import FULL_FACTORS, RunningRiskState, validation_summary
@@ -67,8 +67,11 @@ def _load(artifacts_dir):
 
 def build_site_data(artifacts_dir: str | Path) -> dict:
     a, X, F, spec, industry, total_vol, am = _load(artifacts_dir)
-    freturns = a["factor_returns"]
-    cum = (1 + freturns).cumprod() - 1
+    freturns = a["factor_returns"]  # daily since v0.5
+    cum_daily = (1 + freturns).cumprod() - 1
+    # weekly points keep the chart payload compact without visible loss
+    cum = cum_daily.resample("W-FRI").last().dropna(how="all")
+    fweek = freturns.resample("W-FRI").sum()  # weekly factor payoffs (approx.)
     show = [MARKET_FACTOR, *STYLE_FACTORS]
     return {
         "meta": a["meta"],
@@ -94,8 +97,8 @@ def build_site_data(artifacts_dir: str | Path) -> dict:
         },
         "validation": _validation_payload(a.get("validation")),
         "sample_week": {
-            "date": freturns.index[-1].strftime("%Y-%m-%d"),
-            "f": {f: round(float(freturns.iloc[-1].get(f, 0.0)), 5)
+            "date": fweek.index[-1].strftime("%Y-%m-%d"),
+            "f": {f: round(float(fweek.iloc[-1].get(f, 0.0)), 5)
                   for f in [MARKET_FACTOR, *STYLE_FACTORS]},
         },
     }
@@ -275,6 +278,19 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         row = [f"{F.loc[fr, fc] / np.sqrt(F.loc[fr, fr] * F.loc[fc, fc]):.2f}" for fc in fs]
         lines.append(f"| **{fr}** | " + " | ".join(row) + " |")
 
+    ts = a.get("factor_tstats")
+    if ts is not None and len(ts):
+        sig = (ts.abs() > 2).mean().sort_values(ascending=False)
+        lines += ["", "## Factor quality",
+                  "",
+                  "Share of daily cross-sectional regressions where each factor is",
+                  "statistically significant (|t| > 2) — the standard relevance check",
+                  "(Axioma publishes the same statistic for AXUS4):",
+                  "",
+                  "| factor | % periods significant | mean absolute t |", "|---|---|---|"]
+        for f2 in sig.index:
+            lines.append(f"| {f2} | {sig[f2] * 100:.0f}% | {float(ts[f2].abs().mean()):.1f} |")
+
     lines += [
         "",
         f"## Coverage ({len(X)} tickers)",
@@ -292,10 +308,12 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "   estimate the factor returns; every name alive at the build date is",
         "   covered — risk comes through the factor structure plus a structural",
         "   specific-risk prior, so no asset-level history is required.",
-        "4. Weekly cross-sectional WLS regression of returns on exposures,",
+        "4. Daily cross-sectional WLS regressions of returns on exposures",
+        "   formed the previous Friday (weekly formation, daily estimation),",
         "   √(market cap) weights, industry returns cap-weighted to zero.",
-        "5. Factor covariance: EWMA on weekly factor returns — vol half-life",
-        f"   {cfg.get('vol_half_life', 13)}w, correlation half-life {cfg.get('corr_half_life', 26)}w — with a {cfg.get('nw_factor_lags', 2)}-lag Newey-West",
+        "5. Factor covariance: EWMA on daily factor returns — vol half-life",
+        f"   {cfg.get('vol_half_life', 84)}d, correlation half-life {cfg.get('corr_half_life', 252)}d (~730 effective",
+        f"   observations) — with a {cfg.get('nw_factor_lags', 5)}-lag Newey-West",
         "   variance adjustment for serial correlation and rank-5 correlation",
         f"   blending (sample weight {cfg.get('blend_weight', 0.8)}, Bloomberg's published parameters,",
         "   suppressing the noise directions optimizers exploit), annualized",
@@ -306,7 +324,7 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "6. Specific risk: each asset's EWMA residual vol (lag-1 Newey-West",
         "   adjusted) blended with a cross-sectional structural prediction",
         "   (from size, volatility, liquidity, industry) by history length:",
-        "   w = T/(T + 26w); assets without history get the pure structural",
+        "   w = T/(T + 126d); assets without history get the pure structural",
         f"   prior. Blended vols are Bayesian-shrunk (q = {cfg.get('specific_shrink_q', 0.1)}) toward their",
         "   size-decile mean and scaled by the specific VRA multiplier",
         f"   (this build: {m.get('vra_specific', 1.0)}).",
@@ -428,31 +446,51 @@ def export_history(artifacts_dir: str | Path, out_dir: str | Path,
     state = RunningRiskState(config)
     k = 0
     written = []
-    for t in eh_dates:
+    for i, t in enumerate(eh_dates):
         while k < len(fr_dates) and fr_dates[k] <= t:
             d = fr_dates[k]
             e = res.loc[d].dropna() if d in res.index else pd.Series(dtype=float)
             state.update(fr.loc[d], e)
             k += 1
-        if not state.ready or k >= len(fr_dates):
+        t_next = eh_dates[i + 1] if i + 1 < len(eh_dates) else None
+        if not state.ready or t_next is None or k >= len(fr_dates):
             continue  # warm-up, or last formation week (nothing realized yet)
         snap = eh[eh["date"] == t].set_index("ticker")
         tickers = list(snap.index)
-        t_next = fr_dates[k]
-        resid_next = res.loc[t_next].reindex(tickers) if t_next in res.index else pd.Series(np.nan, index=tickers)
-        spec_ann = np.sqrt(state.specific_var_weekly(pd.Index(tickers)) * config.ann_factor)
+        # the "next week" the client scores against: aggregate the week's
+        # daily regressions. f_week = sum of daily f; resid_week is the
+        # exact compounded weekly return minus the factor part, so
+        # X·f_week + resid_week reproduces each name's true weekly return.
+        days = [d for d in fr_dates if t < d <= t_next]
+        if not days:
+            continue
+        f_week = fr.loc[days].reindex(columns=FULL_FACTORS).fillna(0.0).sum(axis=0)
+        Xn = pd.concat(
+            [pd.Series(1.0, index=snap.index, name=MARKET_FACTOR),
+             snap[_STYLES].astype(float),
+             industry_dummies(pd.Series([ind_of.get(tk, "Other") for tk in tickers],
+                                        index=snap.index))],
+            axis=1).reindex(columns=FULL_FACTORS).fillna(0.0).to_numpy()
+        growth = np.ones(len(tickers))
+        for d in days:
+            fv = fr.loc[d].reindex(FULL_FACTORS).fillna(0.0).to_numpy()
+            eps = (res.loc[d].reindex(tickers).to_numpy()
+                   if d in res.index else np.full(len(tickers), np.nan))
+            growth = growth * (1.0 + Xn @ fv + eps)
+        resid_week = (growth - 1.0) - Xn @ f_week.to_numpy()
+        spec_ann = np.sqrt(state.specific_var_period(pd.Index(tickers)) * config.ann_factor)
         payload = {
             "date": t.strftime("%Y-%m-%d"),
             "tickers": tickers,
             "styles": snap[_STYLES].astype(float).round(3).to_numpy().tolist(),
             "industry": [ind_of.get(tk, "Other") for tk in tickers],
             "spec": _round(spec_ann, 4),
-            "fcov": [_round(row, 8) for row in state.factor_cov_weekly() * config.ann_factor],
+            "fcov": [_round(row, 8) for row in state.factor_cov_period() * config.ann_factor],
             "next": {
                 "date": t_next.strftime("%Y-%m-%d"),
-                "f": _round(fr.loc[t_next].reindex(FULL_FACTORS).fillna(0.0), 6),
+                "f": _round(f_week, 6),
                 "resid": [None if not np.isfinite(v) else round(float(v), 5)
-                          for v in resid_next],
+                          for v in resid_week],
             },
         }
         name = f"{payload['date']}.json"

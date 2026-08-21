@@ -359,7 +359,7 @@ a { color: var(--accent); }
   <div class="card hero" id="home-hero">
     <div class="hero-copy">
       <h1>An open risk model for US equities</h1>
-      <p class="lede">riskprism answers one question about any stock portfolio: <b>how much should it move, and why?</b> It's a Barra-style factor risk model — the kind of tool quant funds license commercially — built fully in the open: <b><span id="hero-n">…</span> US stocks</b>, <b><span id="hero-k">…</span> factors</b>, re-estimated every week from public prices and SEC filings, with every forecast <a href="#validation">graded publicly</a> against what actually happened. Explore it here, or point an AI agent at <a href="model.md">model.md</a> — the whole model is <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">free to download</a>.</p>
+      <p class="lede">riskprism answers one question about any stock portfolio: <b>how much should it move, and why?</b> It's a Barra-style factor risk model — the kind of tool quant funds license commercially — built fully in the open: <b><span id="hero-n">…</span> US stocks</b>, <b><span id="hero-k">…</span> factors</b>, estimated from daily cross-sections and rebuilt every week from public prices and SEC filings, with every forecast <a href="#validation">graded publicly</a> against what actually happened. Explore it here, or point an AI agent at <a href="model.md">model.md</a> — the whole model is <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">free to download</a>.</p>
       <div class="hero-actions">
         <button class="cta solid" id="tour-start">Take the one-minute tour</button>
         <button class="cta ghost" id="hero-try">Try a portfolio</button>
@@ -478,7 +478,7 @@ a { color: var(--accent); }
 <section class="view" id="view-validation">
   <div class="card">
     <h2>Does the model tell the truth?</h2>
-    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time. The panel deliberately includes the hard cases: real traded factor ETFs, and <b>portfolios optimized against the model itself</b> (marked <span style="color:var(--s-size)">opt</span>) — optimizers hunt the covariance matrix's underestimated directions, so these run above 1 by construction; v0.4's correlation blending trims the worst case and the rest is documented, not hidden. Every build rescores the whole history under the current methodology.</p>
+    <p class="sub">Every historical week, the model forecast next-week volatility for a panel of test portfolios — using only information available at the time — and was scored against what actually happened: <span style="font-family:var(--mono)">z = realized return / forecast vol</span>. If the risk numbers are honest, z is standard normal: its standard deviation (the <b>bias statistic</b>) should be ~1.0, and |z| &gt; 1.96 should happen ~5% of the time. The panel deliberately includes the hard cases: real traded factor ETFs, and <b>portfolios optimized against the model itself</b> (marked <span style="color:var(--s-size)">opt</span>) — optimizers hunt the covariance matrix's underestimated directions, so these run above 1 by construction. v0.5's switch to daily estimation dissolved most of it (min-variance bias 1.36 → ~1.1) by an order-of-magnitude jump in effective observations; the residual is documented, not hidden, and the API's <span style="font-family:var(--mono)">optimized=true</span> flag applies the matching Shepard correction. Every build rescores the whole history under the current methodology.</p>
     <div id="val-hero"></div>
   </div>
   <div class="grid2">
@@ -521,7 +521,7 @@ a { color: var(--accent); }
     <h2>Against the commercial models — on their own protocols</h2>
     <p class="sub" style="margin-bottom:10px">The vendors can't be forced onto one standard, so we conform to theirs: each row runs <b>this model under that vendor's published test protocol</b> and puts the result next to what the vendor reports about itself. Periods and universes still differ — that caveat can't be engineered away with public data — but the statistic, horizon, and portfolio construction match.</p>
     <div class="tscroll" id="val-vendor-table"></div>
-    <p class="sub" style="margin-top:8px">v0.3 adopted two of USE4's documented remedies: the <b>Volatility Regime Adjustment</b> (their version held rolling bias near 1.0 through 2008–09 while the unadjusted model swung 1.3&nbsp;→&nbsp;0.7; ours targets the Mincer–Zarnowitz slope of ~0.7 measured in v0.2) and <b>Bayesian specific-risk shrinkage</b> (q&nbsp;=&nbsp;0.1 toward size-decile means — flattened their 1.08→0.92 decile tilt), plus Newey-West variance adjustments. The failure mode left standing is the one the literature calls hardest: <b>portfolios optimized against the model are underforecast</b> (Shepard 2009: true vol ≈ predicted/(1−K/T); MSCI measured bias 1.4–1.5 pre-eigenfactor-adjustment). We measure it on ourselves — the <span style="color:var(--s-size)">opt</span> rows above — and v0.4 A/B-tested both published cures on this validation panel: MSCI's eigenfactor adjustment reproduced their ~40% small-eigenfactor bias exactly but overcorrects broad portfolios at our K=20 weekly scale (an honest negative result), so <b>Bloomberg-style correlation blending</b> (their published w=0.8, J=5) shipped instead — min-var bias 1.36&nbsp;→&nbsp;1.29 with zero effect on other portfolios; the residual is largely specific-risk estimation noise no factor-matrix fix can reach (full evidence table in <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a> §9). One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
+    <p class="sub" style="margin-top:8px">v0.3 adopted two of USE4's documented remedies: the <b>Volatility Regime Adjustment</b> (their version held rolling bias near 1.0 through 2008–09 while the unadjusted model swung 1.3&nbsp;→&nbsp;0.7; ours targets the Mincer–Zarnowitz slope of ~0.7 measured in v0.2) and <b>Bayesian specific-risk shrinkage</b> (q&nbsp;=&nbsp;0.1 toward size-decile means — flattened their 1.08→0.92 decile tilt), plus Newey-West variance adjustments. The failure mode left standing is the one the literature calls hardest: <b>portfolios optimized against the model are underforecast</b> (Shepard 2009: true vol ≈ predicted/(1−K/T); MSCI measured bias 1.4–1.5 pre-eigenfactor-adjustment). We measure it on ourselves — the <span style="color:var(--s-size)">opt</span> rows above — and attacked it in two documented rounds. v0.4 A/B-tested both published matrix-side cures in the weekly-estimation era: eigenfactor adjustment reproduced MSCI's ~40% small-eigenfactor bias exactly but overcorrected broad portfolios at 75 effective observations; blending helped mildly (1.36&nbsp;→&nbsp;1.29). <b>v0.5's daily estimation was the real cure</b>: ~10× the effective observations collapsed min-var bias to ~1.1, exactly Shepard's 1/(1−K/N_eff) prediction — and that analytic correction now ships as the <span style="font-family:var(--mono)">optimized=true</span> reporting flag for anyone optimizing against the model (full evidence in <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a> §9–10). One difference stands: this validation history is public, reproducible, and regenerated weekly, not a whitepaper snapshot. Sources: Menchero, Orr &amp; Wang, <a href="https://www.top1000funds.com/wp-content/uploads/2011/09/USE4_Methodology_Notes_August_2011.pdf"><i>The Barra US Equity Model (USE4)</i>, Methodology &amp; Empirical Notes</a>, MSCI Model Insight, 2011 · <a href="https://cdn2.hubspot.net/hubfs/2174119/Return%20Downloads/Factsheet-AXUS4-1.pdf">Axioma US Equity Factor Risk Models factsheet</a>, 2016 · <a href="https://professional.bloomberg.com/products/risk/mac3/">Bloomberg MAC3</a>.</p>
   </div>
 </section>
 
@@ -537,8 +537,8 @@ a { color: var(--accent); }
     <div class="tscroll" id="pipeline-diagram"></div>
   </div>
   <div class="card">
-    <h2>One week of the model</h2>
-    <p class="sub">Every Friday, that week's stock returns are regressed on the exposures known at the start of the week:</p>
+    <h2>One day of the model</h2>
+    <p class="sub">Every trading day, that day's stock returns are regressed on the exposures formed the previous Friday (weekly formation, daily estimation):</p>
     <pre class="code" style="font-size:14px;text-align:center">r<sub>i</sub> &nbsp;=&nbsp; f<sub>mkt</sub> &nbsp;+&nbsp; Σ<sub>s</sub> X<sub>is</sub>·f<sub>s</sub> &nbsp;+&nbsp; Σ<sub>j</sub> I<sub>ij</sub>·f<sub>j</sub> &nbsp;+&nbsp; ε<sub>i</sub></pre>
     <ul class="sub" style="margin:10px 0 0;padding-left:18px;line-height:1.8">
       <li><b>Weighted least squares</b> with √(market cap) weights — large caps have less noisy returns, so they anchor the fit.</li>
@@ -554,11 +554,11 @@ a { color: var(--accent); }
       <div class="tscroll" id="style-defs"></div>
     </div>
     <div class="card">
-      <h2>From weekly returns to annual risk</h2>
-      <p class="sub">Factor covariance is an exponentially weighted average of factor-return history. Volatilities react fast (13-week half-life); correlations move slowly (26 weeks):</p>
+      <h2>From daily returns to annual risk</h2>
+      <p class="sub">Factor covariance is an exponentially weighted average of daily factor-return history. Volatilities react fast (84-day half-life); correlations move slowly (252 days — daily sampling is what gives them ~730 effective observations):</p>
       <div id="decay-chart"></div>
       <figure class="anim" id="anim-ewma">
-        <figcaption>Memory in motion: each week a new observation arrives on the right; old ones fade at the half-life rate, and the volatility estimate breathes with the flow.</figcaption>
+        <figcaption>Memory in motion: each day a new observation arrives on the right; old ones fade at the half-life rate, and the volatility estimate breathes with the flow.</figcaption>
       </figure>
       <p class="sub" style="margin-top:10px">Assembled risk: <span style="font-family:var(--mono)">Σ = X F Xᵀ + diag(s²)</span> — factor covariance spread through exposures, plus each stock's specific variance (EWMA of its residuals, blended with a structural cross-sectional model by history length, then Bayesian-shrunk toward its size-decile mean). Variances carry Newey-West serial-correlation adjustments; F is repaired to positive semi-definite by eigenvalue flooring; and both blocks are scaled by Volatility Regime Adjustment multipliers — EWMAs of how large returns actually ran versus forecast — so the model catches regime shifts the half-life would lag. The Learn tab walks through every step.</p>
     </div>
@@ -566,7 +566,7 @@ a { color: var(--accent); }
   <div class="card">
     <h2>Read this before trusting it</h2>
     <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
-      <li><b>Survivorship bias, decaying — and measured</b>: history recorded before launch excludes names that had already delisted. Audited against SEC bulk archives (which retain dead filers): ~8%/yr of active filers ceased during our window, but they skew small — median last book equity $115M vs $553M for survivors, ~8.7% of filer book equity in total — bounding the cap-weighted return-mean bias at ~1.4–2.5bp/week and covariances at second order. Weekly builds append history with imputed delisting returns, so with 13/26-week half-lives the biased cold start washes out within ~18–24 months.</li>
+      <li><b>Survivorship bias, decaying — and measured</b>: history recorded before launch excludes names that had already delisted. Audited against SEC bulk archives (which retain dead filers): ~8%/yr of active filers ceased during our window, but they skew small — median last book equity $115M vs $553M for survivors, ~8.7% of filer book equity in total — bounding the cap-weighted return-mean bias at ~1.4–2.5bp/week and covariances at second order. Weekly builds append history with imputed delisting returns, so with 84/252-day half-lives the biased cold start washes out within ~1–2 years.</li>
       <li><b>Prior-driven names</b>: stocks outside the estimation universe (illiquid, recent IPOs) get specific risk from a structural model of their characteristics, not their own history — the stock page shows how much is prior.</li>
       <li><b>Crude universe heuristics</b>: ticker-pattern filters; some ADRs leak through; one share class per company.</li>
       <li><b>First-order stress tests</b>: exposure × shock, no convexity, no specific returns.</li>
@@ -628,7 +628,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
   </div>
   <div class="card">
     <h2>The model in one paragraph</h2>
-    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by weekly cross-sectional WLS regressions. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA (13-week vol / 26-week correlation half-lives) with Newey-West variance adjustment, rank-5 correlation blending, and a Volatility Regime Adjustment multiplier; specific risk blends per-stock residual EWMA with a structural characteristics model, Bayesian-shrunk toward size-decile means, with its own VRA. Everything here is computed in your browser from the published artifacts — no server.</p>
+    <p class="sub" style="margin-bottom:0">Barra-style fundamental factor model: 7 style factors (size, value, momentum, volatility, liquidity, quality, leverage) + 12 Fama-French industries + a market factor, estimated by daily cross-sectional WLS regressions against Friday-formed exposures. Fundamentals and industries come from SEC EDGAR (public domain, point-in-time). Factor covariance is EWMA on daily factor returns (84-day vol / 252-day correlation half-lives) with Newey-West variance adjustment, correlation regularization, and a Volatility Regime Adjustment multiplier; specific risk blends per-stock residual EWMA with a structural characteristics model, Bayesian-shrunk toward size-decile means, with its own VRA. Everything here is computed in your browser from the published artifacts — no server.</p>
   </div>
 </section>
 
@@ -725,8 +725,8 @@ document.getElementById("meta-chips").innerHTML = [
 document.getElementById("tiles").innerHTML = [
   ["Assets covered", `${m.n_assets} <small>${m.n_estimation ?? m.n_assets} estimation</small>`],
   ["Factors", `${K} <small>1 mkt · ${STYLES.length} styles · ${IND.length} industries</small>`],
-  ["Regression weeks", `${m.n_periods}`],
-  ["Mean weekly R²", `${(m.mean_r2 ?? 0).toFixed(2)}`],
+  ["Daily regressions", `${m.n_periods} <small>${m.n_weeks ?? "?"} weeks</small>`],
+  ["Mean daily R²", `${(m.mean_r2 ?? 0).toFixed(2)}`],
 ].map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
 
 // ---------- portfolio math ----------
@@ -1537,7 +1537,7 @@ renderStockTable();
 {
   const r2txt = (m.mean_r2 ?? 0).toFixed(2);
   document.getElementById("meth-r2").innerHTML =
-    `In this build: <b>${m.n_periods}</b> weekly regressions over <b>${m.n_assets}</b> stocks, mean R² <b>${r2txt}</b> — factors explain about ${Math.round((m.mean_r2 ?? 0) * 100)}% of weekly cross-sectional return variance; the rest is stock-specific.`;
+    `In this build: <b>${m.n_periods}</b> daily regressions (${m.n_weeks ?? "?"} formation weeks) over <b>${m.n_assets}</b> stocks, mean daily R² <b>${r2txt}</b> — factors explain about ${Math.round((m.mean_r2 ?? 0) * 100)}% of daily cross-sectional return variance; the rest is stock-specific.`;
   document.getElementById("meth-repo-link").href = (DATA.repo || "#") + "/blob/main/docs/METHODOLOGY.md";
 
   // pipeline diagram
@@ -1560,7 +1560,7 @@ renderStockTable();
   s += box(8, 40, 176, 70, false, ["SEC EDGAR", "fundamentals + SIC codes", "\`point-in-time (filed)"]);
   s += box(8, 210, 176, 70, false, ["Price provider", "daily adjusted bars", "\`yahoo / tiingo / stooq"]);
   s += box(264, 122, 190, 78, false, ["Universe & exposures", `${m.n_assets} stocks pass filters`, "\`7 styles + 12 industries"]);
-  s += box(524, 122, 196, 78, true, ["Weekly WLS regression", `${m.n_periods} weeks · mean R² ${r2txt}`, "\`cap-wtd industry sum = 0"]);
+  s += box(524, 122, 196, 78, true, ["Daily WLS regression", `${m.n_periods} days · mean R² ${r2txt}`, "\`cap-wtd industry sum = 0"]);
   s += box(760, 30, 192, 64, false, ["Factor covariance F", "\`EWMA · NW · blend · VRA"]);
   s += box(760, 236, 192, 64, false, ["Specific risk s", "\`blend · shrink · VRA"]);
   s += box(492, 352, 300, 62, false, ["Model artifacts", "X, F, s + factor return history", "\`parquet · weekly release"]);
@@ -1597,26 +1597,26 @@ renderStockTable();
   document.getElementById("style-defs").innerHTML = dt;
 
   // EWMA decay chart
-  const W = 480, H = 200, ml = 46, mr = 78, mt = 12, mb = 30, weeks = 60;
-  const xp = t => ml + t / weeks * (W - ml - mr);
+  const W = 480, H = 200, ml = 46, mr = 78, mt = 12, mb = 30, span = 550;
+  const xp = t => ml + t / span * (W - ml - mr);
   const yp = v => mt + (1 - v) * (H - mt - mb);
-  let dc = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Exponential decay of observation weights: the 13-week volatility half-life discards history quickly, the 26-week correlation half-life keeps it longer.">`;
+  let dc = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Exponential decay of observation weights: the 84-day volatility half-life discards history quickly, the 252-day correlation half-life keeps it longer.">`;
   [0, 0.5, 1].forEach(v => {
     dc += `<line x1="${ml}" y1="${yp(v)}" x2="${W - mr}" y2="${yp(v)}" stroke="var(--grid)"/>`;
     dc += `<text class="mono" x="${ml - 6}" y="${yp(v) + 4}" text-anchor="end" font-size="10.5" fill="var(--muted)">${v}</text>`;
   });
-  [0, 13, 26, 39, 52].forEach(t => {
-    dc += `<text class="mono" x="${xp(t)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${t}w</text>`;
+  [0, 84, 252, 378, 504].forEach(t => {
+    dc += `<text class="mono" x="${xp(t)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${t}d</text>`;
   });
-  [["13w (vol)", 13, "var(--s-size)"], ["26w (corr)", 26, "var(--s-market)"]].forEach(([lbl, hl, col]) => {
+  [["84d (vol)", 84, "var(--s-size)"], ["252d (corr)", 252, "var(--s-market)"]].forEach(([lbl, hl, col]) => {
     const pts = [];
-    for (let t = 0; t <= weeks; t++) pts.push(`${xp(t).toFixed(1)},${yp(Math.pow(0.5, t / hl)).toFixed(1)}`);
+    for (let t = 0; t <= span; t += 5) pts.push(`${xp(t).toFixed(1)},${yp(Math.pow(0.5, t / hl)).toFixed(1)}`);
     dc += `<polyline points="${pts.join(" ")}" fill="none" style="stroke:${col}" stroke-width="2"/>`;
     dc += `<line x1="${xp(hl)}" y1="${yp(0.5)}" x2="${xp(hl)}" y2="${yp(0)}" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
     dc += `<circle cx="${xp(hl)}" cy="${yp(0.5)}" r="3.5" style="fill:${col}"/>`;
-    dc += `<text x="${xp(weeks) + 6}" y="${yp(Math.pow(0.5, weeks / hl)) + 4}" font-size="11" font-weight="600" style="fill:${col}">${lbl}</text>`;
+    dc += `<text x="${xp(span) + 6}" y="${yp(Math.pow(0.5, span / hl)) + 4}" font-size="11" font-weight="600" style="fill:${col}">${lbl}</text>`;
   });
-  dc += `<text x="${ml}" y="${mt + 2}" font-size="10.5" fill="var(--muted)">weight on a week, by its age</text></svg>`;
+  dc += `<text x="${ml}" y="${mt + 2}" font-size="10.5" fill="var(--muted)">weight on a trading day, by its age</text></svg>`;
   document.getElementById("decay-chart").innerHTML = dc;
 }
 
@@ -1836,7 +1836,7 @@ renderStockTable();
             ctx.fillText("Σ ε ≈ 0", W * 0.86, mid - 118);
           }
         } },
-      { dur: 9, cap: `<b>6 · Weeks become risk.</b> Repeat scene 3 for ${m.n_periods} Fridays and each factor's payoffs pile into a distribution — its volatility (momentum: ● <span style="font-family:var(--mono)">${pct(volMom)}</span>/yr) and its correlations with every other factor: the matrix F. Your exposures pass through it — Σ = XFXᵀ + diag(s²) — and total risk splits into the spectrum. That's the prism.`,
+      { dur: 9, cap: `<b>6 · Weeks become risk.</b> Repeat scene 3 for ${m.n_periods} trading days and each factor's payoffs pile into a distribution — its volatility (momentum: ● <span style="font-family:var(--mono)">${pct(volMom)}</span>/yr) and its correlations with every other factor: the matrix F. Your exposures pass through it — Σ = XFXᵀ + diag(s²) — and total risk splits into the spectrum. That's the prism.`,
         draw(ctx, W, H, u) {
           const k = Math.max(3, Math.floor(ease(Math.min(1, u * 1.4)) * payoffs.length));
           const bins = new Array(21).fill(0);
@@ -1961,9 +1961,9 @@ renderStockTable();
       ctx.fillStyle = css("--ink"); ctx.font = "600 15px " + css("--mono"); ctx.textAlign = "left";
       ctx.fillText(`EWMA vol estimate: ${(vol * 100).toFixed(1)}% ann.`, ml + 2, mt - 10);
       ctx.fillStyle = css("--muted"); ctx.font = "11px " + css("--sans"); ctx.textAlign = "right";
-      ctx.fillText("new week arrives →", W - mr, H - 8);
+      ctx.fillText("new day arrives →", W - mr, H - 8);
       ctx.textAlign = "left";
-      ctx.fillText(`opacity = weight: halves every ${hl} weeks of age`, ml + 2, H - 8);
+      ctx.fillText(`opacity = weight: halves every ${hl} days of age (vol half-life, to scale)`, ml + 2, H - 8);
     }, { aspect: 0.34, loop: 24 });
   }
 }
@@ -2069,7 +2069,7 @@ renderStockTable();
     }
     ctx.fillStyle = css("--muted"); ctx.font = sans(10.5); ctx.textAlign = "left";
     ctx.fillText("daily closes (gridlines = Fridays)", ml, H * 0.58);
-    ctx.fillText("Friday-to-Friday weekly returns — the model's raw material", ml, H - 4);
+    ctx.fillText("daily returns feed the regressions; Fridays mark exposure formation", ml, H - 4);
   }
 
   function drawUniverse(ctx, W, H, t) {
@@ -2467,8 +2467,8 @@ renderStockTable();
       src: ["edgarsrc", "use4"], anim: drawEdgar, aspect: 0.36, loop: 10,
       cap: "The model clock sweeps forward; a fundamental becomes usable only when its filing lands — never at the fiscal period it describes." },
     prices: { kind: "data", col: 0, row: 1, title: "Daily prices & volume", short: ["Daily prices", "pluggable provider"],
-      what: "Daily closes and volumes for every candidate ticker, via a pluggable provider (Yahoo's chart API by default). Aggregated to Friday-to-Friday weekly returns — the model's dependent variable — plus daily returns kept for realized-volatility validation. Raw prices are never redistributed; only derived factor data ships.",
-      why: "Weekly frequency is the medium-horizon design choice: enough cross-sections to estimate 20 factors, slow enough that microstructure noise and asynchronous closes wash out. Commercial vendors run daily (USE4) — that's our documented trade-off, revisited if a short-horizon variant ever ships.",
+      what: "Daily closes and volumes for every candidate ticker, via a pluggable provider (Yahoo's chart API by default). Daily returns are the regression's dependent variable (five cross-sections per formation week); Friday-to-Friday weekly returns are kept for universe screens and validation scoring. Raw prices are never redistributed; only derived factor data ships.",
+      why: "Daily estimation is what buys covariance accuracy: an EWMA's effective sample size is set by its half-life in observations, so daily sampling gives the correlation matrix ~730 effective observations where weekly gave ~75 — same calendar responsiveness, five times the data. It's how commercial models (USE4, Axioma) get their conditioning; microstructure autocorrelation is handled by Newey-West.",
       src: ["meth", "use4"], anim: drawPrices, aspect: 0.36, loop: 8,
       cap: "Daily closes compound into Friday-to-Friday weekly returns; the daily path is kept for higher-powered realized-vol checks." },
     universe: { kind: "proc", col: 1, row: 0, title: "Universe filters", short: ["Universe filters", "estimation vs coverage"],
@@ -2491,21 +2491,21 @@ renderStockTable();
       why: "Datasets that quietly drop the dead overstate returns and understate risk — the classic CRSP delisting bias Shumway quantified (~−30% average for performance delistings). Our own audit: ~8%/yr of active filers cease filing; ignoring them would bias factor means by up to ~2.5bp/week.",
       src: ["shumway", "meth"], anim: drawDelist, aspect: 0.36, loop: 9,
       cap: "Two exits, two treatments: a sub-$5 fade gets −30%; a deal-price exit gets 0%. Either way the name's history survives." },
-    regress: { kind: "proc", col: 2, row: 0, title: "Weekly WLS regression", short: ["Weekly regression", "returns → factor payoffs"],
-      what: "Every Friday, that week's stock returns are regressed on the exposures known at the start of the week: r = f_mkt + Σ X·f_style + Σ I·f_industry + ε. Weights ∝ √(market cap); industries are constrained to cap-weighted zero so the intercept IS the cap-weighted market return. The coefficients are that week's factor returns; the leftovers are each stock's specific return.",
+    regress: { kind: "proc", col: 2, row: 0, title: "Daily WLS regression", short: ["Daily regression", "returns → factor payoffs"],
+      what: "Every trading day, that day's stock returns are regressed on exposures formed the previous Friday: r = f_mkt + Σ X·f_style + Σ I·f_industry + ε. Weights ∝ √(market cap); industries are constrained to cap-weighted zero so the intercept IS the cap-weighted market return. The coefficients are that day's factor returns; the leftovers are each stock's specific returns — five cross-sections a week instead of one.",
       why: "√cap weighting is the USE4 assumption that specific variance scales inversely with √cap — large caps have less noisy returns, so they anchor the fit. The constraint solves the exact collinearity between market and industries while keeping every factor interpretable as a real portfolio.",
       src: ["use4"], anim: drawRegress, aspect: 0.42, loop: 10,
-      cap: "One week, one cross-section: the fitted slope is the factor's payoff that week; vertical gaps are the specific returns ε." },
-    history: { kind: "data", col: 2, row: 1, title: "Factor-return & residual history", short: ["f + ε history", "156-week archive"],
-      what: "The regression's outputs accumulate week by week: a 156-week archive of factor returns and per-stock residuals, plus formation-date exposure snapshots. Capture-forward: each weekly build appends to the prior release rather than refetching — so names that delist keep their rows forever.",
+      cap: "One day, one cross-section: the fitted slope is the factor's payoff that day; vertical gaps are the specific returns ε." },
+    history: { kind: "data", col: 2, row: 1, title: "Factor-return & residual history", short: ["f + ε history", "780-day archive"],
+      what: "The regressions' outputs accumulate day by day: a 780-trading-day archive of factor returns and per-stock residuals, plus weekly formation-date exposure snapshots. Capture-forward: each weekly build appends to the prior release rather than refetching — so names that delist keep their rows forever.",
       why: "This archive IS the model's memory — covariances, specific risks, validation and historical model reconstruction all derive from it. Appending (rather than rebuilding from currently-fetchable prices) is what makes history survivorship-free from launch onward.",
       src: ["meth", "shumway"], anim: drawHistory, aspect: 0.4, loop: 10,
       cap: "Rows accrue weekly. When a stock dies (✝), its column stops — but its past stays, unlike a refetched price panel." },
     fcov: { kind: "proc", col: 2, row: 2, title: "Factor covariance", short: ["Factor covariance", "EWMA · NW · blend · VRA"],
-      what: "Factor vols from a 13-week-half-life EWMA (responsive), correlations from 26 weeks (stable), combined and repaired to positive semi-definite. Variances carry a 2-lag Newey-West adjustment for serial correlation; the correlation matrix is blended with its own rank-5 PCA reconstruction (Bloomberg's published w = 0.8) to suppress the noise directions optimizers exploit; and everything is scaled by the Volatility Regime Adjustment: an EWMA of how big returns actually were versus forecast.",
+      what: "Factor vols from an 84-day-half-life EWMA (responsive), correlations from 252 days (stable — ~730 effective daily observations), combined and repaired to positive semi-definite. Variances carry a 5-lag Newey-West adjustment for serial correlation; the correlation matrix is blended with its own rank-5 PCA reconstruction (Bloomberg's published w = 0.8) to suppress the noise directions optimizers exploit; and everything is scaled by the Volatility Regime Adjustment: an EWMA of how big returns actually were versus forecast.",
       why: "Half-life EWMA alone lags regime shifts — USE4's unadjusted model underforecast going into 2008 (bias ~1.3) and overforecast after (~0.7); their VRA held it near 1.0 throughout. Our measured Mincer-Zarnowitz slope of 0.70 showed the same disease, so v0.3 adopted the same cure (slope now 0.8). Newey-West fixes the ×52 annualization, which silently assumes weeks are independent; blending is Bloomberg's production answer to optimizers exploiting covariance noise — we A/B'd it against MSCI's eigenfactor adjustment on our own validation and shipped the one that did no collateral damage.",
       src: ["use4", "meth"], anim: drawFcov, aspect: 0.4, loop: 12,
-      cap: "Bars fade at the 13-week half-life; when a shock cluster lands, the VRA multiplier λ lifts the whole forecast band before the EWMA can catch up." },
+      cap: "Bars fade at the vol half-life; when a shock cluster lands, the VRA multiplier λ lifts the whole forecast band before the EWMA can catch up." },
     specific: { kind: "proc", col: 2, row: 3, title: "Specific risk", short: ["Specific risk", "blend · shrink · VRA"],
       what: "Each stock's own residual EWMA, blended with a structural model (specific vol regressed on size, volatility, liquidity, industry) by history length — so IPOs get a sensible prior instead of nothing. Blended vols are then Bayesian-shrunk toward their size-decile mean (q = 0.1) and scaled by the specific VRA multiplier.",
       why: "Individual vol estimates are noisy: the stocks that look least risky are mostly the luckiest, so unshrunk models underforecast low-vol names and overforecast high-vol ones (USE4 measured 1.08 → 0.92 across deciles; shrinkage flattened it to ~1.0). The structural blend is the EUE3/USE4 answer to thin histories.",
@@ -2535,7 +2535,7 @@ renderStockTable();
     ["prices", "delist", "last trade"],
     ["universe", "regress", "estimation names"], ["styles", "regress", "X"],
     ["industry", "regress", "dummies"], ["delist", "regress", "imputed r"],
-    ["regress", "history", "f, ε weekly"],
+    ["regress", "history", "f, ε daily"],
     ["history", "fcov", "factor returns"], ["history", "specific", "residuals"],
     ["fcov", "assemble", "F"], ["specific", "assemble", "diag(s²)"],
     ["history", "validate", "point-in-time replay"],

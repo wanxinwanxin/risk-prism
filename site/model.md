@@ -8,12 +8,12 @@
 
 | field | value |
 |---|---|
-| model version | PRISM-US-MH-0.4 |
+| model version | PRISM-US-MH-0.5 |
 | as of | 2026-08-21 |
 | assets covered | 2987 |
 | estimation universe | 2774 |
-| regression weeks | 149 |
-| mean weekly R² | 0.000 |
+| regression weeks | 713 |
+| mean weekly R² | 0.156 |
 | price provider | yahoo |
 | fundamentals | 2837 live from EDGAR |
 | frequency | W-FRI (annualized outputs) |
@@ -66,14 +66,14 @@ snapshots as static JSON under [/history/index.json](/history/index.json).
 
 | factor | descriptor | current ann. vol |
 |---|---|---|
-| market | intercept — cap-weighted market return | 16.5% |
-| size | ln(market cap) | 3.7% |
-| value | book equity / market cap | 30.5% |
-| momentum | 12-month return, skipping the most recent month | 8.1% |
-| volatility | 252-day daily return std, annualized | 12.6% |
-| liquidity | ln(63-day median dollar volume / market cap) | 4.0% |
-| quality | ROE: annual net income / book equity | 0.5% |
-| leverage | total liabilities / total assets | 1.7% |
+| market | intercept — cap-weighted market return | 17.3% |
+| size | ln(market cap) | 4.1% |
+| value | book equity / market cap | 34.7% |
+| momentum | 12-month return, skipping the most recent month | 9.8% |
+| volatility | 252-day daily return std, annualized | 13.3% |
+| liquidity | ln(63-day median dollar volume / market cap) | 3.7% |
+| quality | ROE: annual net income / book equity | 0.7% |
+| leverage | total liabilities / total assets | 5.6% |
 
 Style exposures are winsorized at ±3σ and standardized to cap-weighted
 mean 0 / equal-weighted std 1 each week. Industries: Fama-French 12
@@ -101,14 +101,43 @@ to zero for identification.
 
 | | market | size | value | momentum | volatility | liquidity | quality | leverage |
 |---|---|---|---|---|---|---|---|---|
-| **market** | 1.00 | 0.20 | 0.30 | 0.11 | 0.66 | -0.32 | -0.11 | 0.24 |
-| **size** | 0.20 | 1.00 | 0.37 | 0.03 | 0.59 | 0.34 | 0.02 | -0.13 |
-| **value** | 0.30 | 0.37 | 1.00 | 0.12 | 0.33 | -0.06 | 0.05 | -0.28 |
-| **momentum** | 0.11 | 0.03 | 0.12 | 1.00 | -0.09 | 0.03 | -0.13 | 0.03 |
-| **volatility** | 0.66 | 0.59 | 0.33 | -0.09 | 1.00 | 0.05 | -0.00 | 0.10 |
-| **liquidity** | -0.32 | 0.34 | -0.06 | 0.03 | 0.05 | 1.00 | 0.05 | -0.27 |
-| **quality** | -0.11 | 0.02 | 0.05 | -0.13 | -0.00 | 0.05 | 1.00 | -0.11 |
-| **leverage** | 0.24 | -0.13 | -0.28 | 0.03 | 0.10 | -0.27 | -0.11 | 1.00 |
+| **market** | 1.00 | 0.26 | 0.10 | 0.29 | 0.61 | -0.18 | -0.01 | 0.05 |
+| **size** | 0.26 | 1.00 | 0.32 | 0.31 | 0.49 | 0.28 | -0.03 | -0.10 |
+| **value** | 0.10 | 0.32 | 1.00 | 0.23 | 0.21 | -0.01 | 0.03 | 0.00 |
+| **momentum** | 0.29 | 0.31 | 0.23 | 1.00 | 0.24 | -0.03 | -0.02 | 0.03 |
+| **volatility** | 0.61 | 0.49 | 0.21 | 0.24 | 1.00 | 0.09 | -0.02 | -0.07 |
+| **liquidity** | -0.18 | 0.28 | -0.01 | -0.03 | 0.09 | 1.00 | -0.08 | -0.05 |
+| **quality** | -0.01 | -0.03 | 0.03 | -0.02 | -0.02 | -0.08 | 1.00 | 0.22 |
+| **leverage** | 0.05 | -0.10 | 0.00 | 0.03 | -0.07 | -0.05 | 0.22 | 1.00 |
+
+## Factor quality
+
+Share of daily cross-sectional regressions where each factor is
+statistically significant (|t| > 2) — the standard relevance check
+(Axioma publishes the same statistic for AXUS4):
+
+| factor | % periods significant | mean absolute t |
+|---|---|---|
+| market | 86% | 10.8 |
+| volatility | 83% | 7.3 |
+| momentum | 75% | 6.0 |
+| ind_Enrgy | 71% | 4.7 |
+| ind_Hlth | 71% | 4.5 |
+| ind_BusEq | 70% | 4.3 |
+| liquidity | 62% | 3.3 |
+| ind_Other | 60% | 3.6 |
+| ind_Money | 60% | 3.3 |
+| size | 59% | 3.2 |
+| ind_Utils | 58% | 3.2 |
+| ind_Manuf | 55% | 2.9 |
+| ind_Telcm | 53% | 2.6 |
+| ind_Durbl | 52% | 2.6 |
+| ind_NoDur | 51% | 2.7 |
+| ind_Shops | 46% | 2.4 |
+| ind_Chems | 40% | 2.6 |
+| leverage | 33% | 1.7 |
+| value | 4% | 0.6 |
+| quality | 1% | 0.5 |
 
 ## Coverage (2987 tickers)
 
@@ -122,43 +151,43 @@ realized return / forecast vol. A calibrated model gives std(z) — the
 **bias statistic** — of ~1.0 (>1 underforecasts risk, <1 overforecasts)
 and |z| > 1.96 about 5% of the time.
 
-Overall: **bias statistic 1.06**, |z|>1.96 rate 6.3%, 123 weeks × 3975 portfolio-scores.
+Overall: **bias statistic 1.05**, |z|>1.96 rate 6.0%, 121 weeks × 3992 portfolio-scores.
 
 | portfolio | bias stat | \|z\|>1.96 | mean forecast vol | mean realized vol | vol ratio |
 |---|---|---|---|---|---|
-| equal_weight | 0.99 | 3.3% | 18.7% | 18.5% | 0.98 |
-| IWM | 0.91 | 3.7% | 22.4% | 21.6% | 0.96 |
-| MTUM | 1.02 | 8.3% | 21.6% | 24.8% | 1.14 |
-| QUAL | 0.95 | 2.8% | 15.5% | 15.5% | 0.99 |
-| SPY | 1.00 | 4.6% | 15.8% | 16.8% | 1.05 |
-| USMV | 0.98 | 2.8% | 10.9% | 11.0% | 1.01 |
-| VLUE | 1.06 | 5.5% | 17.6% | 19.4% | 1.09 |
-| industry_BusEq | 0.98 | 4.9% | 23.8% | 23.6% | 0.98 |
-| industry_Chems | 0.80 | 2.4% | 18.7% | 17.4% | 0.91 |
-| industry_Durbl | 0.96 | 2.4% | 27.3% | 27.7% | 1.00 |
-| industry_Enrgy | 1.01 | 2.4% | 23.5% | 22.9% | 0.95 |
-| industry_Hlth | 1.02 | 6.5% | 17.4% | 16.5% | 0.94 |
-| industry_Manuf | 1.02 | 4.1% | 20.8% | 22.1% | 1.05 |
-| industry_Money | 1.12 | 7.3% | 15.3% | 17.3% | 1.11 |
-| industry_NoDur | 1.01 | 5.7% | 15.8% | 16.2% | 1.02 |
-| industry_Shops | 0.99 | 8.1% | 17.3% | 17.3% | 0.99 |
-| industry_Telcm | 0.96 | 5.7% | 19.2% | 17.7% | 0.91 |
-| industry_Utils | 0.98 | 4.9% | 15.3% | 15.4% | 1.00 |
-| market | 1.04 | 3.3% | 18.3% | 21.2% | 1.12 |
-| opt_alpha1 | 1.19 | 7.3% | 1.1% | 1.4% | 1.17 |
-| opt_alpha2 | 1.05 | 7.3% | 1.1% | 1.3% | 1.11 |
-| opt_alpha3 | 1.21 | 9.8% | 1.1% | 1.3% | 1.13 |
-| opt_minvar | 1.29 | 9.8% | 3.8% | 5.1% | 1.30 |
-| random_1 | 0.95 | 3.3% | 20.2% | 19.5% | 0.95 |
-| random_2 | 0.96 | 4.9% | 20.3% | 19.9% | 0.96 |
-| random_3 | 0.91 | 4.1% | 20.6% | 19.4% | 0.92 |
-| style_leverage | 1.42 | 19.5% | 9.9% | 13.3% | 1.33 |
-| style_liquidity | 0.96 | 5.7% | 15.4% | 16.8% | 1.06 |
-| style_momentum | 1.22 | 8.1% | 13.5% | 21.9% | 1.58 |
-| style_quality | 1.24 | 14.6% | 14.2% | 16.6% | 1.16 |
-| style_size | 1.20 | 9.8% | 13.4% | 14.1% | 1.04 |
-| style_value | 1.07 | 7.3% | 14.1% | 15.1% | 1.02 |
-| style_volatility | 0.99 | 8.1% | 28.3% | 28.8% | 1.01 |
+| equal_weight | 0.92 | 3.3% | 18.9% | 18.7% | 0.98 |
+| IWM | 0.87 | 4.1% | 22.2% | 21.3% | 0.95 |
+| MTUM | 1.00 | 5.8% | 20.4% | 24.0% | 1.16 |
+| QUAL | 0.94 | 2.5% | 14.6% | 15.0% | 1.02 |
+| SPY | 0.97 | 4.1% | 15.0% | 16.2% | 1.07 |
+| USMV | 0.98 | 1.7% | 10.5% | 10.8% | 1.02 |
+| VLUE | 1.08 | 8.3% | 16.2% | 18.7% | 1.14 |
+| industry_BusEq | 0.98 | 4.1% | 22.5% | 23.8% | 1.04 |
+| industry_Chems | 0.75 | 0.8% | 19.7% | 17.5% | 0.86 |
+| industry_Durbl | 0.98 | 5.0% | 26.9% | 28.9% | 1.06 |
+| industry_Enrgy | 0.97 | 2.5% | 23.3% | 23.1% | 0.97 |
+| industry_Hlth | 1.06 | 6.6% | 15.6% | 16.4% | 1.05 |
+| industry_Manuf | 0.98 | 4.1% | 19.9% | 22.4% | 1.11 |
+| industry_Money | 1.11 | 8.3% | 14.9% | 17.5% | 1.16 |
+| industry_NoDur | 1.04 | 6.6% | 14.9% | 16.3% | 1.09 |
+| industry_Shops | 1.00 | 6.6% | 16.4% | 17.6% | 1.07 |
+| industry_Telcm | 1.03 | 7.5% | 17.5% | 18.0% | 1.02 |
+| industry_Utils | 0.94 | 4.1% | 15.9% | 15.5% | 0.96 |
+| market | 1.03 | 3.3% | 18.0% | 21.3% | 1.14 |
+| opt_alpha1 | 1.17 | 5.8% | 1.1% | 1.4% | 1.24 |
+| opt_alpha2 | 1.08 | 7.4% | 1.1% | 1.3% | 1.14 |
+| opt_alpha3 | 1.24 | 10.7% | 1.1% | 1.3% | 1.17 |
+| opt_minvar | 1.08 | 6.6% | 4.7% | 5.5% | 1.15 |
+| random_1 | 0.92 | 4.1% | 20.1% | 19.7% | 0.97 |
+| random_2 | 0.91 | 4.1% | 20.3% | 20.2% | 0.97 |
+| random_3 | 0.89 | 4.1% | 20.5% | 19.8% | 0.94 |
+| style_leverage | 1.48 | 20.7% | 9.7% | 13.8% | 1.38 |
+| style_liquidity | 1.00 | 5.0% | 14.6% | 18.2% | 1.18 |
+| style_momentum | 1.03 | 4.1% | 15.5% | 22.8% | 1.40 |
+| style_quality | 1.26 | 12.4% | 13.9% | 16.9% | 1.20 |
+| style_size | 1.13 | 10.7% | 13.9% | 14.4% | 1.01 |
+| style_value | 1.00 | 5.8% | 14.3% | 15.2% | 1.01 |
+| style_volatility | 0.97 | 8.3% | 27.4% | 29.9% | 1.07 |
 
 The vol ratio compares average realized variance (from daily returns
 within each week) to average forecast variance, in vol units — an
@@ -174,24 +203,26 @@ RV-based check with far more statistical power than z-scores alone.
    estimate the factor returns; every name alive at the build date is
    covered — risk comes through the factor structure plus a structural
    specific-risk prior, so no asset-level history is required.
-4. Weekly cross-sectional WLS regression of returns on exposures,
+4. Daily cross-sectional WLS regressions of returns on exposures
+   formed the previous Friday (weekly formation, daily estimation),
    √(market cap) weights, industry returns cap-weighted to zero.
-5. Factor covariance: EWMA on weekly factor returns — vol half-life
-   13w, correlation half-life 26w — with a 2-lag Newey-West
+5. Factor covariance: EWMA on daily factor returns — vol half-life
+   84d, correlation half-life 252d (~730 effective
+   observations) — with a 5-lag Newey-West
    variance adjustment for serial correlation and rank-5 correlation
    blending (sample weight 0.8, Bloomberg's published parameters,
    suppressing the noise directions optimizers exploit), annualized
-   ×52, repaired to PSD, then scaled by the factor Volatility
-   Regime Adjustment multiplier (this build: 1.0421) — an EWMA
-   (8w half-life) of the cross-sectional bias statistic, so the
+   ×252, repaired to PSD, then scaled by the factor Volatility
+   Regime Adjustment multiplier (this build: 1.0694) — an EWMA
+   (42w half-life) of the cross-sectional bias statistic, so the
    model catches vol-regime shifts the raw half-life would lag.
 6. Specific risk: each asset's EWMA residual vol (lag-1 Newey-West
    adjusted) blended with a cross-sectional structural prediction
    (from size, volatility, liquidity, industry) by history length:
-   w = T/(T + 26w); assets without history get the pure structural
+   w = T/(T + 126d); assets without history get the pure structural
    prior. Blended vols are Bayesian-shrunk (q = 0.1) toward their
    size-decile mean and scaled by the specific VRA multiplier
-   (this build: 0.9849).
+   (this build: 0.9379).
 7. Capture-forward history: each weekly build appends to the prior
    build's factor returns and residuals; names that stop trading get
    an imputed delisting return in their final week and keep their

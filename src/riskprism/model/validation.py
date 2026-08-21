@@ -28,7 +28,6 @@ from riskprism.model.specific import bayes_shrink_specific
 FULL_FACTORS = [MARKET_FACTOR, *STYLE_FACTORS,
                 *[f"{INDUSTRY_PREFIX}{i}" for i in INDUSTRIES]]
 
-_MIN_WARMUP_WEEKS = 26
 _RANDOM_PORTFOLIOS = 3
 _RANDOM_NAMES = 50
 
@@ -45,7 +44,7 @@ class RunningRiskState:
     """
 
     config: ModelConfig
-    n_weeks: int = 0
+    n_obs: int = 0
     _s_vol: np.ndarray = field(default=None, repr=False)
     _s_corr: np.ndarray = field(default=None, repr=False)
     _spec_var: dict = field(default_factory=dict, repr=False)
@@ -120,7 +119,7 @@ class RunningRiskState:
         # guard on daily data with cap-weighting; weekly + equal-weight
         # does. -----------------------------------------------------------
         z2cap = 6.25
-        if self.n_weeks >= self.config.vol_half_life:
+        if self.n_obs >= self.config.vol_half_life:
             var = self._nw_factor_var()
             ok = var > 0
             if ok.any():
@@ -158,7 +157,7 @@ class RunningRiskState:
                 self._spec_g1[ticker] = self._lam_spec * g + (1 - self._lam_spec) * e * e_prev
             self._spec_prev[ticker] = e
             self._spec_obs[ticker] = self._spec_obs.get(ticker, 0) + 1
-        self.n_weeks += 1
+        self.n_obs += 1
 
     def warm_up(self, factor_returns: pd.DataFrame, residuals: pd.DataFrame | None) -> None:
         """Replay a prior build's history (incremental builds)."""
@@ -169,9 +168,9 @@ class RunningRiskState:
 
     @property
     def ready(self) -> bool:
-        return self.n_weeks >= max(_MIN_WARMUP_WEEKS, self.config.vol_half_life)
+        return self.n_obs >= max(self.config.min_warmup_obs, self.config.vol_half_life)
 
-    def factor_cov_weekly(self) -> np.ndarray:
+    def factor_cov_period(self) -> np.ndarray:
         d = np.sqrt(np.clip(np.diag(self._s_corr), 1e-18, None))
         corr = self._s_corr / np.outer(d, d)
         np.clip(corr, -1.0, 1.0, out=corr)
@@ -185,16 +184,16 @@ class RunningRiskState:
             # the bias profile drifts slowly with T; refresh periodically
             # (deterministically seeded so replays are reproducible)
             if (self._eigen_v is None
-                    or self.n_weeks - self._eigen_at >= self.config.eigen_refresh_weeks):
-                T = min(self.n_weeks, self.config.history_cap_weeks)
-                self._eigen_v = eigen_bias_profile(cov, T, self.config, seed=self.n_weeks)
-                self._eigen_at = self.n_weeks
+                    or self.n_obs - self._eigen_at >= self.config.eigen_refresh_periods):
+                T = min(self.n_obs, self.config.history_cap_days)
+                self._eigen_v = eigen_bias_profile(cov, T, self.config, seed=self.n_obs)
+                self._eigen_at = self.n_obs
             cov = eigen_adjust(cov, self._eigen_v)
         vals, vecs = np.linalg.eigh(cov)
         vals = np.clip(vals, 0, None)
         return (vecs @ np.diag(vals) @ vecs.T) * self.vra_factor ** 2
 
-    def specific_var_weekly(self, tickers: pd.Index,
+    def specific_var_period(self, tickers: pd.Index,
                             size: pd.Series | None = None) -> pd.Series:
         min_obs = self.config.min_specific_obs
         own = pd.Series(
@@ -329,24 +328,27 @@ def score_portfolios(
     tradable = realized.reindex(X.index)
     ok = np.isfinite(tradable.astype(float))
     X, tradable = X.loc[ok], tradable[ok]
-    F = state.factor_cov_weekly()
-    svar = state.specific_var_weekly(X.index, size=X.get("size"))
+    F = state.factor_cov_period()
+    svar = state.specific_var_period(X.index, size=X.get("size"))
     ports = test_portfolios(X, industries, mktcap, week_index)
     ports.update(optimized_portfolios(X, F, svar, mktcap, week_index, state.config))
+    cfg = state.config
     rows = []
     for name, w in ports.items():
         w = w.reindex(X.index).fillna(0.0)
         x = X.to_numpy().T @ w.to_numpy()
-        var_w = float(x @ F @ x) + float((w.to_numpy() ** 2 * svar.to_numpy()).sum())
-        if var_w <= 0:
+        # state variance is per estimation period (daily); scale to the
+        # one-week scoring horizon (NW already absorbed autocorrelation)
+        var_d = float(x @ F @ x) + float((w.to_numpy() ** 2 * svar.to_numpy()).sum())
+        if var_d <= 0:
             continue
-        vol_w = np.sqrt(var_w)
+        vol_week = np.sqrt(var_d * cfg.horizon_days)
         r = float((w * tradable).sum())
         rows.append({
             "date": date, "portfolio": name, "group": _group(name),
-            "forecast_vol_ann": vol_w * np.sqrt(52.0),
+            "forecast_vol_ann": float(np.sqrt(var_d * cfg.ann_factor)),
             "realized_ret": r,
-            "z": r / vol_w,
+            "z": r / vol_week,
             "realized_vol_ann": _realized_vol_ann(daily_returns, w),
         })
     return rows

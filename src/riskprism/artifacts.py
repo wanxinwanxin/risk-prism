@@ -26,6 +26,7 @@ OPTIONAL_FILES = {
     "fundamentals_store": "fundamentals_store.parquet",  # distilled EDGAR PIT data
     "validation": "validation.parquet",   # in-loop forecast scores (z per portfolio-week)
     "exposure_history": "exposure_history.parquet",  # weekly formation exposures + caps
+    "factor_tstats": "factor_tstats.parquet",  # daily WLS t-statistics per factor
 }
 META_FILE = "meta.json"
 
@@ -42,6 +43,7 @@ def save_artifacts(
     fundamentals_store: pd.DataFrame | None = None,
     validation: pd.DataFrame | None = None,
     exposure_history: pd.DataFrame | None = None,
+    factor_tstats: pd.DataFrame | None = None,
 ) -> Path:
     path = Path(path)
     path.mkdir(parents=True, exist_ok=True)
@@ -59,6 +61,8 @@ def save_artifacts(
         validation.to_parquet(path / OPTIONAL_FILES["validation"])
     if exposure_history is not None and len(exposure_history):
         exposure_history.to_parquet(path / OPTIONAL_FILES["exposure_history"])
+    if factor_tstats is not None and len(factor_tstats):
+        factor_tstats.to_parquet(path / OPTIONAL_FILES["factor_tstats"])
     (path / META_FILE).write_text(json.dumps(meta, indent=2, default=str))
     return path
 

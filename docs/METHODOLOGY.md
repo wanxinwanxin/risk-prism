@@ -1,18 +1,24 @@
 # PRISM-US-MH methodology
 
-Version `PRISM-US-MH-0.4`. Weekly-frequency, medium-horizon US equity
-fundamental factor model. All parameters live in `riskprism.config.ModelConfig`.
+Version `PRISM-US-MH-0.5`. Medium-horizon US equity fundamental factor
+model: **weekly formation, daily estimation** — exposures form on
+Fridays, cross-sectional regressions run on every trading day. All
+parameters live in `riskprism.config.ModelConfig`.
 
-v0.3 added four pieces of the commercial-model recipe, each with
-published evidence behind it (citations inline): Newey-West variance
-adjustment, Volatility Regime Adjustment, Bayesian specific-risk
-shrinkage, and optimized portfolios in the validation panel. v0.4 adds
-Bloomberg-style correlation blending after A/B-testing it against the
-eigenfactor risk adjustment on our own validation panel (results and the
-eigenfactor negative result in DECISIONS.md §9). Exposure and regression
-definitions are unchanged since v0.2, so regression history carries
-forward across these bumps (`compatible_prior_versions`); validation is
-recomputed from history on every build regardless (see Validation below).
+v0.3 added four pieces of the commercial-model recipe (Newey-West
+variance adjustment, Volatility Regime Adjustment, Bayesian specific-risk
+shrinkage, optimized portfolios in the validation panel); v0.4 added
+Bloomberg-style correlation blending after an A/B against the eigenfactor
+risk adjustment (DECISIONS.md §9). **v0.5 switched estimation from weekly
+to daily returns** (DECISIONS.md §10): an EWMA's effective sample size is
+set by its half-life in observations, so daily sampling gives the
+correlation matrix ~730 effective observations (252-day half-life) where
+weekly gave ~75 (26-week half-life) — the mechanism behind commercial
+models' conditioning advantage. The switch changed the regression data
+unit, so v0.5 rebuilt history cold (`compatible_prior_versions` is empty;
+the weekly capture-forward history was entirely cold-start at the time,
+so nothing survivorship-free was lost). Validation is recomputed from
+history on every build regardless (see Validation below).
 
 ## Two universes
 
@@ -93,34 +99,43 @@ Fama-French 12 groups mapped from EDGAR SIC codes. One-hot exposures.
 
 ## Cross-sectional regression
 
-Each week: `r_i = f_mkt + Σ_s X_is f_s + Σ_j I_ij f_j + ε_i`, estimated by
-WLS with √(market cap) weights (normalized). Identification: industry
-factor returns are constrained to cap-weighted zero — implemented via a
+**Weekly formation, daily estimation.** Exposures are computed on each
+Friday exactly as before; then every trading day of the following week
+regresses that day's returns on those frozen exposures:
+`r_i = f_mkt + Σ_s X_is f_s + Σ_j I_ij f_j + ε_i`, estimated by WLS with
+√(market cap) weights (normalized). Identification: industry factor
+returns are constrained to cap-weighted zero — implemented via a
 restriction matrix that eliminates the largest-cap industry (numerically
 safest divisor). The market factor is therefore the cap-weighted market
-return; styles and industries are return deltas relative to it.
-
-Weeks with fewer than 50 usable assets are skipped.
+return; styles and industries are return deltas relative to it. Five
+cross-sections per week instead of one; days with fewer than 50 usable
+assets are skipped. Each regression also produces WLS t-statistics per
+factor, published as the factor-quality table in `/model.md`
+(the Axioma-style %-of-periods-significant check).
 
 ## Factor covariance
 
-EWMA on weekly factor returns, zero-mean convention. Volatilities use a
-13-week half-life (responsive); correlations use 26 weeks (stable).
+EWMA on daily factor returns, zero-mean convention. Volatilities use an
+84-trading-day half-life (responsive; matches USE4S); correlations use
+252 days (stable). Daily sampling is the load-bearing choice: effective
+sample size N_eff = (1+λ)/(1−λ) ≈ 730 observations for correlations vs
+~75 under the old weekly 26-week half-life — same calendar memory, five
+times the data, which is what conditions the K×K matrix optimizers lean
+on.
 
-**Newey-West adjustment (v0.3)**: annualizing weekly variance by ×52
-assumes iid weekly returns; autocorrelated factor returns (momentum
-especially — our ETF validation measured a 1.40 realized/forecast vol
-ratio partly attributable to this) violate that. Per-factor variances
-carry a Bartlett-weighted Newey-West adjustment with 2 lags
-(`var_adj = var + 2·Σ_l (1−l/(L+1))·γ_l`), ratio clipped to [0.5, 2].
-Applied to variances only, which keeps V·C·V trivially PSD. USE4 uses
-the same device on daily returns with 5 vol / 2 correlation lags
-(Menchero, Orr & Wang 2011, §4.1).
+**Newey-West adjustment (v0.3, re-parameterized for daily in v0.5)**:
+annualizing daily variance by ×252 assumes iid daily returns;
+autocorrelated factor returns violate that (and daily data adds
+microstructure autocorrelation — the reason USE4 pairs daily estimation
+with NW). Per-factor variances carry a Bartlett-weighted Newey-West
+adjustment with 5 lags (`var_adj = var + 2·Σ_l (1−l/(L+1))·γ_l`), ratio
+clipped to [0.5, 2]. Applied to variances only, which keeps V·C·V
+trivially PSD (Menchero, Orr & Wang 2011, §4.1).
 
 **Volatility Regime Adjustment (v0.3)**: each week the cross-sectional
 factor bias statistic `B_t² = mean_k (f_kt / σ_kt)²` is computed against
-the pre-update forecast vols; its EWMA (8-week half-life, roughly the
-USE4 ratio of VRA to vol half-life) gives a multiplier
+the pre-update forecast vols; its EWMA (42-day half-life — USE4S's exact
+parameter) gives a multiplier
 `λ_F = √(EWMA[B²])`, clipped to [0.5, 2], which scales all factor vols —
 covariance ×λ_F², correlations untouched. This is what lets the model
 catch regime shifts that half-life-bound EWMA lags: USE4's version held
@@ -150,16 +165,16 @@ flooring at 1e-10.
 
 Two estimates, blended by history length:
 
-1. **Time-series**: per-asset EWMA (13-week half-life) of squared
+1. **Time-series**: per-asset EWMA (84-day half-life) of squared daily
    regression residuals, with a lag-1 Newey-West adjustment (v0.3),
-   annualized. Requires ≥ 13 observations.
+   annualized. Requires ≥ 63 observations.
 2. **Structural**: each week, ln(time-series vol) is regressed
    cross-sectionally on characteristics — size, volatility, and liquidity
    exposures plus industry — over assets that have good history. The fit
    predicts specific vol for *every* asset (with a Duan smearing
    correction for the exp() retransformation).
 
-Blend: `σᵢ = wᵢ·TSᵢ + (1−wᵢ)·structuralᵢ` with `wᵢ = Tᵢ/(Tᵢ + 26)`.
+Blend: `σᵢ = wᵢ·TSᵢ + (1−wᵢ)·structuralᵢ` with `wᵢ = Tᵢ/(Tᵢ + 126)` (days).
 Assets with no residual history (IPOs, coverage-only names) get the pure
 structural prior. `asset_meta.parquet` records each asset's blend weight
 so consumers can distinguish measured from inferred.
@@ -182,7 +197,14 @@ specific vols. Both multipliers ship in `meta` (`vra_factor`,
 ## Portfolio analytics
 
 For weights `w`: exposures `x = Xᵀw`; factor variance `xᵀFx`; specific
-variance `Σ wᵢ²sᵢ²`; total vol is the square root of the sum. Factor
+variance `Σ wᵢ²sᵢ²`; total vol is the square root of the sum.
+`portfolio_risk(..., optimized=True)` (also exposed on the MCP tool)
+additionally applies the Shepard (2009) second-order correction
+`1/(1 − K/N_eff)` to the reported vols: portfolios optimized against the
+model exploit its estimation noise, so their raw forecasts understate
+risk — the correction lives at the reporting layer so the matrix stays
+unbiased for pre-specified portfolios (see the `opt` rows of the
+published validation for the empirically measured counterpart). Factor
 variance contributions `x_k (Fx)_k` sum to factor variance; asset
 contributions `wᵢ · (Σw)ᵢ / σ_p` sum to total vol. Stress tests are
 first-order: `ΔP&L ≈ Σ x_k Δf_k`.
@@ -191,15 +213,19 @@ first-order: `ΔP&L ≈ Σ x_k Δf_k`.
 
 Continuous and out-of-sample by construction — and, since v0.3,
 **recomputed from history on every build** (`model/revalidate.py`): a
-fresh point-in-time risk state (recursive EWMA + Newey-West + VRA +
-shrinkage, warmed only on data through t) replays the entire stored
-factor-return history and rescores every week under the *current*
-methodology. Reconstruction is exact for regressed names because the
-weekly regression defines `rᵢ = Xᵢ·f + εᵢ` and the artifacts store all
-three pieces — including imputed delisting returns for names that have
-since disappeared. Validation is therefore a pure function of the
-shipped artifacts, never a mixture of scores from different model
-versions.
+fresh point-in-time risk state (recursive EWMA + Newey-West + blending +
+VRA + shrinkage, warmed only on data through t) replays the entire
+stored DAILY factor-return history and rescores every completed
+formation week under the *current* methodology. Reconstruction is exact
+for regressed names because each daily regression defines
+`r_d,i = Xᵢ·f_d + ε_d,i`, so the true weekly return is recovered by
+compounding `Π_d (1 + Xᵢ·f_d + ε_d,i) − 1` — including imputed delisting
+returns. Forecasts scale from daily state variance to the one-week
+horizon (×5; Newey-West has already absorbed the autocorrelation the
+scaling assumes away). ETF exposures come from returns-based style
+analysis on trailing DAILY returns (252-day window). Validation is
+therefore a pure function of the shipped artifacts, never a mixture of
+scores from different model versions.
 
 The test panel: cap-weighted market, equal-weighted, top-minus-bottom
 style spreads, cap-weighted industries, random 50-name baskets, six real

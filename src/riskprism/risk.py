@@ -73,8 +73,34 @@ class RiskModel:
         w, _ = self._weight_vector(weights)
         return self.exposures.T @ w
 
-    def portfolio_risk(self, weights: Mapping[str, float], top_n: int = 10) -> dict:
-        """Total risk with factor/specific decomposition and contributions."""
+    def _shepard_multiplier(self) -> float:
+        """Second-order correction for portfolios optimized against this
+        model (Shepard 2009): optimizers seek out the covariance matrix's
+        underestimated directions, so true vol ~ predicted / (1 - K/N_eff),
+        with N_eff the EWMA's effective sample size. Applied to reported
+        forecasts only when the caller declares optimization — never baked
+        into the matrix, which stays unbiased for pre-specified portfolios."""
+        cfg = self.meta.get("config", {}) or {}
+        # N_eff from the VOL half-life — the binding noise source: with it,
+        # the analytic multiplier (1.09 at 84d/K=20) matches the min-var
+        # bias measured in the published validation almost exactly
+        hl = float(cfg.get("vol_half_life", 84))
+        lam = 0.5 ** (1.0 / hl)
+        n_eff = (1 + lam) / (1 - lam)
+        k = len(self.factors)
+        if k >= n_eff:
+            return 2.0
+        return float(min(1.0 / (1.0 - k / n_eff), 2.0))
+
+    def portfolio_risk(self, weights: Mapping[str, float], top_n: int = 10,
+                       optimized: bool = False) -> dict:
+        """Total risk with factor/specific decomposition and contributions.
+
+        Pass ``optimized=True`` if the weights were produced by optimizing
+        against this model: the reported vols are scaled by the Shepard
+        second-order correction (see the `opt` rows of the published
+        validation for the empirically measured counterpart).
+        """
         w, info = self._weight_vector(weights)
         X = self.exposures.to_numpy()
         F = self.factor_covariance.to_numpy()
@@ -96,11 +122,16 @@ class RiskModel:
         else:
             ctr = pd.Series(dtype=float)
 
+        shep = 1.0
+        if optimized and (self.meta.get("config", {}) or {}).get("shepard_correction", True):
+            shep = self._shepard_multiplier()
         return {
             "model_version": self.meta.get("model_version"),
-            "total_vol": total_vol,
-            "factor_vol": float(np.sqrt(factor_var)),
-            "specific_vol": float(np.sqrt(specific_var)),
+            "total_vol": total_vol * shep,
+            **({"total_vol_unadjusted": total_vol,
+                "optimized_correction": shep} if shep != 1.0 else {}),
+            "factor_vol": float(np.sqrt(factor_var)) * shep,
+            "specific_vol": float(np.sqrt(specific_var)) * shep,
             "factor_var_share": factor_var / total_var if total_var else np.nan,
             "factor_exposures": {k: float(v) for k, v in zip(self.factors, x)},
             "factor_var_contributions": {

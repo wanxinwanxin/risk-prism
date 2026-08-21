@@ -2,6 +2,8 @@
 Volatility Regime Adjustment, Bayesian specific shrinkage, optimized test
 portfolios, and the full-history validation replay."""
 
+import dataclasses
+
 import numpy as np
 import pandas as pd
 
@@ -13,7 +15,13 @@ from riskprism.model.specific import bayes_shrink_specific
 from riskprism.model.validation import (FULL_FACTORS, RunningRiskState,
                                         optimized_portfolios)
 
-CFG = ModelConfig()
+CFG = ModelConfig(
+    ann_factor=52.0, horizon_days=1, min_warmup_obs=26,
+    corr_half_life=26, vol_half_life=13, specific_half_life=13,
+    vra_half_life=8, nw_factor_lags=2, nw_specific_lags=1,
+    min_specific_obs=13, structural_t0=26, eigen_refresh_periods=26,
+    history_cap_days=156,
+)
 
 
 def _fr(t=200, seed=0, ar=0.0, sigma=0.01):
@@ -35,7 +43,7 @@ def test_newey_west_raises_variance_for_positive_autocorr():
     # the innovation-driven sample variance; NW with 2 lags recovers a
     # meaningful part of that on average across factors
     ratio = np.diag(ar.to_numpy()).mean() / np.diag(iid.to_numpy()).mean()
-    no_nw = ModelConfig(nw_factor_lags=0)
+    no_nw = dataclasses.replace(CFG, nw_factor_lags=0)
     ar_no = factor_covariance(_fr(ar=0.4), no_nw)
     ratio_no = np.diag(ar_no.to_numpy()).mean() / np.diag(iid.to_numpy()).mean()
     assert ratio > ratio_no * 1.15  # NW lifts autocorrelated variances
@@ -43,7 +51,7 @@ def test_newey_west_raises_variance_for_positive_autocorr():
 
 def test_newey_west_near_noop_for_iid():
     with_nw = factor_covariance(_fr(seed=3), CFG)
-    without = factor_covariance(_fr(seed=3), ModelConfig(nw_factor_lags=0))
+    without = factor_covariance(_fr(seed=3), dataclasses.replace(CFG, nw_factor_lags=0))
     d1, d0 = np.diag(with_nw.to_numpy()), np.diag(without.to_numpy())
     assert np.abs(d1 / d0 - 1).mean() < 0.25  # only noise-level changes
 
@@ -164,7 +172,7 @@ def test_revalidate_reconstructs_and_scores():
 
     validation, state = revalidate_history(fr, res, eh, industries, CFG)
     assert len(validation) > 0
-    assert state.n_weeks == t
+    assert state.n_obs == t
     groups = set(validation["group"])
     assert {"market", "equal", "opt"} <= groups
     # scored weeks start only after the warm-up
@@ -221,3 +229,43 @@ def test_factor_covariance_modes_all_psd():
         F = factor_covariance(fr, cfg).to_numpy()
         assert np.linalg.eigvalsh(F).min() >= 0
         assert np.isfinite(F).all()
+
+
+# ---------------------------------------------- v0.5: daily estimation
+def test_daily_world_weekly_scoring_calibrated():
+    """Simulate a calibrated DAILY world, score at weekly horizons via
+    revalidate: the horizon_days scaling must yield bias ~ 1."""
+    rng = np.random.default_rng(11)
+    n_weeks, n = 60, 120
+    cfg = dataclasses.replace(CFG, ann_factor=252.0, horizon_days=5,
+                              min_warmup_obs=60, vol_half_life=30,
+                              corr_half_life=60, specific_half_life=30,
+                              vra_half_life=20, min_specific_obs=20)
+    idx = pd.Index([f"T{i:03d}" for i in range(n)])
+    industries = pd.Series(rng.choice(["BusEq", "Hlth", "Money", "Shops"], n), index=idx)
+    fridays = pd.date_range("2024-01-05", periods=n_weeks + 1, freq="W-FRI")
+    fr_rows, res_rows, eh_rows = {}, {}, []
+    sig_f = pd.Series(0.003, index=FULL_FACTORS)
+    sig_f["market"] = 0.009
+    for i in range(n_weeks):
+        t = fridays[i]
+        snap = pd.DataFrame(rng.normal(0, 1, (n, len(STYLE_FACTORS))),
+                            index=idx, columns=STYLE_FACTORS).astype("float32")
+        snap.insert(0, "date", t)
+        snap.insert(1, "mktcap", rng.lognormal(20, 1, n).astype("float32"))
+        eh_rows.append(snap.reset_index(names="ticker"))
+        for j in range(5):
+            d = t + pd.Timedelta(days=j + 1)
+            fr_rows[d] = pd.Series(rng.normal(0, sig_f.to_numpy()), index=FULL_FACTORS)
+            res_rows[d] = pd.Series(rng.normal(0, 0.015, n), index=idx)
+    fr = pd.DataFrame(fr_rows).T.sort_index()
+    res = pd.DataFrame(res_rows).T.sort_index()
+    eh = pd.concat(eh_rows, ignore_index=True)
+    validation, state = revalidate_history(fr, res, eh, industries, cfg)
+    assert len(validation) > 0
+    assert state.n_obs == n_weeks * 5
+    bias = validation["z"].std(ddof=1)
+    assert 0.8 < bias < 1.25, f"weekly-horizon bias {bias:.3f} not calibrated"
+    # annualization sanity: market forecast vol should be ~ 0.009*sqrt(252)
+    mkt = validation[validation["portfolio"] == "market"]["forecast_vol_ann"]
+    assert 0.08 < mkt.mean() < 0.22

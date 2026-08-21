@@ -4,7 +4,13 @@ import pandas as pd
 from riskprism.config import STYLE_FACTORS, ModelConfig
 from riskprism.model.specific import specific_risk
 
-CFG = ModelConfig()
+CFG = ModelConfig(
+    ann_factor=52.0, horizon_days=1, min_warmup_obs=26,
+    corr_half_life=26, vol_half_life=13, specific_half_life=13,
+    vra_half_life=8, nw_factor_lags=2, nw_specific_lags=1,
+    min_specific_obs=13, structural_t0=26, eigen_refresh_periods=26,
+    history_cap_days=156,
+)
 
 
 def _setup(n=120, t=100, seed=0):

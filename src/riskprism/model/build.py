@@ -61,7 +61,7 @@ def build_model(
             print(f"[riskprism] {msg}")
 
     # ---- prior build (capture-forward) --------------------------------
-    prior_fr = prior_res = prior_eh = None
+    prior_fr = prior_res = prior_eh = prior_ts = None
     prior_fund: dict[str, Fundamentals] = {}
     prior_industry: dict[str, str] = {}
     if prior_artifacts:
@@ -79,6 +79,7 @@ def build_model(
         if prior_version == config.version or prior_version in config.compatible_prior_versions:
             prior_fr, prior_res = prior["factor_returns"], prior["residuals"]
             prior_eh = prior.get("exposure_history")
+            prior_ts = prior.get("factor_tstats")
             note = "" if prior_version == config.version else \
                 f" (prior {prior_version} regression history is compatible)"
             log(f"prior build loaded: {len(prior_fr)} weeks through "
@@ -162,7 +163,13 @@ def build_model(
 
     first_regression = close.index[0] + pd.Timedelta(days=_BURN_IN_DAYS)
     if prior_fr is not None and len(prior_fr):
-        first_regression = max(first_regression, prior_fr.index[-1])
+        # resume from the start of the formation week containing the
+        # prior's last daily row: that week is re-regressed in full and
+        # replaces its (possibly partial) prior rows on merge
+        last_daily = prior_fr.index[-1]
+        prior_week_starts = [d for d in weekly_close.index if d < last_daily]
+        if prior_week_starts:
+            first_regression = max(first_regression, prior_week_starts[-1])
     rebal_dates = [d for d in weekly_close.index if d >= first_regression]
 
     def fund_asof(names, date):
@@ -170,43 +177,63 @@ def build_model(
             {tk: fundamentals[tk].asof(date) for tk in names}
         ).T.reindex(columns=FUND_FIELDS)
 
+    # ---- weekly formation, daily estimation ------------------------------
+    # Exposures form on Fridays; a cross-sectional regression runs on every
+    # trading day of the following week against those frozen exposures.
+    # Daily sampling is what buys covariance effective observations
+    # (N_eff ~ 730 at the 252d correlation half-life vs ~75 weekly).
+    daily_idx = daily_returns.index
     factor_return_rows: dict[pd.Timestamp, pd.Series] = {}
     residual_rows: dict[pd.Timestamp, pd.Series] = {}
+    tstat_rows: dict[pd.Timestamp, pd.Series] = {}
     exposure_history_rows: list[pd.DataFrame] = []
     r2s = []
     for t, t_next in zip(rebal_dates[:-1], rebal_dates[1:]):
+        days = daily_idx[(daily_idx > t) & (daily_idx <= t_next)]
+        if not len(days):
+            continue
         exposures, mktcap = compute_style_exposures(
             close[estimation], volume[estimation], fund_asof(estimation, t), t,
             config, industries=industries, fit=estu_idx,
         )
-        y = weekly_returns.loc[t_next].copy()
-        # capture-forward: a name whose last trade was week t gets an
-        # imputed delisting return in week t_next instead of dropping out
-        for tk in estimation:
-            if last_traded_week[tk] == t:
-                y[tk] = delisting_return(float(weekly_close.at[t, tk]), config)
-        try:
-            res = cross_sectional_regression(
-                y, exposures, industries, mktcap,
-                min_assets=config.min_assets_per_regression,
-            )
-        except ValueError:
-            continue
-        # persist formation-date exposures so historical models are
-        # reconstructible from the artifacts (see model/asof.py) and the
-        # whole validation history is re-scorable each build
-        eh = exposures.astype("float32").round(4)
-        eh.insert(0, "date", t)
-        eh.insert(1, "mktcap", mktcap.reindex(exposures.index).astype("float32"))
-        exposure_history_rows.append(eh.reset_index(names="ticker"))
-        factor_return_rows[t_next] = res.factor_returns
-        residual_rows[t_next] = res.residuals
-        r2s.append(res.r2)
+        week_ok = False
+        for j, d in enumerate(days):
+            y = daily_returns.loc[d].copy()
+            if j == 0:
+                # capture-forward: a name whose last trade was week t gets
+                # its imputed delisting return on the first day of week
+                # t_next instead of dropping out
+                for tk in estimation:
+                    if last_traded_week[tk] == t:
+                        y[tk] = delisting_return(float(weekly_close.at[t, tk]), config)
+            try:
+                res = cross_sectional_regression(
+                    y, exposures, industries, mktcap,
+                    min_assets=config.min_assets_per_regression,
+                )
+            except ValueError:
+                continue
+            factor_return_rows[d] = res.factor_returns
+            residual_rows[d] = res.residuals
+            if res.tstats is not None:
+                tstat_rows[d] = res.tstats
+            r2s.append(res.r2)
+            week_ok = True
+        if week_ok:
+            # persist formation-date exposures so historical models are
+            # reconstructible from the artifacts (see model/asof.py) and
+            # the whole validation history is re-scorable each build
+            eh = exposures.astype("float32").round(4)
+            eh.insert(0, "date", t)
+            eh.insert(1, "mktcap", mktcap.reindex(exposures.index).astype("float32"))
+            exposure_history_rows.append(eh.reset_index(names="ticker"))
 
     new_fr = pd.DataFrame(factor_return_rows).T.sort_index()
-    new_res = pd.DataFrame(residual_rows).T.sort_index()
-    factor_returns = merge_history(prior_fr, new_fr, config.history_cap_weeks).fillna(0.0)
-    residuals = merge_history(prior_res, new_res, config.history_cap_weeks)
+    new_res = pd.DataFrame(residual_rows).T.sort_index().astype("float32")
+    new_ts = pd.DataFrame(tstat_rows).T.sort_index().astype("float32")
+    factor_returns = merge_history(prior_fr, new_fr, config.history_cap_days).fillna(0.0)
+    residuals = merge_history(prior_res, new_res, config.history_cap_days)
+    factor_tstats = merge_history(prior_ts, new_ts, config.history_cap_days)
     new_eh = (pd.concat(exposure_history_rows, ignore_index=True)
               if exposure_history_rows else pd.DataFrame())
     exposure_history = merge_validation(prior_eh, new_eh, config.history_cap_weeks)
@@ -215,8 +242,8 @@ def build_model(
             f"Only {len(factor_returns)} usable regression periods; "
             "extend the date range or loosen filters"
         )
-    log(f"regressions: {len(new_fr)} new weeks, {len(factor_returns)} total"
-        + (f", mean new R2 = {np.mean(r2s):.3f}" if r2s else ""))
+    log(f"regressions: {len(new_fr)} new days, {len(factor_returns)} total"
+        + (f", mean daily R2 = {np.mean(r2s):.3f}" if r2s else ""))
 
     # ---- validation: replay the full history under the current
     # methodology (see model/revalidate.py) — every build rescores every
@@ -262,9 +289,10 @@ def build_model(
         "as_of": str(as_of.date()),
         "n_assets": int(len(X_final)),
         "n_estimation": int(len(estimation)),
-        "n_periods": int(len(factor_returns)),
+        "n_periods": int(len(factor_returns)),          # daily regressions
+        "n_weeks": int(exposure_history["date"].nunique()) if len(exposure_history) else 0,
         "n_new_periods": int(len(new_fr)),
-        "mean_r2": float(np.mean(r2s)) if r2s else None,
+        "mean_r2": float(np.mean(r2s)) if r2s else None,  # mean daily cross-sectional R2
         "price_provider": provider,
         "incremental": bool(prior_artifacts),
         "fundamentals_live": n_live,
@@ -279,6 +307,7 @@ def build_model(
         residuals=residuals, asset_meta=asset_meta,
         fundamentals_store=store_to_frame(fundamentals),
         validation=validation, exposure_history=exposure_history,
+        factor_tstats=factor_tstats,
     )
     log(f"artifacts written to {path} ({meta['n_assets']} covered, "
         f"{meta['n_estimation']} estimation, as of {meta['as_of']})")

@@ -24,6 +24,7 @@ class RegressionResult:
     residuals: pd.Series
     r2: float
     n_assets: int
+    tstats: pd.Series | None = None  # WLS t-statistics per factor
 
 
 def _restriction_matrix(n_styles: int, ind_weights: np.ndarray) -> np.ndarray:
@@ -85,7 +86,8 @@ def cross_sectional_regression(
     w = w / w.mean()
     sw = np.sqrt(w)
 
-    g, *_ = np.linalg.lstsq(X @ R * sw[:, None], y * sw, rcond=None)
+    A = X @ R * sw[:, None]
+    g, *_ = np.linalg.lstsq(A, y * sw, rcond=None)
     f = R @ g
     resid = y - X @ f
 
@@ -94,9 +96,22 @@ def cross_sectional_regression(
     ssr = float(np.sum(w * resid**2))
     r2 = 1.0 - ssr / sst if sst > 0 else np.nan
 
+    # WLS t-statistics: cov(g) = s2 (A'A)^-1, cov(f) = R cov(g) R'
+    tstats = None
+    dof = len(idx) - A.shape[1]
+    if dof > 0:
+        s2 = ssr / dof
+        try:
+            cov_g = s2 * np.linalg.inv(A.T @ A)
+            se_f = np.sqrt(np.clip(np.einsum("ij,jk,ik->i", R, cov_g, R), 1e-30, None))
+            tstats = pd.Series(f / se_f, index=factor_names)
+        except np.linalg.LinAlgError:
+            pass
+
     return RegressionResult(
         factor_returns=pd.Series(f, index=factor_names),
         residuals=pd.Series(resid, index=idx),
         r2=r2,
         n_assets=len(idx),
+        tstats=tstats,
     )

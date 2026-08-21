@@ -2,10 +2,10 @@
 
 The model's own test portfolios share its construction assumptions; these
 don't. Each ETF's factor exposures are estimated point-in-time by
-regressing its trailing weekly returns on the model's factor returns
+regressing its trailing DAILY returns on the model's daily factor returns
 (returns-based style analysis — holdings aren't freely available
-point-in-time), then its volatility is forecast from the same EWMA state
-and scored against what the ETF actually did.
+point-in-time), then its volatility is forecast from the same running
+state and scored against what the ETF actually did over the next week.
 """
 
 import numpy as np
@@ -22,23 +22,23 @@ ETF_BENCHMARKS = {
     "USMV": "MSCI USA Min Vol",
 }
 
-# 52 weekly observations can't support 21 regressors; market + styles
-# capture what diversified factor ETFs are — industries fold into residual.
+# market + styles capture what diversified factor ETFs are — industries
+# fold into the residual
 REGRESSORS = [MARKET_FACTOR, *STYLE_FACTORS]
-_MIN_WEEKS = 40
-_WINDOW = 52
+_MIN_OBS = 126     # minimum trailing daily observations
+_WINDOW = 252      # trailing window (trading days)
 
 
 def estimate_exposures(trailing_fr: pd.DataFrame, trailing_ret: pd.Series
                        ) -> tuple[pd.Series, float] | None:
-    """Regress trailing ETF returns on factor returns.
+    """Regress trailing daily ETF returns on daily factor returns.
 
-    Returns (exposures over REGRESSORS, weekly residual variance), or None
+    Returns (exposures over REGRESSORS, daily residual variance), or None
     with insufficient history.
     """
     df = pd.concat([trailing_ret.rename("_r"), trailing_fr[REGRESSORS]], axis=1).dropna()
     df = df.tail(_WINDOW)
-    if len(df) < _MIN_WEEKS:
+    if len(df) < _MIN_OBS:
         return None
     y = df["_r"].to_numpy()
     X = np.column_stack([np.ones(len(df)), df[REGRESSORS].to_numpy()])
@@ -49,8 +49,8 @@ def estimate_exposures(trailing_fr: pd.DataFrame, trailing_ret: pd.Series
 
 
 def score_etf_week(
-    state,                      # RunningRiskState through week t
-    trailing_fr: pd.DataFrame,  # factor returns with index <= t
+    state,                      # RunningRiskState through day t
+    trailing_fr: pd.DataFrame,  # daily factor returns with index <= t
     etf_weekly: pd.DataFrame,   # weekly ETF return panel
     etf_daily: pd.DataFrame,    # daily ETF return panel
     t: pd.Timestamp,
@@ -60,7 +60,8 @@ def score_etf_week(
 
     if not state.ready or trailing_fr.empty:
         return []
-    F = state.factor_cov_weekly()
+    cfg = state.config
+    F = state.factor_cov_period()
     pos = [FULL_FACTORS.index(f) for f in REGRESSORS]
     F_sub = F[np.ix_(pos, pos)]
     rows = []
@@ -70,20 +71,20 @@ def score_etf_week(
         realized = etf_weekly.at[t_next, ticker]
         if not np.isfinite(realized):
             continue
-        est = estimate_exposures(trailing_fr, etf_weekly[ticker].loc[:t])
+        est = estimate_exposures(trailing_fr, etf_daily[ticker].loc[:t])
         if est is None:
             continue
-        b, resid_var = est
-        var_w = float(b.to_numpy() @ F_sub @ b.to_numpy()) + resid_var
-        if var_w <= 0:
+        b, resid_var_d = est
+        var_d = float(b.to_numpy() @ F_sub @ b.to_numpy()) + resid_var_d
+        if var_d <= 0:
             continue
-        vol_w = np.sqrt(var_w)
+        vol_week = np.sqrt(var_d * cfg.horizon_days)
         daily_slice = etf_daily[(etf_daily.index > t) & (etf_daily.index <= t_next)][[ticker]]
         rows.append({
             "date": t_next, "portfolio": ticker, "group": "etf",
-            "forecast_vol_ann": vol_w * np.sqrt(52.0),
+            "forecast_vol_ann": float(np.sqrt(var_d * cfg.ann_factor)),
             "realized_ret": float(realized),
-            "z": float(realized) / vol_w,
+            "z": float(realized) / vol_week,
             "realized_vol_ann": _realized_vol_ann(
                 daily_slice, pd.Series(1.0, index=[ticker])),
         })

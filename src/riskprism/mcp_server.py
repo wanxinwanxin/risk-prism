@@ -38,11 +38,15 @@ def get_model_info() -> dict:
 
 
 @mcp.tool()
-def get_portfolio_risk(weights: dict[str, float]) -> dict:
+def get_portfolio_risk(weights: dict[str, float], optimized: bool = False) -> dict:
     """Full risk report for a portfolio: total/factor/specific vol, factor
     exposures, top factor variance contributions, and top asset risk
-    contributions. `weights` maps ticker -> portfolio weight."""
-    return _get_model().portfolio_risk(weights)
+    contributions. `weights` maps ticker -> portfolio weight. Set
+    `optimized=true` if the weights came from optimizing against this
+    model: reported vols then include the Shepard second-order correction
+    (optimizers exploit covariance estimation noise, so raw forecasts
+    understate an optimized portfolio's risk)."""
+    return _get_model().portfolio_risk(weights, optimized=optimized)
 
 
 @mcp.tool()

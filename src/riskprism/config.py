@@ -17,25 +17,36 @@ STYLE_FACTORS = [
 
 @dataclass(frozen=True)
 class ModelConfig:
-    """Parameters of the medium-horizon (weekly) US model.
+    """Parameters of the medium-horizon US model.
 
-    Half-lives are in weeks. The methodology behind each choice is
-    documented in docs/METHODOLOGY.md; changing any of these constitutes
-    a new model version.
+    Estimation is daily against weekly-formed exposures; half-lives are
+    in trading days. The methodology behind each choice is documented in
+    docs/METHODOLOGY.md; changing any of these constitutes a new model
+    version.
     """
 
-    version: str = "PRISM-US-MH-0.4"
+    version: str = "PRISM-US-MH-0.5"
     # Prior versions whose regression/exposure definitions match this one:
     # their factor-return history may be appended to (risk construction on
     # top differs, but validation is recomputed from history every build).
-    compatible_prior_versions: tuple = ("PRISM-US-MH-0.2", "PRISM-US-MH-0.3")
+    # v0.5 switched estimation from weekly to daily returns — incompatible
+    # with all weekly-history priors, hence empty (cold rebuild; the
+    # weekly capture-forward history was entirely cold-start at the time).
+    compatible_prior_versions: tuple = ()
+    # Exposures form on Fridays; regressions run on every trading day
+    # against the week's formation exposures ("weekly formation, daily
+    # estimation"). Daily sampling is what buys effective observations:
+    # N_eff = (1+lam)/(1-lam) ~ 730 at the 252d correlation half-life vs
+    # ~75 at the old 26-week one, with better calendar responsiveness.
     frequency: str = "W-FRI"
-    ann_factor: float = 52.0
+    ann_factor: float = 252.0
+    horizon_days: int = 5  # validation scores 1-week-ahead forecasts
 
-    # Covariance estimation
-    corr_half_life: int = 26
-    vol_half_life: int = 13
-    specific_half_life: int = 13
+    # Covariance estimation (half-lives in trading days; USE4S template:
+    # 84d vol / 504d corr — we use 252d corr, warmable within a ~4y panel)
+    corr_half_life: int = 252
+    vol_half_life: int = 84
+    specific_half_life: int = 84
     eig_floor: float = 1e-10
 
     # Optimization-bias correction on the factor covariance:
@@ -47,22 +58,21 @@ class ModelConfig:
     factor_cov_adjust: str = "blend"
     eigen_adjust_sims: int = 200
     eigen_adjust_a: float = 1.4
-    eigen_refresh_weeks: int = 26  # state replay: recompute profile this often
+    eigen_refresh_periods: int = 126  # state replay: recompute profile this often
     blend_weight: float = 0.8
     blend_components_frac: float = 0.25
 
     # Newey-West serial-correlation adjustment of variances (Bartlett
-    # weights; ratio clipped for robustness). Weekly returns need fewer
-    # lags than USE4's daily 5/2.
-    nw_factor_lags: int = 2
-    nw_specific_lags: int = 1
+    # weights; ratio clipped for robustness). USE4's daily lag counts.
+    nw_factor_lags: int = 5
+    nw_specific_lags: int = 1  # implementation applies lag-1
     nw_ratio_min: float = 0.5
     nw_ratio_max: float = 2.0
 
     # Volatility Regime Adjustment: EWMA of the cross-sectional bias
     # statistic, applied as a multiplier to all factor (and, separately,
-    # specific) vols. USE4 uses half the vol half-life (42d vs 84d).
-    vra_half_life: int = 8
+    # specific) vols. USE4S uses half the vol half-life (42d vs 84d).
+    vra_half_life: int = 42
     vra_lambda_min: float = 0.5   # bounds on the multiplier itself
     vra_lambda_max: float = 2.0
 
@@ -80,9 +90,13 @@ class ModelConfig:
     liquidity_window_days: int = 63
 
     # Specific risk: EWMA blended with a cross-sectional structural model;
-    # blend weight w = T/(T + structural_t0) by residual history length.
-    min_specific_obs: int = 13
-    structural_t0: int = 26
+    # blend weight w = T/(T + structural_t0) by residual history length
+    # (both in trading days).
+    min_specific_obs: int = 63
+    structural_t0: int = 126
+
+    # Observations before the running state's forecasts are scored
+    min_warmup_obs: int = 126
 
     # Estimation universe (participates in factor regressions)
     min_price: float = 2.0
@@ -93,10 +107,17 @@ class ModelConfig:
     coverage_min_price: float = 1.0
     coverage_max_stale_days: int = 10
 
-    # Capture-forward history
+    # Capture-forward history (weekly formation snapshots and daily
+    # regression rows share the same calendar cap)
     history_cap_weeks: int = 156
+    history_cap_days: int = 780
     delist_failure_price: float = 5.0
     delist_failure_return: float = -0.30
+
+    # Shepard (2009) second-order correction, applied to reported
+    # forecasts only when the caller declares the portfolio was optimized
+    # against this model: true vol ~ predicted / (1 - K/N_eff).
+    shepard_correction: bool = True
 
     # Regression
     min_assets_per_regression: int = 50

@@ -213,3 +213,67 @@ Findings:
 
 Version bumped to PRISM-US-MH-0.4; 0.2/0.3 regression history carries
 forward (`compatible_prior_versions`), validation rescored as always.
+
+
+## 10. v0.5: daily estimation — weekly formation, daily regressions (decided 2026-08-21)
+
+The question that forced it: an EWMA's effective sample size is pinned by
+its half-life in OBSERVATIONS (N_eff = (1+λ)/(1−λ)), not by how much
+history accumulates — so the weekly model's correlation matrix was
+permanently limited to ~75 effective observations (26-week half-life),
+vs ~1,450 for USE4's daily 504-day half-life. That noise ratio is what
+made factor expansion dangerous (§9's eigen result) and what made
+optimized portfolios underforecast. Daily sampling buys ~730 effective
+observations at a 252-day half-life with BETTER calendar responsiveness.
+
+Design: **weekly formation, daily estimation.** Exposures still form on
+Fridays (the fundamentals pipeline is untouched); five daily WLS
+regressions run per week against the frozen exposures. Half-lives move
+to the published daily template (vol 84d = USE4S, corr 252d ≈ Axioma MH,
+VRA 42d = USE4S, NW 5 factor lags). Validation still scores 1-week-ahead
+forecasts (daily state variance × 5); weekly returns are reconstructed
+EXACTLY by compounding the daily regression identity. ETF RBSA moves to
+trailing daily returns (252d window — ~5× the observations of the old
+52-week window).
+
+Why now and not later: the switch requires a cold rebuild (daily and
+weekly regression histories are incommensurable), and the one asset a
+cold rebuild destroys — capture-forward survivorship-free history — was
+essentially empty (the founding build was days old; every banked week
+was cold-start). The cost of this switch grows every week the cron runs;
+it will never be cheaper. Deferring it again would have been inertia.
+
+Also shipped in the same version (one coherent recalibration):
+- **Shepard flag**: `portfolio_risk(optimized=True)` / MCP
+  `get_portfolio_risk(optimized=true)` applies the analytic second-order
+  correction 1/(1−K/N_eff) at the REPORTING layer — the resolution of
+  §9's impossibility (one matrix can't be unbiased for both fixed and
+  optimizer-selected portfolios): fixed portfolios keep the unbiased
+  matrix, optimized ones get the selection correction.
+- **Factor QC stats**: per-regression WLS t-statistics ship as
+  factor_tstats.parquet and a %-significant table in /model.md
+  (Axioma publishes the same check).
+- Deliberately NOT bundled: new descriptors and FF30 industries (v0.6) —
+  stacking the biggest frequency change with the biggest factor change
+  would make regressions unattributable.
+
+### §10 addendum: the daily-regime A/B (measured 2026-08-21)
+
+Rerunning the §9 A/B on the v0.5 daily artifacts (121 scored weeks):
+
+| variant | minvar | opt avg | style | random | equal |
+|---|---|---|---|---|---|
+| none | 1.088 | 1.142 | 1.124 | 0.905 | 0.923 |
+| blend (default) | 1.085 | 1.142 | 1.125 | 0.905 | 0.923 |
+| eigen | 1.031 | 1.128 | 1.070 | 0.874 | 0.887 |
+
+Findings: (a) daily estimation itself was the real optimization-bias
+cure — min-var fell 1.36 → 1.09 before any matrix adjustment, matching
+Shepard's 1/(1−K/N_eff) with N_eff from the VOL half-life (84d → 243 obs
+→ 1.090) almost exactly, which is why the `optimized=true` reporting
+flag uses the vol half-life; (b) at ~730 correlation observations,
+blending is inert (≤0.003 everywhere) — kept as the default anyway as
+free conditioning insurance for the v0.6 factor expansion; (c) eigen's
+trade-off turns mild but remains a trade (helps minvar/styles ~0.05,
+worsens random/equal ~0.03) — still off by default. MZ slope healed from
+0.81 to 1.02 with the frequency switch alone.
