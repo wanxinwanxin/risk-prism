@@ -6,7 +6,12 @@ Run with `riskprism-mcp`. Artifacts are loaded from $RISKPRISM_ARTIFACTS
 
 import os
 
-from mcp.server.fastmcp import FastMCP
+try:
+    from mcp.server.fastmcp import FastMCP
+except ImportError:  # mcp 2.x removed mcp.server.fastmcp
+    raise SystemExit(
+        "riskprism-mcp requires the MCP SDK 1.x: pip install 'mcp>=1.2,<2'"
+    ) from None
 
 from riskprism.risk import RiskModel
 

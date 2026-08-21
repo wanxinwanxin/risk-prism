@@ -12,11 +12,12 @@ dependencies = [
     "pandas>=2.1",
     "pyarrow>=15",
     "requests>=2.31",
+    "mcp>=1.2,<2",
 ]
 
 [project.optional-dependencies]
-mcp = ["mcp>=1.2"]
-dev = ["pytest>=8", "mcp>=1.2"]
+mcp = ["mcp>=1.2,<2"]
+dev = ["pytest>=8", "mcp>=1.2,<2"]
 
 [project.scripts]
 riskprism-build = "riskprism.build_cli:main"
