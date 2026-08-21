@@ -29,11 +29,11 @@ REPO_URL = "https://github.com/wanxinwanxin/risk-prism"
 
 STYLE_DEFS = {
     "size": "ln(market cap)",
-    "value": "book equity / market cap",
+    "value": "composite: book/price, earnings/price, cash flow/price, sales/price",
     "momentum": "12-month return, skipping the most recent month",
     "volatility": "252-day daily return std, annualized",
     "liquidity": "ln(63-day median dollar volume / market cap)",
-    "quality": "ROE: annual net income / book equity",
+    "quality": "composite: ROE, ROA, operating cash flow/assets, gross margin",
     "leverage": "total liabilities / total assets",
 }
 
