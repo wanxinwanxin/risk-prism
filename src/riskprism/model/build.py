@@ -32,7 +32,8 @@ from riskprism.model.benchmarks import ETF_BENCHMARKS
 from riskprism.model.revalidate import revalidate_history
 from riskprism.model.validation import merge_validation
 
-FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income", "shares_out"]
+FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income",
+               "shares_out", "op_cashflow", "revenues", "gross_profit", "cost_of_revenue"]
 
 # Daily lookback needed before the first regression date (momentum window
 # plus skip, with slack for holidays).

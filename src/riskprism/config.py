@@ -25,13 +25,14 @@ class ModelConfig:
     version.
     """
 
-    version: str = "PRISM-US-MH-0.5"
+    version: str = "PRISM-US-MH-0.6"
     # Prior versions whose regression/exposure definitions match this one:
     # their factor-return history may be appended to (risk construction on
     # top differs, but validation is recomputed from history every build).
-    # v0.5 switched estimation from weekly to daily returns — incompatible
-    # with all weekly-history priors, hence empty (cold rebuild; the
-    # weekly capture-forward history was entirely cold-start at the time).
+    # v0.6 rebuilt value and quality as multi-descriptor composites —
+    # exposure definitions changed, so v0.5's daily factor returns are not
+    # commensurable and the history rebuilds cold (still nearly free:
+    # capture-forward history barely exceeds provider lookback).
     compatible_prior_versions: tuple = ()
     # Exposures form on Fridays; regressions run on every trading day
     # against the week's formation exposures ("weekly formation, daily

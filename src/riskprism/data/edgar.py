@@ -52,9 +52,31 @@ CONCEPTS = {
         ("us-gaap", "CommonStockSharesOutstanding"),
         ("ifrs-full", "NumberOfSharesOutstanding"),
     ],
+    "op_cashflow": [
+        ("us-gaap", "NetCashProvidedByUsedInOperatingActivities"),
+        ("us-gaap", "NetCashProvidedByUsedInOperatingActivitiesContinuingOperations"),
+        ("ifrs-full", "CashFlowsFromUsedInOperatingActivities"),
+    ],
+    "revenues": [
+        ("us-gaap", "Revenues"),
+        ("us-gaap", "RevenueFromContractWithCustomerExcludingAssessedTax"),
+        ("us-gaap", "RevenueFromContractWithCustomerIncludingAssessedTax"),
+        ("us-gaap", "SalesRevenueNet"),
+        ("ifrs-full", "Revenue"),
+    ],
+    "gross_profit": [("us-gaap", "GrossProfit"), ("ifrs-full", "GrossProfit")],
+    "cost_of_revenue": [
+        ("us-gaap", "CostOfRevenue"),
+        ("us-gaap", "CostOfGoodsAndServicesSold"),
+        ("us-gaap", "CostOfGoodsSold"),
+        ("ifrs-full", "CostOfSales"),
+    ],
 }
 
-_DURATION_CONCEPTS = {"net_income"}
+# Flow (duration) concepts: only full-fiscal-year frames are kept, so
+# point-in-time lookups never mix quarterly and annual magnitudes.
+_DURATION_CONCEPTS = {"net_income", "op_cashflow", "revenues",
+                      "gross_profit", "cost_of_revenue"}
 
 
 def default_cache_dir() -> Path:
