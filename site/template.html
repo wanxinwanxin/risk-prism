@@ -8,86 +8,36 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <style>
 :root {
-  color-scheme: light;
-  --page: #f9f9f7;
-  --surface: #fcfcfb;
-  --ink: #0b0b0b;
-  --ink-2: #52514e;
-  --muted: #898781;
-  --grid: #e1e0d9;
-  --border: rgba(11,11,11,.10);
-  --accent: #2a78d6;
-  --s-market: #2a78d6;
-  --s-size: #eb6834;
-  --s-value: #1baf7a;
-  --s-momentum: #eda100;
-  --s-volatility: #e87ba4;
-  --s-liquidity: #008300;
-  --s-quality: #4a3aa7;
-  --s-leverage: #e34948;
-  --s-industry: #898781;
-  --s-specific: #c3c2b7;
-  --heat-pos: #2a78d6;
-  --heat-neg: #e34948;
-  --heat-mid: #f0efec;
-  --delta-good: #006300;
-  --delta-bad: #d03b3b;
+  /* One committed identity: the dark, engineered-terminal look.
+     The prism mark and the spectral factor palette are the brand;
+     everything else stays out of their way. */
+  color-scheme: dark;
+  --page: #0b0b0c;
+  --surface: #141416;
+  --surface-2: #1b1b1e;
+  --ink: #f2f1ec;
+  --ink-2: #b9b8af;
+  --muted: #82817a;
+  --grid: #232326;
+  --border: rgba(255,255,255,.09);
+  --accent: #4a90e8;
+  --s-market: #4a90e8;
+  --s-size: #e8713d;
+  --s-value: #27b585;
+  --s-momentum: #d9a114;
+  --s-volatility: #d96a95;
+  --s-liquidity: #46a046;
+  --s-quality: #988ef0;
+  --s-leverage: #e46262;
+  --s-industry: #8b897f;
+  --s-specific: #55544d;
+  --heat-pos: #4a90e8;
+  --heat-neg: #e46262;
+  --heat-mid: #29292c;
+  --delta-good: #3cb43c;
+  --delta-bad: #e05c5c;
   --sans: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --page: #0d0d0d;
-    --surface: #1a1a19;
-    --ink: #ffffff;
-    --ink-2: #c3c2b7;
-    --muted: #898781;
-    --grid: #2c2c2a;
-    --border: rgba(255,255,255,.10);
-    --accent: #3987e5;
-    --s-market: #3987e5;
-    --s-size: #d95926;
-    --s-value: #199e70;
-    --s-momentum: #c98500;
-    --s-volatility: #d55181;
-    --s-liquidity: #008300;
-    --s-quality: #9085e9;
-    --s-leverage: #e66767;
-    --s-industry: #898781;
-    --s-specific: #52514e;
-    --heat-pos: #3987e5;
-    --heat-neg: #e66767;
-    --heat-mid: #383835;
-    --delta-good: #0ca30c;
-    --delta-bad: #d03b3b;
-  }
-}
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --page: #0d0d0d;
-  --surface: #1a1a19;
-  --ink: #ffffff;
-  --ink-2: #c3c2b7;
-  --muted: #898781;
-  --grid: #2c2c2a;
-  --border: rgba(255,255,255,.10);
-  --accent: #3987e5;
-  --s-market: #3987e5;
-  --s-size: #d95926;
-  --s-value: #199e70;
-  --s-momentum: #c98500;
-  --s-volatility: #d55181;
-  --s-liquidity: #008300;
-  --s-quality: #9085e9;
-  --s-leverage: #e66767;
-  --s-industry: #898781;
-  --s-specific: #52514e;
-  --heat-pos: #3987e5;
-  --heat-neg: #e66767;
-  --heat-mid: #383835;
-  --delta-good: #0ca30c;
-  --delta-bad: #d03b3b;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -153,7 +103,7 @@ h2 { font-size: 16px; font-weight: 700; margin: 0 0 4px; text-wrap: balance; }
   border-radius: 10px; padding: 14px 16px;
 }
 .tile .k { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.tile .v { font: 600 24px/1.3 var(--sans); }
+.tile .v { font: 600 21px/1.4 var(--mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .tile .v small { font-size: 13px; color: var(--ink-2); font-weight: 500; }
 svg text { font-family: var(--sans); }
 svg .mono { font-family: var(--mono); }
@@ -185,7 +135,7 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .hint { font-size: 12px; color: var(--muted); }
 .warn { font-size: 13px; color: var(--delta-bad); margin-top: 8px; }
 .hero-vol { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin: 6px 0 14px; }
-.hero-vol .num { font: 600 44px/1 var(--sans); letter-spacing: -0.02em; }
+.hero-vol .num { font: 600 40px/1 var(--mono); letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 .hero-vol .split { font: 500 13px var(--mono); color: var(--ink-2); }
 .spectrum { display: flex; gap: 2px; height: 44px; border-radius: 6px; overflow: hidden; }
 .spectrum .slice {
@@ -199,7 +149,8 @@ textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 }
 .offset-note { font-size: 12px; color: var(--ink-2); margin-top: 8px; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--grid); }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--grid); }
+tbody tr:nth-child(even) td { background: rgba(255,255,255,.022); }
 th {
   font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
   color: var(--muted); border-bottom: 1px solid var(--border);
@@ -232,7 +183,7 @@ pre.code {
 #tooltip {
   position: fixed; z-index: 10; pointer-events: none; display: none;
   background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
-  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  box-shadow: 0 6px 18px rgba(0,0,0,.55);
   padding: 8px 10px; font: 12px/1.5 var(--sans); color: var(--ink);
   max-width: 260px;
 }
@@ -261,6 +212,13 @@ a { color: var(--accent); }
 @media (prefers-reduced-motion: no-preference) {
   .spectrum .slice { transition: flex-basis .25s ease; }
 }
+/* ---------- persona cards ---------- */
+.personas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+@media (max-width: 860px) { .personas { grid-template-columns: 1fr; } }
+.persona { margin-bottom: 0; display: flex; flex-direction: column; }
+.persona .k { font: 600 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.persona pre.code { flex: 0 0 auto; }
+.persona a { font-size: 13px; font-weight: 600; margin-top: auto; }
 /* ---------- validation tab ---------- */
 .vsec { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 26px 4px 10px; }
 .vsec .n { font: 600 11px var(--mono); letter-spacing: .1em; color: var(--accent); }
@@ -273,13 +231,13 @@ a { color: var(--accent); }
 @media (max-width: 820px) { .vscore { grid-template-columns: repeat(2, 1fr); } }
 .vscore .cell { background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
 .vscore .k { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.vscore .v { font: 600 27px/1.25 var(--sans); letter-spacing: -0.01em; }
+.vscore .v { font: 600 24px/1.3 var(--mono); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .vscore .v small { font-size: 13px; font-weight: 500; color: var(--ink-2); }
 .vscore .t { font: 500 11px var(--mono); color: var(--muted); margin-top: 2px; }
 .vstats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
 .vstats .cell { background: var(--page); border: 1px solid var(--border); border-radius: 10px; padding: 9px 13px; }
 .vstats .k { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.vstats .v { font: 600 19px/1.3 var(--sans); }
+.vstats .v { font: 600 17px/1.4 var(--mono); font-variant-numeric: tabular-nums; }
 .vstats .v small { font-size: 11px; color: var(--muted); font-weight: 500; font-family: var(--mono); }
 /* ---------- homepage hero ---------- */
 .hero { display: flex; gap: 30px; align-items: center; padding: 26px 26px 24px; }
@@ -379,11 +337,12 @@ a { color: var(--accent); }
 <section class="view active" id="view-overview">
   <div class="card hero" id="home-hero">
     <div class="hero-copy">
-      <h1>An open risk model for US equities</h1>
-      <p class="lede">riskprism answers one question about any stock portfolio: <b>how much should it move, and why?</b> It's a Barra-style factor risk model — the kind of tool quant funds license commercially — built fully in the open: <b><span id="hero-n">…</span> US stocks</b>, <b><span id="hero-k">…</span> factors</b>, estimated from daily cross-sections and rebuilt every week from public prices and SEC filings, with every forecast <a href="#validation">graded publicly</a> against what actually happened. Explore it here, or point an AI agent at <a href="model.md">model.md</a> — the whole model is <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">free to download</a>.</p>
+      <h1>The equity risk model that grades itself in public</h1>
+      <p class="lede">riskprism is a Barra-style US equity factor risk model — the tool quant funds license commercially — rebuilt every week from SEC filings and market prices, free and MIT-licensed. <b><span id="hero-n">…</span> US stocks</b>, <b><span id="hero-k">…</span> factors</b>, estimated from daily cross-sections; every forecast is <a href="#validation">scored against what actually happened</a>, every method is published. Explore it here, or point an AI agent at <a href="model.md">model.md</a>.</p>
       <div class="hero-actions">
         <button class="cta solid" id="tour-start">Take the one-minute tour</button>
         <button class="cta ghost" id="hero-try">Try a portfolio</button>
+        <a class="cta ghost" href="https://github.com/wanxinwanxin/risk-prism/releases/latest" style="text-decoration:none">Get the latest build ↓</a>
         <span class="hint" id="hero-asof"></span>
       </div>
     </div>
@@ -398,6 +357,32 @@ a { color: var(--accent); }
     </svg>
   </div>
   <div class="tiles" id="tiles"></div>
+  <div class="personas">
+    <div class="card persona">
+      <div class="k">For AI agents</div>
+      <p class="sub" style="margin-bottom:8px">Give your agent a real risk model: an MCP server with portfolio risk, exposures, and stress tests — plus every build mirrored as plain markdown.</p>
+      <pre class="code" style="margin:0 0 10px">"riskprism": { "command": "riskprism-mcp" }</pre>
+      <a href="#agents" class="plink" data-view="agents">Set up in one minute →</a>
+    </div>
+    <div class="card persona">
+      <div class="k">For quants &amp; researchers</div>
+      <p class="sub" style="margin-bottom:8px">The full model as versioned parquet artifacts — exposures, factor covariance, specific risk, daily factor-return history. No key, no signup.</p>
+      <pre class="code" style="margin:0 0 10px">pip install git+…/risk-prism
+curl -L …/releases/latest/… | tar xz</pre>
+      <a href="https://github.com/wanxinwanxin/risk-prism#get-the-latest-model-no-key-no-signup">Quickstart →</a>
+    </div>
+    <div class="card persona">
+      <div class="k">For portfolio analysis</div>
+      <p class="sub" style="margin-bottom:8px">Paste a book, get its risk spectrum: total volatility, factor decomposition, stress tests — computed in your browser from the published artifacts.</p>
+      <pre class="code" style="margin:0 0 10px">AAPL 20  MSFT 20  XOM 10 …</pre>
+      <a href="#portfolio" class="plink" data-view="portfolio">Try a portfolio →</a>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Model overview</h2>
+    <p class="sub">The spec sheet, live from the current build.</p>
+    <div class="tscroll"><table id="spec-table"></table></div>
+  </div>
   <div class="card">
     <h2>Cumulative factor returns</h2>
     <p class="sub">Weekly cross-sectional regression factor returns, compounded. Toggle factors below.</p>
@@ -582,6 +567,14 @@ a { color: var(--accent); }
 </section>
 
 <section class="view" id="view-methodology">
+  <div class="card">
+    <h2>Model advances — v0.6 <span class="hint" style="font-family:var(--mono);font-weight:500">· 2026-08-21</span></h2>
+    <ul class="sub" style="margin:0;padding-left:18px;line-height:1.8">
+      <li><b>Value and quality rebuilt as multi-descriptor composites</b> (value: book/earnings/cash-flow/sales yields; quality: ROE, ROA, OCF/assets, gross margin) — quality went from significant in 1.6% of daily cross-sections to 49%, value from 4% to 12%, with the validation scoreboard unchanged.</li>
+      <li><b>v0.5: daily estimation</b> — five cross-sections per week against Friday-formed exposures collapsed optimized-portfolio bias from 1.36 to the Shepard theoretical floor (~1.09), now shipped as the <span style="font-family:var(--mono)">optimized=true</span> reporting flag.</li>
+      <li>Full decision history, including rejected remedies, in <a href="https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md">DECISIONS.md</a> · what's next in the <a href="#roadmap">roadmap below</a>.</li>
+    </ul>
+  </div>
   <div class="card">
     <h2>From 3,000 stocks to 20 factors — and back</h2>
     <p class="sub">The whole idea of a factor model, in six scenes. Numbers marked ● are live from the current build.</p>
@@ -821,10 +814,36 @@ document.getElementById("meta-chips").innerHTML = [
 ].join("");
 document.getElementById("tiles").innerHTML = [
   ["Assets covered", `${m.n_assets} <small>${m.n_estimation ?? m.n_assets} estimation</small>`],
-  ["Factors", `${K} <small>1 mkt · ${STYLES.length} styles · ${IND.length} industries</small>`],
+  ["Factors", `${K} <small>1+${STYLES.length}+${IND.length}</small>`],
   ["Daily regressions", `${m.n_periods} <small>${m.n_weeks ?? "?"} weeks</small>`],
   ["Mean daily R²", `${(m.mean_r2 ?? 0).toFixed(2)}`],
 ].map(([k, v]) => `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+
+// ---------- model overview spec table (the vendor-canonical format) ----------
+{
+  const V0 = DATA.validation || {};
+  const rows = [
+    ["Model", `${esc(m.model_version || "")} — medium horizon · weekly formation, daily estimation`],
+    ["Asset coverage", `${m.n_assets.toLocaleString()} US common stocks · as of ${esc(m.as_of)}`],
+    ["Estimation universe", `${(m.n_estimation ?? 0).toLocaleString()} names — price ≥ $2 · median dollar volume ≥ $1M · ≥ 26 weeks of history`],
+    ["Factors", `${K} — market + ${STYLES.length} styles + ${IND.length} Fama-French industries`],
+    ["Estimation frequency", `daily cross-sectional WLS — ${m.n_periods} regressions on record`],
+    ["Forecast horizon", "1 week, annualized"],
+    ["Model history", `${m.n_weeks ?? "?"} weeks of factor history · capped at a trailing 156`],
+    ["Update cadence", "weekly — Mondays 06:00 UTC, GitHub Actions"],
+    ["Validation", V0.overall_bias
+      ? `${V0.n_weeks} weeks re-scored every build — bias statistic ${V0.overall_bias.toFixed(2)} across ${V0.n_scores.toLocaleString()} forecasts`
+      : "re-scored on every build"],
+    ["Data sources", "SEC EDGAR (fundamentals, SIC codes — public domain) · pluggable daily price providers"],
+    ["License", "MIT — artifacts free to download · no key, no signup"],
+  ];
+  document.getElementById("spec-table").innerHTML =
+    `<tbody>` + rows.map(([k, v]) =>
+      `<tr><td style="white-space:nowrap;font:600 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted)">${k}</td><td>${v}</td></tr>`).join("") + `</tbody>`;
+}
+document.querySelectorAll(".plink").forEach(a => a.addEventListener("click", ev => {
+  ev.preventDefault(); setView(a.dataset.view);
+}));
 
 // ---------- portfolio math ----------
 function parseWeights(text) {
@@ -2204,34 +2223,6 @@ renderStockTable();
     ctx.fillText("model clock", cursor, y0 + 34);
   }
 
-  function drawPrices(ctx, W, H, t) {
-    const ml = 40, mr = 16, u = ease((t % 8) / 7);
-    const rng = mulberry(7); let p = 100; const path = [100];
-    for (let i = 1; i < 120; i++) { p *= 1 + gauss(rng) * 0.013 + 0.0006; path.push(p); }
-    const n = Math.max(10, Math.floor(u * 120));
-    const xs = i => ml + i / 119 * (W - ml - mr);
-    const lo = Math.min(...path) * 0.99, hi = Math.max(...path) * 1.01;
-    const yp = v => 12 + (1 - (v - lo) / (hi - lo)) * (H * 0.5 - 12);
-    for (let i = 5; i < 120; i += 5) { // Fridays
-      ctx.strokeStyle = css("--grid");
-      ctx.beginPath(); ctx.moveTo(xs(i), 10); ctx.lineTo(xs(i), H * 0.52); ctx.stroke();
-    }
-    ctx.strokeStyle = css("--s-market"); ctx.lineWidth = 1.8; ctx.beginPath();
-    for (let i = 0; i < n; i++) ctx[i ? "lineTo" : "moveTo"](xs(i), yp(path[i]));
-    ctx.stroke(); ctx.lineWidth = 1;
-    const y0 = H * 0.82;
-    ctx.strokeStyle = css("--grid");
-    ctx.beginPath(); ctx.moveTo(ml, y0); ctx.lineTo(W - mr, y0); ctx.stroke();
-    for (let i = 5; i < n; i += 5) {
-      const r = path[i] / path[i - 5] - 1;
-      const h2 = Math.min(Math.abs(r) * 900, H * 0.16);
-      ctx.fillStyle = r >= 0 ? css("--s-value") : css("--s-leverage");
-      ctx.fillRect(xs(i) - 3, r >= 0 ? y0 - h2 : y0, 6, h2);
-    }
-    ctx.fillStyle = css("--muted"); ctx.font = sans(10.5); ctx.textAlign = "left";
-    ctx.fillText("daily closes (gridlines = Fridays)", ml, H * 0.58);
-    ctx.fillText("daily returns feed the regressions; Fridays mark exposure formation", ml, H - 4);
-  }
 
   function drawUniverse(ctx, W, H, t) {
     const rng = mulberry(21), u = (t % 9) / 9;
@@ -2259,48 +2250,6 @@ renderStockTable();
     ctx.fillText(`coverage-only — risk via priors (${(m.n_assets ?? 3000) - (m.n_estimation ?? 2800)})`, W * 0.74, H - 8);
   }
 
-  function drawStyles(ctx, W, H, t) {
-    const u = (t % 10) / 10, ml = 30, mr = 16, y0 = H * 0.78;
-    const rng = mulberry(5);
-    const raw = Array.from({ length: 400 }, () => gauss(rng) * (rng() < 0.06 ? 3.4 : 1));
-    const phase = u < 0.36 ? 0 : u < 0.7 ? 1 : 2;
-    const wu = ease((u - 0.36) / 0.2); // winsor progress
-    const bins = new Array(33).fill(0);
-    raw.forEach(v => {
-      let z = v;
-      if (phase >= 1) { const cap = 3 + (1 - wu) * 3; z = Math.max(-cap, Math.min(cap, z)); }
-      const b = Math.round((z + 6) / 12 * 32);
-      if (b >= 0 && b <= 32) bins[b]++;
-    });
-    const bw = (W - ml - mr) / 33, mx = Math.max(...bins);
-    const x3l = ml + ((-3 + 6) / 12) * (W - ml - mr), x3r = ml + ((3 + 6) / 12) * (W - ml - mr);
-    bins.forEach((c, i) => {
-      const x = ml + i * bw, h2 = c / mx * H * 0.55;
-      const inside = x >= x3l - bw && x <= x3r;
-      ctx.fillStyle = inside ? css("--s-momentum") : css("--s-leverage");
-      ctx.fillRect(x, y0 - h2, bw - 1.5, h2);
-    });
-    [x3l, x3r].forEach(x => {
-      ctx.strokeStyle = css("--ink-2"); ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(x, y0 - H * 0.6); ctx.lineTo(x, y0); ctx.stroke();
-      ctx.setLineDash([]);
-    });
-    ctx.font = mono(10); ctx.fillStyle = css("--muted"); ctx.textAlign = "center";
-    ctx.fillText("−3σ", x3l, y0 + 14); ctx.fillText("+3σ", x3r, y0 + 14);
-    ctx.textAlign = "left"; ctx.font = sans(11);
-    ctx.fillStyle = css("--ink");
-    const msg = phase === 0 ? "1 · raw descriptor — fat tails, data errors, scale all over the place"
-      : phase === 1 ? "2 · winsorize: fold everything beyond ±3σ back to the boundary"
-      : "3 · standardize: cap-weighted mean 0, equal-weighted std 1 — exposures become comparable σ-units";
-    ctx.fillText(msg, ml, 16);
-    if (phase === 2) {
-      const x = ml + ((1.3 + 6) / 12) * (W - ml - mr);
-      ctx.strokeStyle = css("--accent"); ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(x, y0 - H * 0.5); ctx.lineTo(x, y0); ctx.stroke(); ctx.lineWidth = 1;
-      ctx.fillStyle = css("--accent"); ctx.font = mono(11); ctx.textAlign = "center";
-      ctx.fillText("one stock: +1.3σ momentum", x, y0 - H * 0.55);
-    }
-  }
 
   function drawIndustry(ctx, W, H, t) {
     const u = ease((t % 8) / 5), rng = mulberry(13), n = 48, cols = 12;
@@ -2327,41 +2276,6 @@ renderStockTable();
     ctx.fillText(u < 0.4 ? "four-digit SIC codes from each filer's EDGAR record…" : "…mapped to 12 Fama-French groups → one-hot industry exposures", 14, H * 0.06 + 4);
   }
 
-  function drawDelist(ctx, W, H, t) {
-    const u = (t % 9) / 9, half = W / 2;
-    const panel = (x0, title, prices, imputed, color, note) => {
-      const iw = half - 40, y0 = H * 0.72, n = prices.length;
-      ctx.font = sans(11, 600); ctx.fillStyle = css("--ink"); ctx.textAlign = "left";
-      ctx.fillText(title, x0, 18);
-      ctx.strokeStyle = css("--grid");
-      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + iw, y0); ctx.stroke();
-      const hi = Math.max(...prices) * 1.15;
-      ctx.strokeStyle = css("--ink-2"); ctx.lineWidth = 1.6; ctx.beginPath();
-      prices.forEach((p, i) => ctx[i ? "lineTo" : "moveTo"](x0 + i / (n + 2) * iw, y0 - p / hi * (H * 0.44)));
-      ctx.stroke(); ctx.lineWidth = 1;
-      const lx = x0 + (n - 1) / (n + 2) * iw, ly = y0 - prices[n - 1] / hi * (H * 0.44);
-      ctx.fillStyle = css("--muted"); ctx.font = mono(9.5);
-      ctx.fillText("last trade", lx - 22, ly - 8);
-      if (u > 0.45) {
-        const uu = ease((u - 0.45) / 0.3);
-        ctx.fillStyle = color; ctx.globalAlpha = uu;
-        const bx = x0 + n / (n + 2) * iw;
-        const bh = Math.abs(imputed) * 200 * (H / 220);
-        ctx.fillRect(bx, imputed < 0 ? ly : ly - 1.5, 14, imputed < 0 ? Math.min(bh, y0 - ly) : 3);
-        ctx.font = mono(11);
-        ctx.fillText(`${imputed >= 0 ? "+" : ""}${(imputed * 100).toFixed(0)}% imputed`, bx - 20, y0 + 16);
-        ctx.globalAlpha = 1;
-      }
-      ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
-      ctx.fillText(note, x0, H - 6);
-    };
-    const rngA = mulberry(3); const pA = [8, 7, 6.2, 5, 3.8, 3.1, 2.4, 2.1].map(p => p * (1 + gauss(rngA) * 0.03));
-    const pB = [30, 31, 30, 33, 36, 37.5, 38, 38.2];
-    panel(24, "last price $2.10 — under $5", pA, -0.30, css("--s-leverage"), "failure-shaped exit → −30% (Shumway 1997)");
-    panel(half + 16, "last price $38 — deal close", pB, 0.0, css("--s-value"), "merger — final price already reflects the terms → 0%");
-    ctx.strokeStyle = css("--grid");
-    ctx.beginPath(); ctx.moveTo(half, 10); ctx.lineTo(half, H - 10); ctx.stroke();
-  }
 
   function drawRegress(ctx, W, H, t) {
     const u = ease(((t % 10) - 1) / 3), rng = mulberry(17);
@@ -2440,49 +2354,6 @@ renderStockTable();
     ctx.fillText("each build appends new weeks; history capped at 156", fx, 30 + rows * (cell + 1));
   }
 
-  function drawFcov(ctx, W, H, t) {
-    const u = (t % 12) / 12, ml = 40, mr = 130, y0 = H * 0.66;
-    const rng = mulberry(41), n = 46;
-    const shock = i => (i > 30 && i <= 38) ? 2.6 : 1;
-    const rets = Array.from({ length: n }, (_, i) => gauss(rng) * 0.012 * shock(i));
-    const shown = Math.max(6, Math.floor(u * n));
-    const bw = (W - ml - mr) / n;
-    let ew = 0, wsum = 0, lam = Math.pow(0.5, 1 / 13), l2 = 1, lamV = Math.pow(0.5, 1 / 8);
-    ctx.strokeStyle = css("--grid");
-    ctx.beginPath(); ctx.moveTo(ml, y0); ctx.lineTo(W - mr, y0); ctx.stroke();
-    let prevVar = 0;
-    for (let i = 0; i < shown; i++) {
-      const age = shown - 1 - i, wgt = Math.pow(lam, age);
-      ew += wgt * rets[i] * rets[i]; wsum += wgt;
-      const curVar = ew / Math.max(wsum, 1e-9);
-      if (i > 12) {
-        const b2 = rets[i] * rets[i] / Math.max(prevVar, 1e-9);
-        l2 = lamV * l2 + (1 - lamV) * Math.min(b2, 9);
-      }
-      prevVar = curVar;
-      const h2 = Math.min(Math.abs(rets[i]) / 0.045 * (H * 0.5), H * 0.5);
-      ctx.fillStyle = css("--s-size");
-      ctx.globalAlpha = Math.max(0.08, wgt);
-      ctx.fillRect(ml + i * bw, rets[i] >= 0 ? y0 - h2 : y0, Math.max(2, bw - 2), h2);
-      ctx.globalAlpha = 1;
-    }
-    const vol = Math.sqrt(ew / Math.max(wsum, 1e-9) * 52);
-    const lamNow = Math.max(0.5, Math.min(2, Math.sqrt(l2)));
-    ctx.strokeStyle = css("--accent"); ctx.setLineDash([4, 3]);
-    const bandY = y0 - Math.min(vol * lamNow / 3.2, 0.98) * H * 0.5;
-    ctx.beginPath(); ctx.moveTo(ml, bandY); ctx.lineTo(W - mr, bandY); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = css("--ink"); ctx.font = mono(11); ctx.textAlign = "left";
-    ctx.fillText(`EWMA vol ${(vol * 100).toFixed(0)}%`, W - mr + 8, y0 - 30);
-    ctx.fillStyle = lamNow > 1.1 ? css("--s-leverage") : css("--ink-2");
-    ctx.fillText(`× VRA λ = ${lamNow.toFixed(2)}`, W - mr + 8, y0 - 14);
-    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
-    ctx.fillText("forecast band", W - mr + 8, bandY + 4);
-    ctx.fillText("opacity = EWMA weight (13w half-life);", ml, H - 18);
-    ctx.fillText("shock cluster arrives → λ climbs before the half-life can catch up", ml, H - 6);
-    ctx.fillStyle = css("--ink"); ctx.font = sans(10.5);
-    ctx.fillText(`this build ships λ_factor = ${VRA_F.toFixed(2)}`, ml, 14);
-  }
 
   function drawSpecific(ctx, W, H, t) {
     const u = ease(((t % 10) - 2.5) / 3), ml = 46, mr = 16, mt = 22, mb = 30;
@@ -2517,77 +2388,7 @@ renderStockTable();
     ctx.fillText("specific vol (ann.)", 0, 0); ctx.restore();
   }
 
-  function drawAssemble(ctx, W, H, t) {
-    const u = (t % 9) / 9, cy = H * 0.46;
-    const uIn = ease(u / 0.4), uSig = ease((u - 0.45) / 0.25), uSpec = ease((u - 0.72) / 0.25);
-    const box = (x, y, w2, h2, color, lbl, sub) => {
-      ctx.fillStyle = color; ctx.globalAlpha = 0.16; ctx.fillRect(x, y, w2, h2); ctx.globalAlpha = 1;
-      ctx.strokeStyle = color; ctx.strokeRect(x, y, w2, h2);
-      ctx.fillStyle = css("--ink"); ctx.font = mono(12); ctx.textAlign = "center";
-      ctx.fillText(lbl, x + w2 / 2, y + h2 / 2 + 4);
-      if (sub) { ctx.fillStyle = css("--muted"); ctx.font = sans(8.5); ctx.fillText(sub, x + w2 / 2, y + h2 + 11); }
-    };
-    const gap = 12, xX = W * 0.06 + (1 - uIn) * -30;
-    box(xX, cy - 52, 34, 104, css("--s-market"), "X", "n × 20 exposures");
-    box(xX + 34 + gap, cy - 26, 52, 52, css("--s-momentum"), "F", "factor cov");
-    box(xX + 98 + gap, cy - 17, 104, 34, css("--s-market"), "Xᵀ", "");
-    ctx.fillStyle = css("--ink"); ctx.font = mono(15); ctx.textAlign = "center";
-    ctx.fillText("+", xX + 218, cy + 5);
-    box(xX + 232, cy - 52, 104, 104, css("--s-specific"), "diag(s²)", "specific, per stock");
-    if (uSig > 0) {
-      ctx.globalAlpha = uSig;
-      ctx.fillText("=", xX + 352, cy + 5);
-      box(xX + 366, cy - 52, 104, 104, css("--accent"), "Σ", "n × n — never stored, always composed");
-      ctx.globalAlpha = 1;
-    }
-    if (uSpec > 0) {
-      ctx.globalAlpha = uSpec;
-      ctx.fillStyle = css("--ink"); ctx.font = mono(12.5); ctx.textAlign = "left";
-      const xr = Math.min(xX + 490, W - 190);
-      ctx.fillText("σ(w) = √(wᵀΣw)", xr, cy - 10);
-      ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
-      ctx.fillText("your portfolio in, one number out —", xr, cy + 8);
-      ctx.fillText("then split back into the spectrum", xr, cy + 20);
-      ctx.globalAlpha = 1;
-    }
-  }
 
-  function drawValidate(ctx, W, H, t) {
-    const u = (t % 12) / 12, ml = 36, mrPanel = W * 0.3, y0 = H * 0.5;
-    const rng = mulberry(61), n = 40, shown = Math.max(4, Math.floor(u * n));
-    const bw = (W - ml - mrPanel - 20) / n;
-    const zs = [];
-    for (let i = 0; i < n; i++) {
-      const sig = 0.02 * (1 + 0.3 * Math.sin(i / 6));
-      const z = gauss(rng), r = z * sig;
-      if (i >= shown) continue;
-      zs.push(z);
-      const x = ml + i * bw;
-      const bh = 1.96 * sig / 0.075 * (H * 0.42);
-      ctx.fillStyle = css("--accent"); ctx.globalAlpha = 0.14;
-      ctx.fillRect(x, y0 - bh, Math.max(2, bw - 1.5), 2 * bh);
-      ctx.globalAlpha = 1;
-      const y = y0 - r / 0.075 * (H * 0.42);
-      ctx.fillStyle = Math.abs(z) > 1.96 ? css("--s-leverage") : css("--ink-2");
-      ctx.beginPath(); ctx.arc(x + bw / 2, y, 2.2, 0, 7); ctx.fill();
-    }
-    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "left";
-    ctx.fillText("band = ±1.96 × forecast vol, set BEFORE the week · dot = what happened", ml, H - 6);
-    const bias = zs.length > 3 ? Math.sqrt(zs.reduce((a, z) => a + z * z, 0) / (zs.length - 1)) : 1;
-    const exc = zs.length ? zs.filter(z => Math.abs(z) > 1.96).length / zs.length : 0;
-    const px = W - mrPanel + 6;
-    ctx.fillStyle = css("--ink"); ctx.font = mono(13); ctx.textAlign = "left";
-    ctx.fillText(`bias = ${bias.toFixed(2)}`, px, y0 - 22);
-    ctx.font = mono(11);
-    ctx.fillText(`|z|>1.96: ${(exc * 100).toFixed(0)}%`, px, y0 - 4);
-    ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
-    ctx.fillText("calibrated ⇒ bias ≈ 1,", px, y0 + 16);
-    ctx.fillText("tails ≈ 5% — no cherry-", px, y0 + 28);
-    ctx.fillText("picking possible: every", px, y0 + 40);
-    ctx.fillText("week is scored, in public", px, y0 + 52);
-    ctx.fillStyle = css("--ink"); ctx.font = sans(10.5);
-    ctx.fillText("every historical week: forecast first, reality lands, z = return / forecast", ml, 14);
-  }
 
   function drawShip(ctx, W, H, t) {
     const u = (t % 8) / 8;
@@ -2620,6 +2421,716 @@ renderStockTable();
     ctx.fillText("same numbers to everyone — no key, no signup, MIT", srcX - 52, H - 6);
   }
 
+  // === timeline kernel ======================================================
+  // Named beats replace magic-number phase windows. Each beat:
+  //   { dur, ease?, cap?, draw(ctx, W, H, k, io) }
+  // k = eased progress of THIS beat (0 before, sticks at 1 after);
+  // io = { ks: every beat's k this frame, t: seconds into this beat } —
+  // ks lets early beats dim themselves when a later beat takes focus.
+  const clamp01 = u => u < 0 ? 0 : u > 1 ? 1 : u;
+  const EASE = {
+    linear: u => clamp01(u),
+    smooth: u => { u = clamp01(u); return u * u * (3 - 2 * u); },
+    outCubic: u => { u = clamp01(u); return 1 - Math.pow(1 - u, 3); },
+    inOutCubic: u => { u = clamp01(u); return u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; },
+    outBack: u => { u = clamp01(u); const c = 1.4; return 1 + (c + 1) * Math.pow(u - 1, 3) + c * Math.pow(u - 1, 2); },
+    inQuad: u => { u = clamp01(u); return u * u; },
+  };
+  const lerp = (a, b, k) => a + (b - a) * k;
+  const stag = (i, n, u, spread = 0.5) => clamp01((u - (i / n) * spread) / Math.max(1e-6, 1 - spread));
+
+  function timeline(beats, opts = {}) {
+    const holdEnd = opts.holdEnd ?? 1.4, fadeWrap = opts.fadeWrap ?? 0.5;
+    let acc = 0;
+    const offs = beats.map(b => { const o = acc; acc += b.dur; return o; });
+    const total = acc + holdEnd;
+    return {
+      total,
+      showcase: acc - 0.05,
+      capAt(t) {
+        let c = "";
+        beats.forEach((b, i) => { if (t >= offs[i] && b.cap != null) c = b.cap; });
+        return c;
+      },
+      render(ctx, W, H, t) {
+        const a = t > total - fadeWrap ? Math.max(0, (total - t) / fadeWrap) : 1;
+        const ks = beats.map((b, i) => t < offs[i] ? 0 : (b.ease || EASE.smooth)((t - offs[i]) / b.dur));
+        ctx.save(); ctx.globalAlpha = a;
+        beats.forEach((b, i) => { if (t >= offs[i]) b.draw(ctx, W, H, ks[i], { ks, t: t - offs[i] }); });
+        ctx.restore();
+      },
+    };
+  }
+
+  // === the six rewritten choreographies =====================================
+
+  // -- daily prices: 5 cross-sections a week; 730 vs 75 effective obs --------
+  function tlPrices() {
+    const rng = mulberry(7);
+    const closes = [100]; for (let i = 1; i < 6; i++) closes.push(closes[i - 1] * (1 + gauss(rng) * 0.012 + 0.002));
+    const rets = closes.slice(1).map((p, i) => p / closes[i] - 1);
+    const rngW = mulberry(19), rngD = mulberry(23);
+    const wob = Array.from({ length: 60 }, () => gauss(rngW)), wobD = Array.from({ length: 60 }, () => gauss(rngD));
+    const L = { ml: 42, midX: W2 => W2 * 0.44, trayY: H2 => H2 * 0.86 };
+    const pathXY = (W, H, i) => [L.ml + 24 + i / 5 * (L.midX(W) - L.ml - 48), H * 0.16 + (1 - (closes[i] - 98) / 8) * H * 0.30];
+    const dimBy = (ctx, io) => { ctx.globalAlpha *= 1 - 0.75 * (io.ks[3] || 0); };
+    return [
+      { dur: 3.0, cap: "One week: five daily returns peel off the closes and feed the regressions.",
+        draw(ctx, W, H, k, io) {
+          ctx.save(); dimBy(ctx, io);
+          [0, 5].forEach(i => { const [x] = pathXY(W, H, i);
+            ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(x, H * 0.10); ctx.lineTo(x, H * 0.56); ctx.stroke();
+            ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "center"; ctx.fillText("Fri", x, H * 0.08); });
+          ctx.strokeStyle = css("--s-market"); ctx.lineWidth = 1.8; ctx.beginPath();
+          for (let i = 0; i < 6; i++) { const kk = stag(i, 6, k, 0.45); if (kk <= 0) break;
+            const [x, y] = pathXY(W, H, i); ctx[i ? "lineTo" : "moveTo"](x, y); }
+          ctx.stroke(); ctx.lineWidth = 1;
+          for (let i = 0; i < 6; i++) { const kk = stag(i, 6, k, 0.45); if (kk <= 0) continue;
+            const [x, y] = pathXY(W, H, i);
+            ctx.fillStyle = css("--s-market"); ctx.beginPath(); ctx.arc(x, y, 3.4 * EASE.outBack(kk), 0, 7); ctx.fill(); }
+          let landed = 0;
+          for (let i = 0; i < 5; i++) {
+            const kk = stag(i, 5, clamp01((k - 0.3) / 0.7), 0.6); if (kk <= 0) continue;
+            const [x0, y0] = pathXY(W, H, i + 1);
+            const ty = L.trayY(H) - 12, tx = L.ml + 26 + i * 15;
+            const x = lerp(x0, tx, EASE.inOutCubic(kk)), y = lerp(y0, ty, EASE.inQuad(kk));
+            const up = rets[i] >= 0;
+            ctx.fillStyle = up ? css("--s-value") : css("--s-leverage");
+            ctx.fillRect(x - 3, y - 9, 6, 9);
+            if (kk > 0.97) landed++;
+          }
+          ctx.strokeStyle = css("--border"); ctx.strokeRect(L.ml + 12, L.trayY(H) - 26, 92, 30);
+          ctx.fillStyle = css("--ink-2"); ctx.font = mono(9.5); ctx.textAlign = "left";
+          ctx.fillText(`daily → regressions: ${landed}`, L.ml + 12, L.trayY(H) + 16);
+          ctx.restore();
+        } },
+      { dur: 3.0, cap: "…and compound, Friday to Friday, into one weekly return for scoring.",
+        draw(ctx, W, H, k, io) {
+          ctx.save(); dimBy(ctx, io);
+          const [x0] = pathXY(W, H, 0), [x1] = pathXY(W, H, 5);
+          const bk = EASE.outCubic(clamp01(k * 2));
+          ctx.strokeStyle = css("--s-momentum"); ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(x0, H * 0.60); ctx.lineTo(x0 + (x1 - x0) * bk, H * 0.60); ctx.stroke();
+          [x0, x0 + (x1 - x0) * bk].forEach(x => { ctx.beginPath(); ctx.moveTo(x, H * 0.60); ctx.lineTo(x, H * 0.57); ctx.stroke(); });
+          ctx.lineWidth = 1;
+          const mk = clamp01((k - 0.45) / 0.55);
+          if (mk > 0) {
+            const wret = closes[5] / closes[0] - 1;
+            const bx = lerp((x0 + x1) / 2, L.ml + 168, EASE.inOutCubic(mk));
+            const by = lerp(H * 0.62, L.trayY(H) - 12, EASE.inQuad(mk));
+            ctx.fillStyle = css("--s-momentum");
+            ctx.fillRect(bx - 5, by - 14, 10, 14);
+            ctx.strokeStyle = css("--border"); ctx.strokeRect(L.ml + 148, L.trayY(H) - 26, 78, 30);
+            ctx.fillStyle = css("--ink-2"); ctx.font = mono(9.5); ctx.textAlign = "left";
+            ctx.fillText(`weekly → scoring: ${mk > 0.97 ? 1 : 0}`, L.ml + 148, L.trayY(H) + 16);
+            if (mk > 0.5) { ctx.fillStyle = css("--muted"); ctx.font = mono(9);
+              ctx.fillText(`Π(1+r) − 1 = ${(wret * 100).toFixed(1)}%`, (x0 + x1) / 2 - 30, H * 0.66); }
+          }
+          ctx.restore();
+        } },
+      { dur: 2.4, cap: "A year of that: 250 daily observations against 52 weekly ones.",
+        draw(ctx, W, H, k, io) {
+          ctx.save(); dimBy(ctx, io);
+          const nD = Math.floor(250 * k), nW = Math.floor(52 * k);
+          ctx.font = mono(15); ctx.textAlign = "left";
+          ctx.fillStyle = css("--s-market"); ctx.fillText(String(nD), L.ml + 12, L.trayY(H) - 36);
+          ctx.fillStyle = css("--s-momentum"); ctx.fillText(String(nW), L.ml + 148, L.trayY(H) - 36);
+          ctx.restore();
+        } },
+      { dur: 4.2, ease: EASE.linear, cap: "Five times the data is why the correlation matrix actually converges.",
+        draw(ctx, W, H, k) {
+          const x0 = W * 0.52, x1 = W - 18, y0 = H * 0.14, y1 = H * 0.72;
+          const xs = i => x0 + i / 59 * (x1 - x0);
+          const ys = v => y1 - clamp01((v + 0.25) / 1.0) * (y1 - y0);
+          ctx.strokeStyle = css("--grid");
+          ctx.beginPath(); ctx.moveTo(x0, ys(0.5)); ctx.lineTo(x1, ys(0.5)); ctx.stroke();
+          ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "left";
+          ctx.fillText("true ρ = 0.5", x0, ys(0.5) - 6);
+          const n = Math.max(2, Math.floor(k * 60));
+          [[wob, 0.42, "--s-size", "weekly · N_eff ≈ 75"], [wobD, 0.13, "--s-market", "daily · N_eff ≈ 730"]].forEach(([w, amp, col, lbl]) => {
+            ctx.strokeStyle = css(col); ctx.lineWidth = 1.8; ctx.beginPath();
+            for (let i = 0; i < n; i++) {
+              const damp = 1 / Math.sqrt(1 + i * 0.15);
+              ctx[i ? "lineTo" : "moveTo"](xs(i), ys(0.5 + w[i] * amp * damp));
+            }
+            ctx.stroke(); ctx.lineWidth = 1;
+            if (k > 0.9) { ctx.fillStyle = css(col); ctx.font = sans(10.5, 600); ctx.textAlign = "right";
+              ctx.fillText(lbl, x1, ys(0.5 + (w === wob ? 0.09 : -0.045)) - 4); }
+          });
+        } },
+      { dur: 1.8, cap: "Same calendar memory. Five times the data. That is the whole trade.",
+        draw(ctx, W, H, k) {
+          ctx.fillStyle = css("--ink"); ctx.globalAlpha = k; ctx.font = sans(13, 600); ctx.textAlign = "left";
+          ctx.fillText("same calendar, 5× the data", L.ml + 12, H * 0.10);
+          ctx.globalAlpha = 1;
+        } },
+    ];
+  }
+
+  // -- style descriptors: outliers fold, then the axis itself remaps ---------
+  function tlStyles() {
+    const rng = mulberry(5);
+    const zs = Array.from({ length: 360 }, () => gauss(rng));
+    const outliers = [{ z: 5.6, lbl: "data error: B/P = 14" }, { z: 6.8 }, { z: -5.2 }];
+    const NB = 41;
+    const bins = new Array(NB).fill(0);
+    zs.forEach(z => { const b = Math.round((z + 7) / 14 * (NB - 1)); if (b >= 0 && b < NB) bins[b]++; });
+    const mx = Math.max(...bins);
+    // axis maps: "raw" view is off-center and stretched; "z" view is centered
+    const xAt = (W, z, k3) => {
+      const rawX = 0.16 + (z * 0.115 + 0.42) * 0.62;   // fraction of width
+      const zX = 0.08 + (z + 7) / 14 * 0.84;
+      return W * lerp(rawX, zX, k3);
+    };
+    return [
+      { dur: 2.6, cap: "The raw descriptor: real units, fat tails, and outright data errors.",
+        draw(ctx, W, H, k, io) {
+          const k3 = io.ks[2], y0 = H * 0.66, dim = 1 - 0.7 * (io.ks[3] || 0);
+          ctx.save(); ctx.globalAlpha *= dim;
+          bins.forEach((c, i) => {
+            const kk = stag(i, NB, k, 0.5); if (kk <= 0) return;
+            const z = (i / (NB - 1)) * 14 - 7;
+            const x = xAt(W, z, k3), x2 = xAt(W, z + 14 / (NB - 1), k3);
+            let h = c / mx * H * 0.42 * kk;
+            // winsorized mass lands on the ±3 boundary bins
+            const wk = io.ks[1];
+            if (wk > 0 && Math.abs(Math.abs(z) - 3) < 14 / (NB - 1) / 2) h += H * 0.055 * wk;
+            ctx.fillStyle = css("--s-momentum");
+            ctx.fillRect(x, y0 - h, Math.max(1.5, x2 - x - 1.5), h);
+          });
+          // axis + crossfading tick labels
+          ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(W * 0.05, y0); ctx.lineTo(W * 0.95, y0); ctx.stroke();
+          ctx.font = mono(9.5); ctx.textAlign = "center";
+          ctx.fillStyle = css("--muted");
+          ctx.globalAlpha = (1 - k3) * dim;
+          [["0.0", -2.4], ["0.4", 0], ["0.8", 2.4]].forEach(([l, z]) => ctx.fillText(l, xAt(W, z, 0), y0 + 14));
+          ctx.globalAlpha = k3 * dim;
+          [-3, 0, 3].forEach(z => ctx.fillText(`${z > 0 ? "+" : ""}${z}σ`, xAt(W, z, 1), y0 + 14));
+          ctx.globalAlpha = dim;
+          ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "left";
+          ctx.globalAlpha = (1 - k3) * dim;
+          ctx.fillText("book / price, raw units", W * 0.05, y0 + 28);
+          ctx.globalAlpha = k3 * dim;
+          ctx.fillText("standard deviations from the cap-weighted market", W * 0.05, y0 + 28);
+          ctx.restore();
+        } },
+      { dur: 3.2, cap: "Winsorize: the ±3σ walls slide in and the outliers fold back to the boundary.",
+        draw(ctx, W, H, k, io) {
+          const k3 = io.ks[2], y0 = H * 0.66, dim = 1 - 0.7 * (io.ks[3] || 0);
+          ctx.save(); ctx.globalAlpha *= dim;
+          const wallK = EASE.outCubic(clamp01(k * 1.6));
+          [-3, 3].forEach(s => {
+            const xw = xAt(W, s * (1 + 1.4 * (1 - wallK)), k3);
+            ctx.strokeStyle = css("--ink-2"); ctx.setLineDash([4, 3]);
+            ctx.beginPath(); ctx.moveTo(xw, H * 0.14); ctx.lineTo(xw, y0); ctx.stroke(); ctx.setLineDash([]);
+            if (wallK > 0.8) { ctx.fillStyle = css("--muted"); ctx.font = mono(9.5); ctx.textAlign = "center";
+              ctx.fillText(`${s > 0 ? "+" : ""}${s}σ`, xw, H * 0.11); }
+          });
+          outliers.forEach((o, i) => {
+            const kk = stag(i, 3, clamp01((k - 0.25) / 0.75), 0.4);
+            const zNow = lerp(o.z, Math.sign(o.z) * 3, EASE.inOutCubic(kk));
+            const x = xAt(W, zNow, k3), y = y0 - H * 0.05;
+            for (let tr = 1; tr <= 3; tr++) { // motion trail
+              const zt = lerp(o.z, Math.sign(o.z) * 3, EASE.inOutCubic(Math.max(0, kk - tr * 0.08)));
+              ctx.fillStyle = css("--s-leverage"); ctx.globalAlpha = 0.16 * dim;
+              ctx.beginPath(); ctx.arc(xAt(W, zt, k3), y, 3.4, 0, 7); ctx.fill();
+            }
+            ctx.globalAlpha = dim; ctx.fillStyle = css("--s-leverage");
+            ctx.beginPath(); ctx.arc(x, y, 4 - kk, 0, 7); ctx.fill();
+            if (o.lbl && kk < 0.35) { ctx.font = mono(9); ctx.textAlign = "right"; ctx.fillStyle = css("--s-leverage");
+              ctx.fillText(o.lbl, x - 8, y - 8); }
+          });
+          ctx.restore();
+        } },
+      { dur: 3.4, ease: EASE.inOutCubic, cap: "Standardize: the axis itself remaps — cap-weighted mean to 0, std to 1." ,
+        draw(ctx, W, H, k) {
+          if (k > 0.15) {
+            const x0 = xAt(W, 0, k), y0 = H * 0.66;
+            ctx.strokeStyle = css("--accent"); ctx.globalAlpha = clamp01((k - 0.15) / 0.5);
+            ctx.beginPath(); ctx.moveTo(x0, H * 0.14); ctx.lineTo(x0, y0); ctx.stroke();
+            ctx.fillStyle = css("--accent"); ctx.font = mono(9.5); ctx.textAlign = "center";
+            ctx.fillText("market = 0", x0, H * 0.11);
+            ctx.globalAlpha = 1;
+          }
+        } },
+      { dur: 3.2, cap: "Seven traits, one ruler — a stock's row of X reads in σ everywhere.",
+        draw(ctx, W, H, k) {
+          const names = STYLES, exps = [1.3, -0.4, 0.6, -1.1, 0.2, 0.8, -0.6];
+          const y = H * 0.87;
+          names.forEach((nm, i) => {
+            const kk = stag(i, names.length, k, 0.55); if (kk <= 0) return;
+            const x0 = W * 0.06 + i * (W * 0.88 / names.length), w2 = W * 0.88 / names.length - 14;
+            ctx.globalAlpha = kk;
+            ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + w2, y); ctx.stroke();
+            const xm = x0 + w2 / 2;
+            ctx.strokeStyle = css("--border"); ctx.beginPath(); ctx.moveTo(xm, y - 3); ctx.lineTo(xm, y + 3); ctx.stroke();
+            const xe = xm + (exps[i % exps.length] / 3.5) * (w2 / 2) * EASE.outBack(kk);
+            ctx.fillStyle = css(`--s-${nm}`);
+            ctx.beginPath(); ctx.arc(xe, y, 3.4, 0, 7); ctx.fill();
+            ctx.fillStyle = css("--muted"); ctx.font = mono(8); ctx.textAlign = "center";
+            ctx.fillText(nm.slice(0, 4), x0 + w2 / 2, y + 13);
+            ctx.globalAlpha = 1;
+          });
+          if (k > 0.75) {
+            ctx.fillStyle = css("--ink"); ctx.globalAlpha = (k - 0.75) / 0.25;
+            ctx.font = sans(12, 600); ctx.textAlign = "left";
+            ctx.fillText("every trait, same ruler", W * 0.06, H * 0.79);
+            ctx.globalAlpha = 1;
+          }
+        } },
+    ];
+  }
+
+  // -- delisting: watch survivorship bias form, then get fixed ---------------
+  function tlDelist() {
+    const rng = mulberry(3);
+    const NR = 10, DIE = 3, MERGE = 7, NP = 40;
+    const rows = Array.from({ length: NR }, (_, r) => {
+      let p = 1; const path = [1];
+      for (let i = 1; i < NP; i++) {
+        const drift = r === DIE ? -0.028 : r === MERGE ? 0.012 : 0.001;
+        p *= 1 + drift + gauss(rng) * 0.02; path.push(p);
+      }
+      return path;
+    });
+    const stopAt = r => r === DIE ? 25 : r === MERGE ? 28 : NP - 1;
+    const rowY = (H, r) => H * 0.10 + r * (H * 0.52 / (NR - 1));
+    const rowX = (W, i) => W * 0.05 + i / (NP - 1) * (W * 0.46);
+    const avgX = (W, i) => W * 0.60 + i / (NP - 1) * (W * 0.36);
+    const avgY = (H, v) => H * 0.58 - clamp01((v - 0.97) / 0.12) * H * 0.42;
+    // honest vs naive portfolio averages (precomputed shape, drawn on demand)
+    const honest = [], naive = [];
+    for (let i = 0; i < NP; i++) {
+      honest.push(1 + i * 0.0012);
+      naive.push(1 + i * 0.0012 + (i > 25 ? (i - 25) * 0.0022 : 0)); // drops the loser → drifts up
+    }
+    return [
+      { dur: 2.6, cap: "Ten names' histories. One is dying; one is about to be acquired.",
+        draw(ctx, W, H, k) {
+          rows.forEach((path, r) => {
+            const kk = stag(r, NR, k, 0.5); if (kk <= 0) return;
+            const n = Math.max(2, Math.floor(kk * (stopAt(r) + 1)));
+            ctx.strokeStyle = r === DIE ? css("--s-leverage") : r === MERGE ? css("--s-value") : css("--ink-2");
+            ctx.globalAlpha = r === DIE || r === MERGE ? 0.95 : 0.4;
+            ctx.lineWidth = r === DIE || r === MERGE ? 1.6 : 1;
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) ctx[i ? "lineTo" : "moveTo"](rowX(W, i), rowY(H, r) - (path[i] - 1) * 26);
+            ctx.stroke();
+            ctx.globalAlpha = 1; ctx.lineWidth = 1;
+          });
+        } },
+      { dur: 3.2, cap: "The naive dataset just deletes the dead row — and its average quietly lifts.",
+        draw(ctx, W, H, k) {
+          const y = rowY(H, DIE), xEnd = rowX(W, stopAt(DIE));
+          // strike the dead row
+          ctx.strokeStyle = css("--s-leverage"); ctx.globalAlpha = 0.9;
+          ctx.setLineDash([2, 3]); ctx.beginPath();
+          ctx.moveTo(W * 0.05, y); ctx.lineTo(W * 0.05 + EASE.outCubic(k) * (xEnd - W * 0.05), y);
+          ctx.stroke(); ctx.setLineDash([]); ctx.globalAlpha = 1;
+          ctx.fillStyle = css("--s-leverage"); ctx.font = mono(9); ctx.textAlign = "left";
+          if (k > 0.3) ctx.fillText("deleted from history", W * 0.05, y - 7);
+          // naive average drifts up on the right panel
+          const n = Math.max(2, Math.floor(k * NP));
+          ctx.strokeStyle = css("--grid"); ctx.beginPath();
+          ctx.moveTo(W * 0.60, avgY(H, 1)); ctx.lineTo(W * 0.96, avgY(H, 1)); ctx.stroke();
+          ctx.strokeStyle = css("--s-leverage"); ctx.lineWidth = 1.8; ctx.beginPath();
+          for (let i = 0; i < n; i++) ctx[i ? "lineTo" : "moveTo"](avgX(W, i), avgY(H, naive[i]));
+          ctx.stroke(); ctx.lineWidth = 1;
+          ctx.fillStyle = css("--s-leverage"); ctx.font = mono(9); ctx.textAlign = "right";
+          if (k > 0.6) ctx.fillText("survivors-only average", W * 0.96, avgY(H, naive[NP - 1]) - 6);
+          ctx.fillStyle = css("--muted"); ctx.font = sans(9.5); ctx.textAlign = "left";
+          ctx.fillText("portfolio average, one year", W * 0.60, H * 0.66);
+        } },
+      { dur: 2.8, cap: "riskprism keeps the row and stamps the exit: sub-$5 fade → −30% (Shumway).",
+        draw(ctx, W, H, k) {
+          const y = rowY(H, DIE), x = rowX(W, stopAt(DIE));
+          const drop = EASE.inQuad(clamp01(k * 1.8)), settle = EASE.outBack(clamp01((k - 0.55) / 0.45));
+          const bh = 16 * (drop < 1 ? drop : settle * 0.2 + 0.8);
+          ctx.fillStyle = css("--s-leverage");
+          ctx.fillRect(x + 4, y, 7, bh);
+          if (k > 0.5) { ctx.font = mono(9.5); ctx.textAlign = "left"; ctx.fillStyle = css("--s-leverage");
+            ctx.fillText("−30%", x + 15, y + 10);
+            ctx.fillStyle = css("--muted"); ctx.font = sans(8.5);
+            ctx.fillText("Shumway 1997", x + 15, y + 21); }
+        } },
+      { dur: 2.4, cap: "A deal-price exit already paid you — it gets 0%, and also stays.",
+        draw(ctx, W, H, k) {
+          const y = rowY(H, MERGE), x = rowX(W, stopAt(MERGE));
+          const kk = EASE.outCubic(k);
+          ctx.fillStyle = css("--s-value");
+          ctx.fillRect(x + 4, y - (rows[MERGE][stopAt(MERGE)] - 1) * 26 - 1.5, 12 * kk, 3);
+          if (k > 0.5) { ctx.font = mono(9.5); ctx.textAlign = "left"; ctx.fillStyle = css("--s-value");
+            ctx.fillText("0% — deal close", x + 18, y - (rows[MERGE][stopAt(MERGE)] - 1) * 26 + 3); }
+        } },
+      { dur: 3.0, cap: "The gap between those averages is fake alpha — ours is measured, and kept out.",
+        draw(ctx, W, H, k) {
+          const n = Math.max(2, Math.floor(k * NP));
+          ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.8; ctx.beginPath();
+          for (let i = 0; i < n; i++) ctx[i ? "lineTo" : "moveTo"](avgX(W, i), avgY(H, honest[i]));
+          ctx.stroke(); ctx.lineWidth = 1;
+          if (k > 0.4) {
+            ctx.fillStyle = css("--s-leverage"); ctx.globalAlpha = 0.14 * clamp01((k - 0.4) / 0.4);
+            ctx.beginPath();
+            for (let i = 26; i < NP; i++) ctx[i === 26 ? "moveTo" : "lineTo"](avgX(W, i), avgY(H, naive[i]));
+            for (let i = NP - 1; i >= 26; i--) ctx.lineTo(avgX(W, i), avgY(H, honest[i]));
+            ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+          }
+          if (k > 0.7) {
+            ctx.fillStyle = css("--ink"); ctx.font = mono(9.5); ctx.textAlign = "right";
+            ctx.fillText("with the dead kept in", W * 0.96, avgY(H, honest[NP - 1]) + 12);
+            ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+            ctx.fillText("audited: ≈1.4–2.5bp/wk of fake alpha avoided", W * 0.96, H * 0.72);
+          }
+        } },
+    ];
+  }
+
+  // -- assembly: the impossible matrix, composed from three small pieces -----
+  function tlAssemble() {
+    const rng = mulberry(47);
+    const GC = 26, GR = 14; // the Σ raster
+    const cells = Array.from({ length: GR * GC }, () => gauss(rng) * 0.8);
+    const wDemo = {}; ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN"].forEach(t2 => { if (t2 in TIDX) wDemo[t2] = 0.2; });
+    const rr = computeRisk(Object.keys(wDemo).length >= 3 ? wDemo : { [T[0]]: 1 }, EMBEDDED);
+    const shares = (() => {
+      const cls = [["market", Math.max(0, rr.contrib[rr.factors.indexOf(MKT)]), "--s-market"]];
+      let sty = 0, ind = 0;
+      rr.factors.forEach((f2, k2) => {
+        if (STYLES.includes(f2)) sty += rr.contrib[k2];
+        else if (f2.startsWith("ind_")) ind += rr.contrib[k2];
+      });
+      cls.push(["styles", Math.max(0, sty), "--s-momentum"], ["industries", Math.max(0, ind), "--s-industry"], ["specific", rr.svar, "--s-specific"]);
+      const tot = cls.reduce((a, c) => a + c[1], 0);
+      return cls.map(c => ({ name: c[0], share: c[1] / tot, color: c[2] }));
+    })();
+    const G = (W, H) => ({ x0: W * 0.30, y0: H * 0.10, cw: W * 0.40 / GC, ch: H * 0.56 / GR });
+    return [
+      { dur: 3.0, cap: "The matrix nobody can estimate: 4.5M covariances from 780 days of data.",
+        draw(ctx, W, H, k, io) {
+          const g = G(W, H), later = Math.max(io.ks[1], io.ks[3]);
+          const collapse = EASE.inOutCubic(io.ks[3] || 0);
+          const cx = W * 0.5, cy = H * 0.38;
+          ctx.save();
+          ctx.translate(cx, cy); ctx.scale(1 - 0.96 * collapse, 1 - 0.96 * collapse); ctx.translate(-cx, -cy);
+          ctx.globalAlpha *= (1 - 0.75 * (io.ks[1] || 0) * (1 - (io.ks[2] || 0))) * (1 - collapse * 0.6);
+          for (let r = 0; r < GR; r++) for (let c = 0; c < GC; c++) {
+            const i = r * GC + c, kk = stag(i, GR * GC, k, 0.85); if (kk <= 0) continue;
+            const flood = io.ks[2] ? clamp01((io.ks[2] * 1.15 - c / GC) * 6) : 0;
+            const isDiag = Math.abs(r / GR - c / GC) < 0.035;
+            if (flood > 0) {
+              const v = cells[i];
+              if (isDiag && io.ks[2] > 0.6) {
+                ctx.fillStyle = css("--s-specific"); ctx.globalAlpha = 0.95;
+              } else {
+                ctx.fillStyle = v >= 0 ? css("--heat-pos") : css("--heat-neg");
+                ctx.globalAlpha = (Math.min(Math.abs(v), 1) * 0.7 + 0.1) * flood;
+              }
+            } else {
+              ctx.fillStyle = css("--ink-2"); ctx.globalAlpha = 0.16 * kk;
+            }
+            ctx.fillRect(g.x0 + c * g.cw, g.y0 + r * g.ch, g.cw - 1.5, g.ch - 1.5);
+            ctx.globalAlpha = 1;
+          }
+          ctx.restore();
+          if (collapse < 0.98) {
+            ctx.fillStyle = css("--ink"); ctx.font = mono(11); ctx.textAlign = "left";
+            ctx.globalAlpha = 1 - collapse;
+            ctx.fillText(`${(Math.floor(k * 4498500)).toLocaleString()} covariances`, g.x0, H * 0.055);
+            ctx.fillStyle = css("--muted"); ctx.font = mono(9.5); ctx.textAlign = "right";
+            ctx.fillText("780 days of data", g.x0 + GC * g.cw, H * 0.055);
+            ctx.globalAlpha = 1;
+          }
+        } },
+      { dur: 2.8, cap: "The pieces are small: exposures X, a 20×20 factor covariance F, and a diagonal.",
+        draw(ctx, W, H, k, io) {
+          const dim = 1 - 0.8 * (io.ks[3] || 0);
+          ctx.save(); ctx.globalAlpha *= dim;
+          const y0 = H * 0.74;
+          const slide = EASE.outBack(k);
+          // X: tall thin strip
+          const xX = lerp(-60, W * 0.30, slide);
+          for (let r = 0; r < 10; r++) for (let c = 0; c < 3; c++) {
+            const v = gaussFor(r * 3 + c);
+            ctx.fillStyle = v >= 0 ? css("--heat-pos") : css("--heat-neg");
+            ctx.globalAlpha = (Math.min(Math.abs(v), 1) * 0.6 + 0.15) * dim;
+            ctx.fillRect(xX + c * 7, y0 + r * 5 - 26, 5.5, 3.8);
+          }
+          ctx.globalAlpha = dim;
+          // F: square
+          const xF = lerp(W + 60, W * 0.42, slide);
+          for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+            const v = gaussFor(100 + r * 8 + c);
+            ctx.fillStyle = v >= 0 ? css("--heat-pos") : css("--heat-neg");
+            ctx.globalAlpha = (Math.min(Math.abs(v), 1) * 0.6 + 0.15) * dim;
+            ctx.fillRect(xF + c * 6, y0 + r * 6 - 26, 4.6, 4.6);
+          }
+          ctx.globalAlpha = dim;
+          // diag
+          const xD = lerp(W + 140, W * 0.60, slide);
+          for (let r = 0; r < 8; r++) {
+            ctx.fillStyle = css("--s-specific"); ctx.globalAlpha = 0.9 * dim;
+            ctx.fillRect(xD + r * 6, y0 + r * 6 - 26, 4.6, 4.6);
+          }
+          ctx.globalAlpha = dim;
+          ctx.fillStyle = css("--ink"); ctx.font = mono(10); ctx.textAlign = "center";
+          ctx.fillText("X", xX + 10, y0 + 34);
+          ctx.fillText("F", xF + 24, y0 + 34);
+          ctx.fillText("diag(s²)", xD + 24, y0 + 34);
+          ctx.fillStyle = css("--muted"); ctx.font = mono(11);
+          ctx.fillText("·", (xX + 21 + xF) / 2, y0);
+          ctx.fillText("+", (xF + 48 + xD) / 2, y0);
+          ctx.restore();
+        } },
+      { dur: 2.8, cap: "Compose: XFXᵀ floods the matrix; each stock's own variance lands on the diagonal.",
+        draw() { /* the flood is rendered by beat 1 via io.ks[2] */ } },
+      { dur: 3.4, cap: "A real book passes through — wᵀΣw — and the matrix collapses to one number.",
+        draw(ctx, W, H, k) {
+          const tick = Object.keys(wDemo);
+          const ky = EASE.outCubic(clamp01(k * 1.6));
+          ctx.fillStyle = css("--ink-2"); ctx.font = mono(9.5); ctx.textAlign = "center";
+          ctx.globalAlpha = ky;
+          tick.forEach((t2, i) => ctx.fillText(`${t2} 20%`, W * (0.32 + i * 0.09), H * 0.945));
+          ctx.globalAlpha = 1;
+          const nk = clamp01((k - 0.45) / 0.55);
+          if (nk > 0) {
+            ctx.fillStyle = css("--ink"); ctx.font = mono(26); ctx.textAlign = "center";
+            ctx.globalAlpha = nk;
+            ctx.fillText(`σ = ${(rr.tvol * nk * 100).toFixed(1)}%`, W * 0.5, H * 0.42);
+            ctx.fillStyle = css("--muted"); ctx.font = sans(9.5);
+            ctx.fillText("annualized, computed in this browser", W * 0.5, H * 0.50);
+            ctx.globalAlpha = 1;
+          }
+        } },
+      { dur: 2.8, cap: "…and splits back into the spectrum. That is the prism.",
+        draw(ctx, W, H, k) {
+          const y = H * 0.60, x0 = W * 0.24, w2 = W * 0.52 * EASE.inOutCubic(k);
+          let acc = 0;
+          shares.forEach(c => {
+            ctx.fillStyle = css(c.color);
+            ctx.fillRect(x0 + acc * w2, y, c.share * w2, 16);
+            if (k > 0.8 && c.share > 0.08) {
+              ctx.fillStyle = css("--ink"); ctx.font = mono(8.5); ctx.textAlign = "center";
+              ctx.fillText(`${c.name} ${Math.round(c.share * 100)}%`, x0 + (acc + c.share / 2) * w2, y + 28);
+            }
+            acc += c.share;
+          });
+        } },
+    ];
+    function gaussFor(i) { const r2 = mulberry(900 + i); return gauss(r2); }
+  }
+
+  // -- factor covariance: co-movement → a shape → a cell of F; then VRA ------
+  function tlFcov() {
+    const rng = mulberry(41);
+    const N = 44;
+    const mo = [], va = [];
+    for (let i = 0; i < N; i++) { const c = gauss(rng); mo.push(c * 0.011); va.push((0.6 * c + 0.8 * gauss(rng)) * 0.009); }
+    const shocks = Array.from({ length: 30 }, (_, i) => gauss(mulberry(88 + i)) * 0.011 * ((i > 17 && i < 25) ? 2.8 : 1));
+    const FN = 20; // drawn F grid — the real size
+    const fCell = (W, H) => ({ x0: W * 0.64, y0: H * 0.08, s: Math.min(W * 0.30 / FN, H * 0.46 / FN) });
+    return [
+      { dur: 2.8, cap: "Two factors' daily returns. Watch the days they spike together.",
+        draw(ctx, W, H, k, io) {
+          const gone = EASE.inOutCubic(io.ks[1] || 0), dim = 1 - 0.85 * gone;
+          if (dim <= 0.02) return;
+          ctx.save(); ctx.globalAlpha *= dim;
+          const x0 = W * 0.06, w2 = W * 0.50, bw = w2 / N;
+          [[mo, "--s-momentum", H * 0.22], [va, "--s-value", H * 0.46]].forEach(([arr, col, yc]) => {
+            ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(x0, yc); ctx.lineTo(x0 + w2, yc); ctx.stroke();
+            for (let i = 0; i < N; i++) {
+              const kk = stag(i, N, k, 0.6); if (kk <= 0) continue;
+              const h = Math.abs(arr[i]) / 0.032 * H * 0.16 * kk;
+              ctx.fillStyle = css(col);
+              ctx.fillRect(x0 + i * bw, arr[i] >= 0 ? yc - h : yc, Math.max(1.5, bw - 1.5), h);
+            }
+          });
+          for (let i = 0; i < N; i++) {
+            if (stag(i, N, k, 0.6) < 1) continue;
+            if (mo[i] * va[i] > 0 && Math.abs(mo[i]) > 0.012 && Math.abs(va[i]) > 0.008) {
+              ctx.strokeStyle = css("--ink-2"); ctx.globalAlpha = 0.4 * dim;
+              ctx.beginPath(); ctx.moveTo(x0 + i * bw + bw / 2, H * 0.10); ctx.lineTo(x0 + i * bw + bw / 2, H * 0.56); ctx.stroke();
+              ctx.globalAlpha = dim;
+            }
+          }
+          ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "left";
+          ctx.fillText("momentum", x0, H * 0.10); ctx.fillText("value", x0, H * 0.34);
+          ctx.restore();
+        } },
+      { dur: 3.0, cap: "Co-movement is a shape: each day becomes a dot; the tilt is their covariance.",
+        draw(ctx, W, H, k, io) {
+          const gone = EASE.inOutCubic(io.ks[2] || 0);
+          const sx = v => W * (0.18 + (v + 0.032) / 0.064 * 0.30), sy = v => H * (0.72 - (v + 0.026) / 0.052 * 0.52);
+          const g = fCell(W, H), tr = 5, tc = 8;
+          const tx = g.x0 + tc * g.s + g.s / 2, ty = g.y0 + tr * g.s + g.s / 2;
+          for (let i = 0; i < N; i++) {
+            const kk = stag(i, N, k, 0.5); if (kk <= 0) continue;
+            const x0b = W * 0.06 + i * (W * 0.50 / N), yb = H * 0.34;
+            let x = lerp(x0b, sx(mo[i]), EASE.inOutCubic(kk));
+            let y = lerp(yb, sy(va[i]), EASE.inOutCubic(kk));
+            if (gone > 0) { x = lerp(x, tx, gone); y = lerp(y, ty, gone); }
+            ctx.fillStyle = css("--s-momentum"); ctx.globalAlpha = 0.65 * (1 - gone * 0.85);
+            ctx.beginPath(); ctx.arc(x, y, 2.6 * (1 - gone * 0.7), 0, 7); ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+          if (k > 0.6 && gone < 0.5) {
+            const ek = clamp01((k - 0.6) / 0.4) * (1 - gone * 2);
+            if (ek > 0) {
+              ctx.save();
+              ctx.translate(sx(0), sy(0)); ctx.rotate(-0.5);
+              ctx.strokeStyle = css("--ink-2"); ctx.globalAlpha = ek;
+              ctx.beginPath(); ctx.ellipse(0, 0, W * 0.13 * ek, W * 0.05 * ek, 0, 0, 7); ctx.stroke();
+              ctx.restore(); ctx.globalAlpha = 1;
+              ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "center";
+              ctx.fillText("cov(mom, val) > 0", sx(0), H * 0.80);
+            }
+          }
+        } },
+      { dur: 2.8, cap: "The shape becomes one cell of F. Same procedure, 190 times, every day.",
+        draw(ctx, W, H, k, io) {
+          const g = fCell(W, H), vraGlow = 1 + 0.5 * (io.ks[3] || 0) * (VRA_F - 1) * 4;
+          for (let r = 0; r < FN; r++) for (let c = 0; c < FN; c++) {
+            const i = r * FN + c, kk = stag(i, FN * FN, k, 0.8); if (kk <= 0) continue;
+            const v = gauss(mulberry(500 + i));
+            const isT = r === 5 && c === 8;
+            ctx.fillStyle = isT ? css("--s-momentum") : (v >= 0 ? css("--heat-pos") : css("--heat-neg"));
+            ctx.globalAlpha = (isT ? 0.95 : (Math.min(Math.abs(v), 1) * 0.35 + 0.08)) * kk * Math.min(vraGlow, 1.6);
+            ctx.fillRect(g.x0 + c * g.s, g.y0 + r * g.s, g.s - 1, g.s - 1);
+            ctx.globalAlpha = 1;
+          }
+          if (k > 0.7) {
+            ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "center";
+            ctx.fillText("F — 20 × 20", g.x0 + FN * g.s / 2, g.y0 + FN * g.s + 12);
+          }
+        } },
+      { dur: 3.8, cap: "Regimes shift: the VRA multiplier lifts all of F before the half-life catches up.",
+        draw(ctx, W, H, k) {
+          const x0 = W * 0.06, w2 = W * 0.50, bw = w2 / 30, yc = H * 0.80;
+          const n = Math.max(2, Math.floor(k * 30));
+          ctx.strokeStyle = css("--grid"); ctx.beginPath(); ctx.moveTo(x0, yc); ctx.lineTo(x0 + w2, yc); ctx.stroke();
+          let lam = 1;
+          for (let i = 0; i < n; i++) {
+            const h = Math.abs(shocks[i]) / 0.036 * H * 0.13;
+            const shocky = i > 17 && i < 25;
+            if (shocky) lam = Math.min(1.32, lam + 0.05);
+            ctx.fillStyle = shocky ? css("--s-leverage") : css("--s-size");
+            ctx.fillRect(x0 + i * bw, shocks[i] >= 0 ? yc - h : yc, Math.max(1.5, bw - 1.5), h);
+          }
+          const band = yc - H * 0.10 * lam;
+          ctx.strokeStyle = css("--accent"); ctx.setLineDash([4, 3]);
+          ctx.beginPath(); ctx.moveTo(x0, band); ctx.lineTo(x0 + w2, band); ctx.stroke(); ctx.setLineDash([]);
+          ctx.fillStyle = lam > 1.05 ? css("--s-leverage") : css("--ink-2");
+          ctx.font = mono(11); ctx.textAlign = "left";
+          ctx.fillText(`λ = ${lam.toFixed(2)}`, x0 + w2 + 8, band + 4);
+        } },
+      { dur: 2.0, cap: "Newey-West on the variances, PSD repair, correlation blending — then it ships.",
+        draw(ctx, W, H, k) {
+          ctx.fillStyle = css("--ink"); ctx.globalAlpha = k; ctx.font = sans(12, 600); ctx.textAlign = "left";
+          ctx.fillText(`this build ships λ_factor = ${VRA_F.toFixed(2)}`, W * 0.06, H * 0.955);
+          ctx.globalAlpha = 1;
+        } },
+    ];
+  }
+
+  // -- validation: forecast FIRST, reality lands — causality on screen -------
+  function tlValidate() {
+    const rng = mulberry(61);
+    const N = 40;
+    const weeks = Array.from({ length: N }, (_, i) => {
+      const sig = 0.02 * (1 + 0.3 * Math.sin(i / 6));
+      const z = gauss(rng);
+      return { sig, z, r: z * sig };
+    });
+    const colX = (W, i) => W * 0.06 + i * (W * 0.54 / N);
+    const y0 = H2 => H2 * 0.42, ampl = H2 => H2 * 0.30;
+    const histX = (W, b) => W * 0.68 + (b + 4) / 8 * W * 0.28;
+    return [
+      { dur: 2.2, ease: EASE.outCubic, cap: "First, the forecast: a ±1.96σ band, written down before the week begins.",
+        draw(ctx, W, H, k, io) {
+          const w1 = weeks[0], bw = W * 0.05;
+          const bh = 1.96 * w1.sig / 0.075 * ampl(H) * k;
+          ctx.fillStyle = css("--accent"); ctx.globalAlpha = 0.20;
+          ctx.fillRect(colX(W, 0), y0(H) - bh, bw, 2 * bh);
+          ctx.globalAlpha = 1;
+          if (k > 0.8 && !io.ks[2]) {
+            ctx.fillStyle = css("--muted"); ctx.font = mono(9); ctx.textAlign = "left";
+            ctx.fillText("the forecast", colX(W, 0), y0(H) - bh - 8);
+          }
+        } },
+      { dur: 2.0, cap: "Then reality lands: z = what happened ÷ what was forecast.",
+        draw(ctx, W, H, k, io) {
+          const w1 = weeks[0], bw = W * 0.05;
+          const yT = y0(H) - w1.r / 0.075 * ampl(H);
+          const drop = EASE.inQuad(clamp01(k * 1.4));
+          const bounce = 5 * Math.max(0, Math.sin(clamp01((k - 0.7) / 0.3) * Math.PI));
+          const y = drop < 1 ? lerp(-10, yT, drop) : yT - bounce;
+          ctx.fillStyle = Math.abs(w1.z) > 1.96 ? css("--s-leverage") : css("--ink");
+          ctx.beginPath(); ctx.arc(colX(W, 0) + bw / 2, y, 4, 0, 7); ctx.fill();
+          if (k > 0.75 && !io.ks[2]) {
+            ctx.fillStyle = css("--ink-2"); ctx.font = mono(9.5); ctx.textAlign = "left";
+            ctx.fillText(`z = ${w1.z.toFixed(2)}`, colX(W, 0) + bw + 6, yT + 3);
+          }
+        } },
+      { dur: 5.2, ease: EASE.linear, cap: "Every week, the same ritual — the band always drawn before the dot lands.",
+        draw(ctx, W, H, k, io) {
+          const pour = EASE.inOutCubic(io.ks[3] || 0);
+          let sumZ2 = 0, cnt = 0, esc = 0;
+          for (let i = 1; i < N; i++) {
+            const bk = stag(i - 1, N - 1, k, 0.82);
+            const dk = stag(i - 1, N - 1, clamp01(k - 0.04), 0.82);
+            if (bk <= 0) continue;
+            const w1 = weeks[i], x = colX(W, i), bw = W * 0.54 / N - 2;
+            const bh = 1.96 * w1.sig / 0.075 * ampl(H) * EASE.outCubic(bk);
+            ctx.fillStyle = css("--accent"); ctx.globalAlpha = 0.16 * (1 - pour * 0.8);
+            ctx.fillRect(x, y0(H) - bh, Math.max(2, bw), 2 * bh);
+            ctx.globalAlpha = 1;
+            if (dk > 0) {
+              const yT = y0(H) - w1.r / 0.075 * ampl(H);
+              // during the pour, dots fly to their histogram bin
+              const b = Math.max(-4, Math.min(4, w1.z));
+              const binIdx = Math.round((b + 4) / 8 * 16);
+              const tx = histX(W, (binIdx / 16) * 8 - 4), tyy = H * 0.72 - (i % 6) * 7;
+              const y = lerp(lerp(-10, yT, EASE.inQuad(dk)), tyy, pour);
+              const xx = lerp(x + bw / 2, tx, pour);
+              ctx.fillStyle = Math.abs(w1.z) > 1.96 ? css("--s-leverage") : css("--ink-2");
+              ctx.beginPath(); ctx.arc(xx, y, 2.2, 0, 7); ctx.fill();
+              if (dk >= 1) { sumZ2 += w1.z * w1.z; cnt++; if (Math.abs(w1.z) > 1.96) esc++; }
+            }
+          }
+          if (cnt > 3) {
+            const bias = Math.sqrt(sumZ2 / cnt);
+            ctx.fillStyle = css("--ink"); ctx.font = mono(12); ctx.textAlign = "left";
+            ctx.fillText(`bias = ${bias.toFixed(2)}`, W * 0.68, H * 0.10);
+            ctx.font = mono(10); ctx.fillStyle = css("--ink-2");
+            ctx.fillText(`|z|>1.96: ${cnt ? Math.round(esc / cnt * 100) : 0}%`, W * 0.68, H * 0.16);
+          }
+        } },
+      { dur: 3.0, cap: "Weeks pool into a distribution — and it should look standard normal.",
+        draw(ctx, W, H, k) {
+          if (k > 0.5) {
+            const ck = clamp01((k - 0.5) / 0.5);
+            ctx.strokeStyle = css("--ink"); ctx.lineWidth = 1.6; ctx.beginPath();
+            const n = Math.floor(ck * 60);
+            for (let i = 0; i <= n; i++) {
+              const z = -4 + i / 60 * 8;
+              const y = H * 0.74 - Math.exp(-z * z / 2) * H * 0.28;
+              ctx[i ? "lineTo" : "moveTo"](histX(W, z), y);
+            }
+            ctx.stroke(); ctx.lineWidth = 1;
+          }
+        } },
+      { dur: 2.2, cap: "The verdict, recomputed with every build. No cherry-picking is possible.",
+        draw(ctx, W, H, k, io) {
+          const pu = 1 + 0.06 * Math.sin(clamp01(k * 2) * Math.PI);
+          ctx.save();
+          ctx.translate(W * 0.82, H * 0.90); ctx.scale(pu, pu);
+          ctx.fillStyle = css("--delta-good"); ctx.globalAlpha = EASE.outCubic(k);
+          ctx.font = mono(13); ctx.textAlign = "center";
+          ctx.fillText("calibrated", 0, 0);
+          ctx.restore(); ctx.globalAlpha = 1;
+        } },
+    ];
+  }
+
   // === node metadata ========================================================
   const NODES = {
     edgar: { kind: "data", col: 0, row: 0, title: "SEC EDGAR bulk data", short: ["SEC EDGAR", "filings, point-in-time"],
@@ -2630,7 +3141,7 @@ renderStockTable();
     prices: { kind: "data", col: 0, row: 1, title: "Daily prices & volume", short: ["Daily prices", "pluggable provider"],
       what: "Daily closes and volumes for every candidate ticker, via a pluggable provider (Yahoo's chart API by default). Daily returns are the regression's dependent variable (five cross-sections per formation week); Friday-to-Friday weekly returns are kept for universe screens and validation scoring. Raw prices are never redistributed; only derived factor data ships.",
       why: "Daily estimation is what buys covariance accuracy: an EWMA's effective sample size is set by its half-life in observations, so daily sampling gives the correlation matrix ~730 effective observations where weekly gave ~75 — same calendar responsiveness, five times the data. It's how commercial models (USE4, Axioma) get their conditioning; microstructure autocorrelation is handled by Newey-West.",
-      src: ["meth", "use4"], anim: drawPrices, aspect: 0.36, loop: 8,
+      src: ["meth", "use4"], tl: tlPrices, aspect: 0.44,
       cap: "Daily closes compound into Friday-to-Friday weekly returns; the daily path is kept for higher-powered realized-vol checks." },
     universe: { kind: "proc", col: 1, row: 0, title: "Universe filters", short: ["Universe filters", "estimation vs coverage"],
       what: "Two universes, on purpose. The estimation universe (price ≥ $2, median dollar volume ≥ $1M, 26+ weeks of history) supplies clean cross-sections for the factor regressions. The coverage universe is everything alive at ≥ $1 — including week-old IPOs — and inherits risk through the factor structure plus structural priors.",
@@ -2640,7 +3151,7 @@ renderStockTable();
     styles: { kind: "proc", col: 1, row: 1, title: "Style descriptors", short: ["Style descriptors", "winsorize · standardize"],
       what: "Seven characteristics per stock — size, value, momentum, volatility, liquidity, quality, leverage — computed from prices and point-in-time fundamentals. Value and quality are multi-descriptor composites (book/earnings/cash-flow/sales yields; ROE, ROA, OCF/assets, gross margin): each descriptor is z-scored, the composite averages the z-scores a filer actually has, and the result is re-standardized. Everything is winsorized at ±3σ (data errors and true outliers folded to the boundary), then standardized to cap-weighted mean 0 and equal-weighted std 1.",
       why: "The standardization convention is load-bearing: cap-weighted mean 0 makes the market portfolio style-neutral (so the market factor is really the market), and equal-weighted std 1 stops mega-caps from defining the scale. Composites are how USE4 and Axioma make fundamental factors robust — one noisy or unfiled XBRL tag shouldn't erase a stock's value signal. This is USE4's exact recipe (§2.2).",
-      src: ["use4"], anim: drawStyles, aspect: 0.4, loop: 10,
+      src: ["use4"], tl: tlStyles, aspect: 0.44,
       cap: "Raw descriptor → fold outliers at ±3σ → re-center and re-scale: every exposure becomes 'how many σ from the market on this trait'." },
     industry: { kind: "proc", col: 1, row: 2, title: "Industry map", short: ["Industry map", "SIC → Fama-French 12"],
       what: "Each filer's four-digit SIC code from EDGAR maps to one of the 12 Fama-French industry groups, becoming a one-hot exposure. Coarser than the 39–68 GICS industries commercial models use — deliberately.",
@@ -2650,7 +3161,7 @@ renderStockTable();
     delist: { kind: "proc", col: 1, row: 3, title: "Delisting imputation", short: ["Delisting returns", "the survivorship fix"],
       what: "When a stock stops trading, it doesn't silently vanish: its final week gets an imputed return — −30% if its last price was under $5 (failure-shaped exits), 0% otherwise (mergers, where the last price already reflects deal terms) — and all its history stays in the dataset.",
       why: "Datasets that quietly drop the dead overstate returns and understate risk — the classic CRSP delisting bias Shumway quantified (~−30% average for performance delistings). Our own audit: ~8%/yr of active filers cease filing; ignoring them would bias factor means by up to ~2.5bp/week.",
-      src: ["shumway", "meth"], anim: drawDelist, aspect: 0.36, loop: 9,
+      src: ["shumway", "meth"], tl: tlDelist, aspect: 0.46,
       cap: "Two exits, two treatments: a sub-$5 fade gets −30%; a deal-price exit gets 0%. Either way the name's history survives." },
     regress: { kind: "proc", col: 2, row: 0, title: "Daily WLS regression", short: ["Daily regression", "returns → factor payoffs"],
       what: "Every trading day, that day's stock returns are regressed on exposures formed the previous Friday: r = f_mkt + Σ X·f_style + Σ I·f_industry + ε. Weights ∝ √(market cap); industries are constrained to cap-weighted zero so the intercept IS the cap-weighted market return. The coefficients are that day's factor returns; the leftovers are each stock's specific returns — five cross-sections a week instead of one.",
@@ -2665,7 +3176,7 @@ renderStockTable();
     fcov: { kind: "proc", col: 2, row: 2, title: "Factor covariance", short: ["Factor covariance", "EWMA · NW · blend · VRA"],
       what: "Factor vols from an 84-day-half-life EWMA (responsive), correlations from 252 days (stable — ~730 effective daily observations), combined and repaired to positive semi-definite. Variances carry a 5-lag Newey-West adjustment for serial correlation; the correlation matrix is blended with its own rank-5 PCA reconstruction (Bloomberg's published w = 0.8) to suppress the noise directions optimizers exploit; and everything is scaled by the Volatility Regime Adjustment: an EWMA of how big returns actually were versus forecast.",
       why: "Half-life EWMA alone lags regime shifts — USE4's unadjusted model underforecast going into 2008 (bias ~1.3) and overforecast after (~0.7); their VRA held it near 1.0 throughout. Our measured Mincer-Zarnowitz slope of 0.70 showed the same disease, so v0.3 adopted the same cure (slope now 0.8). Newey-West fixes the ×52 annualization, which silently assumes weeks are independent; blending is Bloomberg's production answer to optimizers exploiting covariance noise — we A/B'd it against MSCI's eigenfactor adjustment on our own validation and shipped the one that did no collateral damage.",
-      src: ["use4", "meth"], anim: drawFcov, aspect: 0.4, loop: 12,
+      src: ["use4", "meth"], tl: tlFcov, aspect: 0.46,
       cap: "Bars fade at the vol half-life; when a shock cluster lands, the VRA multiplier λ lifts the whole forecast band before the EWMA can catch up." },
     specific: { kind: "proc", col: 2, row: 3, title: "Specific risk", short: ["Specific risk", "blend · shrink · VRA"],
       what: "Each stock's own residual EWMA, blended with a structural model (specific vol regressed on size, volatility, liquidity, industry) by history length — so IPOs get a sensible prior instead of nothing. Blended vols are then Bayesian-shrunk toward their size-decile mean (q = 0.1) and scaled by the specific VRA multiplier.",
@@ -2675,12 +3186,12 @@ renderStockTable();
     assemble: { kind: "proc", col: 3, row: 0, title: "Assembly: Σ = XFXᵀ + D", short: ["Σ = XFXᵀ + D", "the whole point"],
       what: "The full n×n covariance of ~3,000 stocks is never estimated directly — it's composed: exposures spread 20 factors' covariance across every stock (XFXᵀ), plus each stock's own specific variance on the diagonal. Any portfolio's risk is then one quadratic form, computed in your browser.",
       why: "Estimating 3,000×3,000 ≈ 4.5M covariances from 156 weeks is hopeless (T ≪ n); 20 factors need only 210. This dimension reduction is the founding insight of factor risk models — and why a laptop (or a web page) can price portfolio risk at all.",
-      src: ["use4", "bbg"], anim: drawAssemble, aspect: 0.34, loop: 9,
+      src: ["use4", "bbg"], tl: tlAssemble, aspect: 0.42,
       cap: "Three small pieces compose the giant matrix nobody could estimate directly — then your weights pass through it and out comes one number." },
     validate: { kind: "proc", col: 3, row: 1, title: "Validation replay", short: ["Validation replay", "graded weekly, in public"],
       what: "Every build replays a fresh point-in-time model over the whole history and rescores every week: forecast first, reality lands, z = return / forecast. The panel includes market, style spreads, industries, random baskets, six real factor ETFs — and portfolios optimized against the model itself, the documented worst case.",
       why: "std(z) ≈ 1 is the industry-standard bias statistic (USE4 Appendix A); Mincer-Zarnowitz regressions test the same thing with more power. Optimized portfolios matter because optimizers hunt the covariance matrix's underestimated directions — MSCI measured bias 1.4–1.5 there. No other public model, commercial or open, publishes this continuously.",
-      src: ["use4", "shepard", "mz", "eigen"], anim: drawValidate, aspect: 0.38, loop: 12,
+      src: ["use4", "shepard", "mz", "eigen"], tl: tlValidate, aspect: 0.42,
       cap: "The band is drawn before each week happens; the dot is what happened. Calibrated ⇒ dots escape the band ~5% of the time." },
     ship: { kind: "data", col: 3, row: 2, title: "Artifacts, explorer, MCP", short: ["Open artifacts", "humans · agents · code"],
       what: "Every Monday the pipeline reruns and ships the same model three ways: this explorer for people, /model.md + llms.txt + an MCP server for AI agents, and versioned parquet artifacts (exposures, covariance, specific risk, full histories) for anyone's code. MIT, no key, no signup.",
@@ -2736,8 +3247,9 @@ renderStockTable();
 
   // === detail panel =========================================================
   let disposeAnim = null;
-  function mountAnim(drawFn, aspect, loop) {
+  function mountAnim(nd) {
     const fig = document.getElementById("learn-anim");
+    const capEl = document.getElementById("learn-cap");
     if (disposeAnim) disposeAnim();
     fig.querySelectorAll("canvas,button.play").forEach(e => e.remove());
     const canvas = document.createElement("canvas");
@@ -2745,31 +3257,48 @@ renderStockTable();
     btn.className = "play";
     fig.prepend(btn); fig.prepend(canvas);
     const ctx = canvas.getContext("2d");
-    let playing = false, start = 0, raf = null, W = 0, H = 0;
+    const tl = nd.tl ? timeline(nd.tl()) : null;
+    // legacy draws get loop hygiene from the player: hold the finished
+    // frame, then fade through the wrap instead of a hard reset
+    const total = tl ? tl.total : nd.loop + 1.8;
+    const showcase = tl ? tl.showcase : nd.loop * 0.65;
+    let playing = false, start = 0, raf = null, W = 0, H = 0, lastCap = null;
     function size() {
       if (!fig.clientWidth) return; // hidden tab: resize event retries
       const dpr = devicePixelRatio || 1;
-      W = fig.clientWidth; H = Math.round(W * aspect);
+      W = fig.clientWidth; H = Math.round(W * nd.aspect);
       canvas.width = W * dpr; canvas.height = H * dpr;
       canvas.style.height = H + "px";
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
-    const render = t => { ctx.clearRect(0, 0, W, H); drawFn(ctx, W, H, t); };
+    function render(t) {
+      ctx.clearRect(0, 0, W, H);
+      if (tl) {
+        tl.render(ctx, W, H, t);
+        const c = tl.capAt(t) || nd.cap;
+        if (c !== lastCap) { capEl.textContent = c; lastCap = c; }
+      } else {
+        const tt = Math.min(t, nd.loop - 0.02);
+        let a = 1;
+        if (t > nd.loop + 0.6) a = Math.max(0, 1 - (t - nd.loop - 0.6) / 0.6);
+        ctx.save(); ctx.globalAlpha = a; nd.anim(ctx, W, H, tt); ctx.restore();
+      }
+    }
     function frame(now) {
       if (!start) start = now;
-      render(((now - start) / 1000) % loop);
+      render(((now - start) / 1000) % total);
       if (playing) raf = requestAnimationFrame(frame);
     }
     function set(p) {
-      playing = p; btn.textContent = p ? "❚❚ Pause" : "▶ Play";
+      playing = p; btn.textContent = p ? "\u275A\u275A Pause" : "\u25B6 Play";
       if (p) { start = 0; raf = requestAnimationFrame(frame); }
       else if (raf) cancelAnimationFrame(raf);
     }
     btn.addEventListener("click", () => set(!playing));
-    const onResize = () => { size(); if (!playing) render(loop * 0.65); };
+    const onResize = () => { size(); if (!playing) render(showcase); };
     addEventListener("resize", onResize);
     size();
-    if (reduced) { render(loop * 0.65); set(false); } else set(true);
+    if (reduced) { render(showcase); set(false); } else set(true);
     disposeAnim = () => { if (raf) cancelAnimationFrame(raf); removeEventListener("resize", onResize); };
   }
 
@@ -2785,7 +3314,7 @@ renderStockTable();
     document.getElementById("learn-cap").textContent = nd.cap;
     document.getElementById("learn-why").innerHTML =
       `<b>Why we do it this way</b> — ${nd.why}<br><span style="font-size:11.5px">Sources: ${cite(...nd.src)}</span>`;
-    mountAnim(nd.anim, nd.aspect, nd.loop);
+    mountAnim(nd);
   }
   document.querySelectorAll("#learn-diagram .ln").forEach(g => {
     const go = () => {
