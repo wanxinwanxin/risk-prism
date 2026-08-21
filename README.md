@@ -21,6 +21,25 @@ weekly-published model artifacts covering most liquid US common stocks.
 > **Disclaimer**: research software, provided as-is. Nothing here is
 > investment advice.
 
+## Hosted API (no key, no signup)
+
+The live deployment serves a JSON API over the newest weekly build —
+interactive docs at
+[/api/docs](https://risk-prism-production.up.railway.app/api/docs):
+
+```bash
+curl -s -X POST https://risk-prism-production.up.railway.app/api/v1/portfolio-risk \
+  -H 'content-type: application/json' \
+  -d '{"weights": {"AAPL": 0.4, "MSFT": 0.4, "XOM": 0.2}}'
+```
+
+Endpoints: `GET /api/v1/meta` · `GET /api/v1/factors` ·
+`GET /api/v1/assets/{ticker}` · `GET /api/v1/coverage?tickers=…` ·
+`POST /api/v1/portfolio-risk` · `POST /api/v1/stress-test`. Same surface
+as the MCP server; self-host it with `pip install ".[api]" && riskprism-api`
+(artifacts auto-download from the latest release at boot). Details in
+[docs/API.md](docs/API.md).
+
 ## For AI agents (MCP)
 
 ```json

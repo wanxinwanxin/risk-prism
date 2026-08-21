@@ -360,8 +360,9 @@ a { color: var(--accent); }
   <div class="personas">
     <div class="card persona">
       <div class="k">For AI agents</div>
-      <p class="sub" style="margin-bottom:8px">Give your agent a real risk model: an MCP server with portfolio risk, exposures, and stress tests — plus every build mirrored as plain markdown.</p>
-      <pre class="code" style="margin:0 0 10px">"riskprism": { "command": "riskprism-mcp" }</pre>
+      <p class="sub" style="margin-bottom:8px">Give your agent a real risk model: a hosted JSON API and an MCP server — portfolio risk, exposures, stress tests — plus every build mirrored as plain markdown.</p>
+      <pre class="code" style="margin:0 0 10px">POST /api/v1/portfolio-risk
+"riskprism": { "command": "riskprism-mcp" }</pre>
       <a href="#agents" class="plink" data-view="agents">Set up in one minute →</a>
     </div>
     <div class="card persona">
@@ -684,8 +685,12 @@ curl -L …/releases/latest/… | tar xz</pre>
   <div class="card">
     <h2>Point your agent at this model</h2>
     <p class="sub">Reading this as an agent? The plain-markdown mirror of this build lives at <a href="model.md">/model.md</a> (indexed by <a href="llms.txt">/llms.txt</a>) — model card, factor definitions, correlations, and full coverage list, no DOM required.</p>
-    <p class="sub">riskprism ships an MCP server. Install the package, download the latest artifacts, add the server — your agent can measure portfolio risk.</p>
+    <p class="sub">The fastest path is the <b>hosted JSON API</b> — no install, no key, serving the newest weekly build. Interactive docs at <a href="api/docs">/api/docs</a>, spec at <a href="api/openapi.json">/api/openapi.json</a>. For a local tool surface, riskprism also ships an MCP server: install the package, download the latest artifacts, add the server.</p>
     <p class="sub"><b>Download the model itself</b>: every build is published as parquet artifacts — exposures, factor covariance, specific risk, factor returns, residuals, estimation-quality metadata, and the distilled point-in-time EDGAR fundamentals store — at <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">the latest release</a>. MIT/public-domain-derived; no key, no signup.</p>
+    <div class="codehead"><h2 style="font-size:13px">Hosted API</h2><button class="copy" data-copy="api-snippet">Copy</button></div>
+    <pre class="code" id="api-snippet">curl -s -X POST https://risk-prism-production.up.railway.app/api/v1/portfolio-risk \
+  -H 'content-type: application/json' \
+  -d '{"weights": {"AAPL": 0.4, "MSFT": 0.4, "XOM": 0.2}}'</pre>
     <div class="codehead"><h2 style="font-size:13px">MCP configuration</h2><button class="copy" data-copy="mcp-snippet">Copy</button></div>
     <pre class="code" id="mcp-snippet">{
   "mcpServers": {
@@ -704,15 +709,17 @@ model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
 model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
   </div>
   <div class="card">
-    <h2>MCP tools</h2>
+    <h2>Tool surface — REST &amp; MCP</h2>
+    <p class="sub">One surface, two transports: every MCP tool has a REST twin.</p>
     <div class="tscroll"><table>
-      <thead><tr><th>Tool</th><th>What it returns</th></tr></thead>
+      <thead><tr><th>REST endpoint</th><th>MCP tool</th><th>What it returns</th></tr></thead>
       <tbody>
-        <tr><td><code>get_model_info</code></td><td>Model version, as-of date, factor list, coverage count</td></tr>
-        <tr><td><code>get_portfolio_risk</code></td><td>Total / factor / specific vol, exposures, top contributions</td></tr>
-        <tr><td><code>get_factor_exposures</code></td><td>Per-asset exposures and vol decomposition</td></tr>
-        <tr><td><code>stress_test</code></td><td>First-order P&amp;L under factor shocks</td></tr>
-        <tr><td><code>check_coverage</code></td><td>Which tickers the current build covers</td></tr>
+        <tr><td><code>GET /api/v1/meta</code></td><td><code>get_model_info</code></td><td>Model version, as-of date, factor list, coverage count</td></tr>
+        <tr><td><code>POST /api/v1/portfolio-risk</code></td><td><code>get_portfolio_risk</code></td><td>Total / factor / specific vol, exposures, top contributions</td></tr>
+        <tr><td><code>GET /api/v1/assets/{ticker}</code></td><td><code>get_factor_exposures</code></td><td>Per-asset exposures and vol decomposition</td></tr>
+        <tr><td><code>POST /api/v1/stress-test</code></td><td><code>stress_test</code></td><td>First-order P&amp;L under factor shocks</td></tr>
+        <tr><td><code>GET /api/v1/coverage</code></td><td><code>check_coverage</code></td><td>Which tickers the current build covers</td></tr>
+        <tr><td><code>GET /api/v1/factors</code></td><td>—</td><td>Factor vols and the full K×K covariance matrix</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -725,7 +732,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})</pre>
 </div></main>
 
 <footer><div class="wrap">
-  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT · <a href="https://github.com/wanxinwanxin/risk-prism">source</a> · <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">artifacts</a> · <a href="model.md">model.md</a>
+  riskprism · research software, provided as-is · not investment advice · fundamentals: SEC EDGAR (public domain) · prices via pluggable providers · MIT · <a href="https://github.com/wanxinwanxin/risk-prism">source</a> · <a href="https://github.com/wanxinwanxin/risk-prism/releases/latest">artifacts</a> · <a href="api/docs">api</a> · <a href="model.md">model.md</a>
 </div></footer>
 
 <div id="tooltip" role="tooltip"></div>
@@ -835,6 +842,7 @@ document.getElementById("tiles").innerHTML = [
       ? `${V0.n_weeks} weeks re-scored every build — bias statistic ${V0.overall_bias.toFixed(2)} across ${V0.n_scores.toLocaleString()} forecasts`
       : "re-scored on every build"],
     ["Data sources", "SEC EDGAR (fundamentals, SIC codes — public domain) · pluggable daily price providers"],
+    ["Access", `hosted JSON API at <a href="api/docs">/api/v1</a> · MCP server · parquet artifacts — all free, no key`],
     ["License", "MIT — artifacts free to download · no key, no signup"],
   ];
   document.getElementById("spec-table").innerHTML =

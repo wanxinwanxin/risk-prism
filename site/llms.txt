@@ -5,5 +5,14 @@
 > stocks, rebuilt weekly from public data. Not investment advice.
 
 - [Model card, current build, and usage (markdown)](/model.md)
+- [JSON API — no key, no signup (OpenAPI spec)](/api/openapi.json)
+- [API docs](/api/docs)
 - [Interactive explorer](/)
 - [Source and methodology](https://github.com/wanxinwanxin/risk-prism)
+
+## API quickstart
+
+POST /api/v1/portfolio-risk with {"weights": {"AAPL": 0.4, "MSFT": 0.4,
+"XOM": 0.2}} returns annualized vol with factor/specific decomposition.
+Also: GET /api/v1/meta, /api/v1/factors, /api/v1/assets/{ticker},
+/api/v1/coverage?tickers=..., POST /api/v1/stress-test.
