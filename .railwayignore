@@ -1,5 +1,6 @@
 # Packing rules for `railway up` — replaces .gitignore for deploys, because
 # site/history/ is gitignored (25MB of generated snapshots) but MUST ship.
+# src/ + pyproject MUST ship too: the image runs the FastAPI server.
 .git/
 .venv/
 venv/
@@ -11,5 +12,4 @@ artifacts/
 docs/
 scripts/
 tests/
-src/
 !site/history/
