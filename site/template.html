@@ -490,7 +490,7 @@ footer.site {
         <tbody>
           <tr><td style="font-weight:500;white-space:nowrap">v0.7 — beta split</td><td>Shipped 2026-08-22 — beta significant in 84% of daily cross-sections, R² 0.159 → 0.178, every scoreboard aggregate improved</td></tr>
           <tr><td style="font-weight:500;white-space:nowrap">v0.8 — styles</td><td>Shipped 2026-08-22 — growth added (42% significant), leverage rebuilt as a composite (bias 1.50 → 1.11); dividend yield measured and rejected</td></tr>
-          <tr><td style="font-weight:500;white-space:nowrap">v0.9 — FF30</td><td>Shipped 2026-08-22 — 30 Fama-French industries, K = 40, R² 0.212; coverage raise toward ~8,000 EDGAR names is the open half</td></tr>
+          <tr><td style="font-weight:500;white-space:nowrap">v0.9 — FF30 + coverage</td><td>Shipped 2026-08-22 — 30 Fama-French industries (K = 40, R² ~0.21) and coverage 2,987 → 6,307 names, estimation pinned at the liquid ~2,800</td></tr>
           <tr><td style="font-weight:500;white-space:nowrap">v1.0 — stability</td><td>Frozen schema, PyPI, versioned registry, one year of live weekly record</td></tr>
         </tbody>
       </table></div>
@@ -812,7 +812,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10})</pre>
       <p style="font-size:14px;line-height:1.65;margin:0;color:#2b2d2e">The plain-markdown mirror of this build lives at <a href="model.md" class="mono" style="font-size:13px">/model.md</a>, indexed by <a href="llms.txt" class="mono" style="font-size:13px">/llms.txt</a> — model card, factor definitions, correlations, and the full coverage list. No DOM parsing required. Point-in-time weekly snapshots are served as static JSON under <a href="history/index.json" class="mono" style="font-size:13px">/history/index.json</a>.</p>
     </div>
     <p class="sub" style="font-size:13.5px;margin:14px 0 0">Or rebuild the model yourself — the weekly GitHub Action runs exactly this:</p>
-    <pre class="code" style="margin-top:10px">riskprism-build --max-names 3000 --out artifacts</pre>
+    <pre class="code" style="margin-top:10px">riskprism-build --max-names 8000 --out artifacts</pre>
   </section>
 
   <section class="sect" style="padding-bottom:72px">
