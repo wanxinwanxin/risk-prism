@@ -1,7 +1,9 @@
 """Style factor exposure construction.
 
-Eight styles, all computable from prices plus EDGAR fundamentals:
-size, value, momentum, beta, volatility, liquidity, quality, leverage.
+Nine styles, all computable from prices plus EDGAR fundamentals: size,
+value, growth, momentum, beta, volatility, liquidity, quality, leverage.
+(Dividend yield was measured and rejected in v0.8 — significant in 0% of
+daily cross-sections and collinear with value; DECISIONS.md §13.)
 
 Beta (Market Sensitivity) and volatility come from one time-series
 regression per name: daily returns over the volatility window on the
@@ -157,7 +159,17 @@ def compute_style_exposures(
         "ocf_to_assets": fund_df["op_cashflow"] / ta,
         "gross_margin": gp / rev,
     }
-    raw["leverage"] = fund_df["total_liabilities"] / ta
+    # leverage composite (v0.8): book leverage, debt-to-equity and market
+    # leverage — the single liabilities/assets descriptor measured
+    # significant in only ~32% of cross-sections with style bias 1.50
+    tl = fund_df["total_liabilities"]
+    leverage_descs = {
+        "book_leverage": tl / ta,
+        "debt_to_equity": (tl / be).where(be > 0),
+        "market_leverage": tl / (tl + mktcap),
+    }
+    # sales growth (v0.8): normalized 5y revenue slope, point-in-time
+    raw["growth"] = fund_df["sales_growth"]
 
     if industries is not None:
         ind = industries.reindex(tickers)
@@ -167,10 +179,12 @@ def compute_style_exposures(
 
         value_descs = {k: impute(v) for k, v in value_descs.items()}
         quality_descs = {k: impute(v) for k, v in quality_descs.items()}
-        raw["leverage"] = impute(raw["leverage"])
+        leverage_descs = {k: impute(v) for k, v in leverage_descs.items()}
+        raw["growth"] = impute(raw["growth"])
 
     raw["value"] = _composite(value_descs, mktcap, config.winsor_z, fit)
     raw["quality"] = _composite(quality_descs, mktcap, config.winsor_z, fit)
+    raw["leverage"] = _composite(leverage_descs, mktcap, config.winsor_z, fit)
 
     exposures = pd.DataFrame(
         {name: process_exposure(raw[name], mktcap, z=config.winsor_z, fit=fit)

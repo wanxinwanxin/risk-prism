@@ -33,7 +33,24 @@ from riskprism.model.revalidate import revalidate_history
 from riskprism.model.validation import merge_validation
 
 FUND_FIELDS = ["book_equity", "total_assets", "total_liabilities", "net_income",
-               "shares_out", "op_cashflow", "revenues", "gross_profit", "cost_of_revenue"]
+               "shares_out", "op_cashflow", "revenues", "gross_profit",
+               "cost_of_revenue", "dividends_paid", "sales_growth"]
+
+# Sales growth: normalized slope of up-to-5 point-in-time annual revenue
+# filings — needs at least this many distinct fiscal years to be scored.
+_GROWTH_MIN_PERIODS = 3
+
+
+def _sales_growth(fund: "Fundamentals", date: pd.Timestamp) -> float:
+    hist = fund.history_asof("revenues", date, max_periods=5)
+    if len(hist) < _GROWTH_MIN_PERIODS:
+        return np.nan
+    y = hist.to_numpy(dtype=float)
+    denom = float(np.mean(np.abs(y)))
+    if not np.isfinite(denom) or denom == 0:
+        return np.nan
+    slope = float(np.polyfit(np.arange(len(y), dtype=float), y, 1)[0])
+    return slope / denom
 
 # Daily lookback needed before the first regression date (momentum window
 # plus skip, with slack for holidays).
@@ -174,9 +191,12 @@ def build_model(
     rebal_dates = [d for d in weekly_close.index if d >= first_regression]
 
     def fund_asof(names, date):
-        return pd.DataFrame(
-            {tk: fundamentals[tk].asof(date) for tk in names}
-        ).T.reindex(columns=FUND_FIELDS)
+        rows = {}
+        for tk in names:
+            d = fundamentals[tk].asof(date)
+            d["sales_growth"] = _sales_growth(fundamentals[tk], date)
+            rows[tk] = d
+        return pd.DataFrame(rows).T.reindex(columns=FUND_FIELDS)
 
     # ---- weekly formation, daily estimation ------------------------------
     # Exposures form on Fridays; a cross-sectional regression runs on every

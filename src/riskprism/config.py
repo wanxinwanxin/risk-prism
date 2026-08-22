@@ -7,6 +7,7 @@ MARKET_FACTOR = "market"
 STYLE_FACTORS = [
     "size",
     "value",
+    "growth",
     "momentum",
     "beta",
     "volatility",
@@ -26,14 +27,15 @@ class ModelConfig:
     version.
     """
 
-    version: str = "PRISM-US-MH-0.7"
+    version: str = "PRISM-US-MH-0.9"
     # Prior versions whose regression/exposure definitions match this one:
     # their factor-return history may be appended to (risk construction on
     # top differs, but validation is recomputed from history every build).
-    # v0.7 split Market Sensitivity (beta) out of volatility and redefined
-    # volatility as beta-orthogonalized residual volatility — exposure
-    # definitions changed, so v0.6's daily factor returns are not
-    # commensurable and the history rebuilds cold (still nearly free:
+    # v0.9 = the v0.8 style work (growth added; leverage rebuilt as a
+    # multi-descriptor composite; dividend yield measured and rejected —
+    # DECISIONS.md §13) plus FF12 -> FF30 industries (§14). Exposure
+    # definitions changed on both axes, so prior daily factor returns are
+    # not commensurable and the history rebuilds cold (still nearly free:
     # capture-forward history barely exceeds provider lookback).
     compatible_prior_versions: tuple = ()
     # Exposures form on Fridays; regressions run on every trading day

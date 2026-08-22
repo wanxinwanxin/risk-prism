@@ -71,12 +71,17 @@ CONCEPTS = {
         ("us-gaap", "CostOfGoodsSold"),
         ("ifrs-full", "CostOfSales"),
     ],
+    "dividends_paid": [
+        ("us-gaap", "PaymentsOfDividendsCommonStock"),
+        ("us-gaap", "PaymentsOfDividends"),
+        ("ifrs-full", "DividendsPaidClassifiedAsFinancingActivities"),
+    ],
 }
 
 # Flow (duration) concepts: only full-fiscal-year frames are kept, so
 # point-in-time lookups never mix quarterly and annual magnitudes.
 _DURATION_CONCEPTS = {"net_income", "op_cashflow", "revenues",
-                      "gross_profit", "cost_of_revenue"}
+                      "gross_profit", "cost_of_revenue", "dividends_paid"}
 
 
 def default_cache_dir() -> Path:
@@ -319,6 +324,26 @@ class Fundamentals:
 
     def asof(self, date: pd.Timestamp) -> dict[str, float]:
         return {field: latest_asof(df, date) for field, df in self.series.items()}
+
+    def history_asof(self, field: str, date: pd.Timestamp,
+                     max_periods: int = 5) -> pd.Series:
+        """Annual values per fiscal period, point-in-time as of ``date``.
+
+        Only filings with ``filed <= date`` are visible; the latest filing
+        wins per fiscal period end. Returns up to ``max_periods`` values
+        indexed by period end, oldest first — the input for trend
+        descriptors like sales growth.
+        """
+        df = self.series.get(field)
+        if df is None or df.empty:
+            return pd.Series(dtype=float)
+        ok = df[df["filed"] <= date]
+        if ok.empty:
+            return pd.Series(dtype=float)
+        dedup = ok.sort_values("filed").drop_duplicates("end", keep="last")
+        dedup = dedup.sort_values("end")
+        return pd.Series(dedup["val"].to_numpy(dtype=float),
+                         index=pd.to_datetime(dedup["end"]))[-max_periods:]
 
     def to_frame(self, ticker: str) -> pd.DataFrame:
         frames = []
