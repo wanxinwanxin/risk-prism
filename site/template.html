@@ -270,7 +270,7 @@ footer.site {
   <section class="hero" style="padding:72px 0 60px">
     <h1><span style="display:block">Portfolio risk, decomposed.</span>
         <span style="display:block">Rebuilt weekly. Graded in public.</span></h1>
-    <p class="lede">riskprism is an open-source, Barra-style fundamental factor risk model for US equities: a market factor, seven styles and twelve industries, estimated from daily cross-sections of roughly three thousand names. Built entirely on a redistributable data chain — SEC EDGAR fundamentals and market prices — and published as versioned artifacts under MIT.</p>
+    <p class="lede">riskprism is an open-source, Barra-style fundamental factor risk model for US equities: a market factor, eight styles and twelve industries, estimated from daily cross-sections of roughly three thousand names. Built entirely on a redistributable data chain — SEC EDGAR fundamentals and market prices — and published as versioned artifacts under MIT.</p>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:26px;align-items:center">
       <a class="btn btn-primary" href="#explorer">Open the explorer</a>
       <a class="btn btn-secondary" href="#model">Read the model factsheet</a>
@@ -348,7 +348,7 @@ footer.site {
         <tr><td>Estimation universe</td><td>~2,800 liquid names</td><td>~2,900 (Axioma AXUS4)</td><td><span class="tag tag-accent">At parity</span></td></tr>
         <tr><td>Estimation frequency</td><td>Daily cross-sections</td><td>Daily</td><td><span class="tag tag-accent">At parity</span></td></tr>
         <tr><td>Validation</td><td>Public, reproducible, re-scored weekly</td><td>Whitepaper snapshots</td><td><span class="tag tag-outline">Advantage</span></td></tr>
-        <tr><td>Factor breadth</td><td>20 factors</td><td>70–80 factors</td><td><span class="tag tag-neutral">Roadmap</span></td></tr>
+        <tr><td>Factor breadth</td><td>21 factors</td><td>70–80 factors</td><td><span class="tag tag-neutral">Roadmap</span></td></tr>
         <tr><td>Live track record</td><td>~3y replayed, weeks live</td><td>25–30 years</td><td><span class="tag tag-neutral">Time</span></td></tr>
       </tbody>
     </table></div>
@@ -851,7 +851,7 @@ const IND = FACTORS.filter(f => f.startsWith("ind_"));
 const RAMP = { a1:"#eef6ff", a2:"#d6ebff", a3:"#b5d9fd", a4:"#94bce3", a5:"#749dc4",
                a6:"#597ea3", a7:"#416180", a8:"#2c455d", a9:"#1d2d3d",
                n4:"#b7b7ba", n5:"#98989b", n6:"#7a7a7d", n7:"#5d5d60" };
-const SC = { size:"#416180", value:"#597ea3", momentum:"#749dc4", volatility:"#94bce3",
+const SC = { size:"#416180", value:"#597ea3", momentum:"#749dc4", beta:"#1d2d3d", volatility:"#94bce3",
              liquidity:"#5d5d60", quality:"#7a7a7d", leverage:"#98989b" };
 const DARK_SLICES = new Set(["#2c455d", "#416180", "#597ea3", "#5d5d60", "#7a7a7d", "#1d2d3d"]);
 const COLOR = f => f === MKT ? RAMP.a8
@@ -996,7 +996,8 @@ document.getElementById("model-title").textContent = m.model_version || "riskpri
     size: "Log market capitalization",
     value: "Composite — book, earnings, cash-flow and sales yields",
     momentum: "Twelve-month return, most recent month excluded",
-    volatility: "Trailing 252-day return volatility",
+    beta: "Market sensitivity — slope of daily returns on the cap-weighted market, 252-day window",
+    volatility: "Residual volatility — annualized residual std from the beta regression, orthogonalized to beta",
     liquidity: "Share turnover — 63-day median dollar volume over market cap",
     quality: "Composite — ROE, ROA, operating cash flow / assets, gross margin",
     leverage: "Balance-sheet leverage — total liabilities / total assets",
@@ -1322,7 +1323,7 @@ function renderPortfolio() {
 }
 function renderStress(r) {
   const holder = document.getElementById("pf-sliders");
-  const stressFactors = [MKT, "size", "value", "momentum", "volatility"];
+  const stressFactors = [MKT, "beta", "size", "value", "momentum", "volatility"];
   holder.innerHTML = "";
   stressFactors.forEach(f => {
     if (!(f in stressShocks)) stressShocks[f] = f === MKT ? -10 : 0;
@@ -1762,7 +1763,7 @@ renderStockTable();
       if (VNOW === "v0.5") journey.push([VNOW, mvRow ? mvRow.bias : 1.09, "daily estimation"]);
       else {
         journey.push(["v0.5", 1.09, "daily estimation"]);
-        const jlabel = { "v0.6": "+ composites" }[VNOW] || "current build";
+        const jlabel = { "v0.6": "+ composites", "v0.7": "+ beta split" }[VNOW] || "current build";
         if (mvRow) journey.push([VNOW, mvRow.bias, jlabel]);
       }
       const hl = ((DATA.meta.config || {}).vol_half_life) || 84;
