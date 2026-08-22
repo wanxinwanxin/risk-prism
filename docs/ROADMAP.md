@@ -12,7 +12,7 @@ Status as of `PRISM-US-MH-0.9` (2026-08-22).
 | Dimension | riskprism today | Commercial typical | Gap |
 |---|---|---|---|
 | Estimation universe | ~2,800 liquid names | Axioma AXUS4 ~2,900 | at parity |
-| Coverage universe | ~3,000 (self-imposed cap) | 8,000–9,000 US names | closable — EDGAR has ~8,000 candidates |
+| Coverage universe | ~6,300 of ~8,000 EDGAR candidates | 8,000–9,000 US names | near parity — the rest is mostly untradeable |
 | Factors | 40 (market + 9 styles + FF30) | 70–80 (a dozen styles + 60+ GICS industries) | near parity (public schemes go to FF48) |
 | Estimation frequency | daily cross-sections | daily | at parity (since v0.5) |
 | Live track record | ~3 years replayed, weeks live | 25–30 years | only time closes this |
@@ -33,10 +33,10 @@ Status as of `PRISM-US-MH-0.9` (2026-08-22).
   rejected (0% significant — an honest negative). Evidence: DECISIONS §13.
 - **v0.9 — FF30 industries (SHIPPED 2026-08-22).** K = 40 (market + 9
   styles + FF30 from Ken French's public SIC maps). Mean daily R² 0.212,
-  overall bias 0.99. Evidence: DECISIONS §14. Coverage raise toward the
-  ~8,000 EDGAR candidates is the remaining half — next build attempt.
-  Re-run the eigenfactor A/B at K=40 (documented negative at K=20; the
-  trade may flip) — still open.
+  overall bias 0.99. Evidence: DECISIONS §14. Coverage shipped the same
+  day: 2,987 → 6,307 names with estimation pinned at the EDGAR-ordered
+  top 3,000 (two failed attempts documented — §15). The eigenfactor A/B
+  re-ran at K=40: blend stands (§14).
 - **v1.0 — stability.** Frozen artifact schema, PyPI package, versioned
   model registry, and at least one year of uninterrupted live weekly
   out-of-sample record.

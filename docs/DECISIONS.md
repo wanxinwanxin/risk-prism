@@ -479,3 +479,45 @@ calibration.
 
 Coverage remains ~3,000 names; the raise toward the ~8,000 EDGAR
 candidates is the remaining half of the roadmap's v0.9 line.
+
+## 15. Coverage raised to the EDGAR universe — estimation stays pinned (decided 2026-08-22)
+
+**Change.** The candidate pool widens from the ~3,000 largest EDGAR
+names to ~8,000; coverage goes 2,987 → **6,307**. Three builds to get it
+honest:
+
+1. **Naive raise (rejected).** Widening the pool let ~900 marginal names
+   through the estimation screens (2,774 → 3,698). Style-portfolio
+   calibration blew up (leverage 2.39, size 2.39), overall bias
+   0.99 → 1.22, and the structural specific-risk prior extrapolated to
+   absurdities on the new tail (p95 = 1089%/yr).
+2. **ADV-rank cap (rejected).** Capping estimation at the 3,000 most
+   liquid names fixed the size but changed the composition — small
+   high-turnover names displaced quiet large caps, and the style-extreme
+   deciles load on exactly those names: panel-matched style bias
+   1.12 → 1.57 while market/ETF/industry/optimized portfolios were
+   unchanged. The diagnosis in one line: coverage was leaking into the
+   estimation universe.
+3. **EDGAR-order pool cap (shipped).** The estimation candidate pool is
+   the first `estimation_max_names` EDGAR-ordered names (≈ market cap) —
+   byte-identical estimation to the prior build — and coverage alone
+   widens. The structural prior is also clipped to the fit
+   distribution's [q01, 1.5×q99] against exp() extrapolation.
+
+### §15 result: gate passed, shipped
+
+- Coverage 2,987 → 6,307; estimation exactly 2,774 (unchanged names).
+- Panel-matched scoreboard vs the 3,000-name build: overall 0.987 vs
+  0.989; styles 1.124 vs 1.125; market/ETF/industry/optimized all within
+  noise. Full panel (now 135 weeks — the wider pool starts regressions
+  14 weeks earlier, deepening the replayed record): bias 0.988,
+  |z|>1.96 5.2%.
+- Extended tail: 3,533 prior-driven names, specific vol median 47%,
+  p95 167%, max 176% — the clip holds.
+- Mean daily R² 0.205 vs 0.212 (a day-composition effect of the deeper
+  panel, not a universe change — the cross-sections are identical).
+
+The lesson worth keeping: **coverage and estimation are different
+products.** Coverage is a reach claim; estimation is a quality claim.
+Every commercial model pins the estimation universe by construction —
+now so do we, explicitly.

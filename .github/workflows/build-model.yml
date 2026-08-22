@@ -7,7 +7,7 @@ on:
     inputs:
       max_names:
         description: "Universe size cap"
-        default: "3000"
+        default: "8000"
 
 permissions:
   contents: write
@@ -40,7 +40,7 @@ jobs:
           # — SEC's fair-access policy requires a contact email.
           RISKPRISM_EDGAR_UA: ${{ vars.RISKPRISM_EDGAR_UA }}
         run: |
-          riskprism-build --max-names "${{ github.event.inputs.max_names || '3000' }}" \
+          riskprism-build --max-names "${{ github.event.inputs.max_names || '8000' }}" \
             $PRIOR_FLAG --out artifacts
       - name: Set release tag
         id: tag
