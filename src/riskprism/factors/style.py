@@ -1,7 +1,14 @@
 """Style factor exposure construction.
 
-Seven styles, all computable from prices plus EDGAR fundamentals:
-size, value, momentum, volatility, liquidity, quality, leverage.
+Eight styles, all computable from prices plus EDGAR fundamentals:
+size, value, momentum, beta, volatility, liquidity, quality, leverage.
+
+Beta (Market Sensitivity) and volatility come from one time-series
+regression per name: daily returns over the volatility window on the
+cap-weighted market return. Beta is the slope; volatility is the
+annualized std of the residuals, orthogonalized to beta cross-sectionally
+(v0.6's raw total volatility conflated the two dimensions — USE4 and
+Axioma both carry them as separate factors).
 
 Value and quality are multi-descriptor composites (the single-descriptor
 v0.5 versions measured significant in only 4% and 1% of daily
@@ -23,6 +30,26 @@ import pandas as pd
 
 from riskprism.config import STYLE_FACTORS, ModelConfig
 from riskprism.factors.transforms import process_exposure, standardize, winsorize_z
+
+def _orthogonalize(y: pd.Series, x: pd.Series, mktcap: pd.Series,
+                   fit: pd.Index | None) -> pd.Series:
+    """Residual of a cross-sectional regression of y on x, re-standardized.
+
+    The slope fits on ``fit`` rows (default: all) and applies everywhere.
+    """
+    ref = y.index.intersection(fit) if fit is not None else y.index
+    yr, xr = y.loc[ref], x.loc[ref]
+    ok = yr.notna() & xr.notna()
+    if int(ok.sum()) < 2:
+        return y
+    xc = xr[ok] - xr[ok].mean()
+    denom = float((xc ** 2).sum())
+    if denom == 0:
+        return y
+    b = float(((yr[ok] - yr[ok].mean()) * xc).sum()) / denom
+    a = float(yr[ok].mean()) - b * float(xr[ok].mean())
+    return standardize(y - (a + b * x), mktcap, fit=fit).fillna(0.0)
+
 
 def _composite(descs: dict[str, pd.Series], mktcap: pd.Series, z: float,
                fit: pd.Index | None) -> pd.Series:
@@ -74,10 +101,40 @@ def compute_style_exposures(
     else:
         raw["momentum"] = pd.Series(np.nan, index=tickers)
 
+    # beta and residual volatility, from one regression per name: daily
+    # returns over the volatility window on the cap-weighted market return
+    # (weights fixed at as-of caps; the market is defined on the fit
+    # universe when one is given, matching the estimation-universe market
+    # the factor regressions see).
     rets = px.pct_change()
     recent = rets.iloc[-config.volatility_window_days:]
-    vol = recent.std() * np.sqrt(252)
-    raw["volatility"] = vol.where(recent.count() >= config.volatility_window_days // 2)
+    ref_cols = recent.columns.intersection(fit) if fit is not None else recent.columns
+    w_ref = mktcap.reindex(ref_cols).where(lambda s: s > 0)
+    ref = recent[ref_cols]
+    w_present = ref.notna().mul(w_ref, axis=1).sum(axis=1)
+    mkt = ref.mul(w_ref, axis=1).sum(axis=1, min_count=1) / w_present.where(w_present > 0)
+
+    X = recent.to_numpy(dtype=float)
+    m = mkt.to_numpy(dtype=float)
+    mask = np.isfinite(X) & np.isfinite(m)[:, None]
+    n_obs = mask.sum(axis=0)
+    safe_n = np.maximum(n_obs, 1)
+    X0 = np.where(mask, X, 0.0)
+    M0 = np.where(mask, m[:, None], 0.0)
+    xbar = X0.sum(axis=0) / safe_n
+    mbar = M0.sum(axis=0) / safe_n
+    xc = np.where(mask, X0 - xbar, 0.0)
+    mc = np.where(mask, M0 - mbar, 0.0)
+    cov = (xc * mc).sum(axis=0) / safe_n
+    var = (mc * mc).sum(axis=0) / safe_n
+    with np.errstate(invalid="ignore", divide="ignore"):
+        beta = cov / var
+        resid = np.where(mask, xc - beta * mc, 0.0)
+        rvol = np.sqrt((resid ** 2).sum(axis=0) / safe_n * 252.0)
+    ok_obs = ((n_obs >= config.volatility_window_days // 2)
+              & np.isfinite(beta) & (var > 0))
+    raw["beta"] = pd.Series(np.where(ok_obs, beta, np.nan), index=tickers)
+    raw["volatility"] = pd.Series(np.where(ok_obs, rvol, np.nan), index=tickers)
 
     dollar_vol = (close * volume).loc[:as_of].iloc[-config.liquidity_window_days:]
     turnover = dollar_vol.median() / mktcap
@@ -120,4 +177,8 @@ def compute_style_exposures(
          for name in STYLE_FACTORS},
         index=tickers,
     )
+    # whatever beta/vol correlation the time-series regression left at the
+    # exposure level is projected out, so the two styles stay separate axes
+    exposures["volatility"] = _orthogonalize(
+        exposures["volatility"], exposures["beta"], mktcap, fit)
     return exposures, mktcap

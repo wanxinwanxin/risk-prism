@@ -94,7 +94,7 @@ def create_app(model: RiskModel | None = None,
         title="riskprism API",
         summary="Open-source US equity factor risk model. Free, no key.",
         description=(
-            "Barra-style factor risk model (market + 7 styles + 12 industries), "
+            "Barra-style factor risk model (market + 8 styles + 12 industries), "
             "rebuilt weekly from SEC EDGAR and market data, validated in public. "
             "Weights are portfolio weights; shorts are negative; they need not "
             "sum to 1. All volatilities are annualized decimals (0.20 = 20%/yr). "

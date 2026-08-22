@@ -8,6 +8,7 @@ STYLE_FACTORS = [
     "size",
     "value",
     "momentum",
+    "beta",
     "volatility",
     "liquidity",
     "quality",
@@ -25,12 +26,13 @@ class ModelConfig:
     version.
     """
 
-    version: str = "PRISM-US-MH-0.6"
+    version: str = "PRISM-US-MH-0.7"
     # Prior versions whose regression/exposure definitions match this one:
     # their factor-return history may be appended to (risk construction on
     # top differs, but validation is recomputed from history every build).
-    # v0.6 rebuilt value and quality as multi-descriptor composites —
-    # exposure definitions changed, so v0.5's daily factor returns are not
+    # v0.7 split Market Sensitivity (beta) out of volatility and redefined
+    # volatility as beta-orthogonalized residual volatility — exposure
+    # definitions changed, so v0.6's daily factor returns are not
     # commensurable and the history rebuilds cold (still nearly free:
     # capture-forward history barely exceeds provider lookback).
     compatible_prior_versions: tuple = ()
