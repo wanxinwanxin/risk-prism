@@ -3,6 +3,9 @@
 Run with `riskprism-api` (or `uvicorn riskprism.api_server:app`). Serves:
     /api/v1/*      JSON risk endpoints (same surface as the MCP server)
     /api/docs      interactive OpenAPI docs
+    /mcp           hosted MCP endpoint (streamable HTTP, stateless) — the
+                   same five tools as the local `riskprism-mcp` server,
+                   with no install and no artifact download
     /              the rendered explorer site ($RISKPRISM_SITE, default ./site)
 
 Artifacts load from $RISKPRISM_ARTIFACTS (default ./artifacts). If meta.json
@@ -17,11 +20,13 @@ import tarfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from pydantic import BaseModel, Field
 
+from riskprism import mcp_server as _agent_tools
 from riskprism.risk import RiskModel
 
 DEFAULT_ARTIFACTS_URL = (
@@ -79,6 +84,14 @@ def create_app(model: RiskModel | None = None,
                site_dir: str | Path | None = None) -> FastAPI:
     state: dict = {"model": model, "error": None}
 
+    # Hosted MCP over streamable HTTP: a stateless session manager wrapped
+    # around the same low-level server the stdio `riskprism-mcp` runs — one
+    # tool surface, two transports. A fresh manager per app instance keeps
+    # its run-once lifespan compatible with test factories.
+    mcp_manager = StreamableHTTPSessionManager(
+        app=_agent_tools.mcp._mcp_server, event_store=None,
+        json_response=True, stateless=True)
+
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         if state["model"] is None:
@@ -88,7 +101,12 @@ def create_app(model: RiskModel | None = None,
                 state["model"] = RiskModel.load(artifacts)
             except Exception as exc:  # keep the site up even if artifacts fail
                 state["error"] = f"{type(exc).__name__}: {exc}"
-        yield
+        if state["model"] is not None:
+            # the MCP tools lazily load from $RISKPRISM_ARTIFACTS; hand them
+            # the already-loaded model instead of a second copy
+            _agent_tools._model = state["model"]
+        async with mcp_manager.run():
+            yield
 
     app = FastAPI(
         title="riskprism API",
@@ -167,6 +185,23 @@ def create_app(model: RiskModel | None = None,
             return m().stress_test(req.weights, req.factor_shocks)
         except ValueError as exc:
             raise HTTPException(400, detail=str(exc)) from None
+
+    class _MCPBridge(Response):
+        """Hands the raw ASGI exchange to the MCP session manager.
+
+        FastAPI awaits the returned response as an ASGI app, so the
+        manager gets the untouched receive channel (the endpoint never
+        reads the body) and full control of the send side — which a
+        streamable-HTTP transport needs.
+        """
+
+        async def __call__(self, scope, receive, send):
+            await mcp_manager.handle_request(scope, receive, send)
+
+    @app.api_route("/mcp", methods=["POST", "GET", "DELETE"],
+                   include_in_schema=False)
+    async def mcp_route(request: Request) -> Response:
+        return _MCPBridge()
 
     site = Path(site_dir if site_dir is not None
                 else os.environ.get("RISKPRISM_SITE", "site"))

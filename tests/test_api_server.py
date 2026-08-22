@@ -109,3 +109,35 @@ def test_site_served_at_root(client):
 
 def test_health(client):
     assert client.get("/api/v1/health").json()["model_loaded"] is True
+
+# ---- hosted MCP endpoint (streamable HTTP, stateless) ----
+
+MCP_HEADERS = {"content-type": "application/json",
+               "accept": "application/json, text/event-stream"}
+
+
+def _rpc(method, params=None, id=1):
+    msg = {"jsonrpc": "2.0", "method": method, "id": id}
+    if params is not None:
+        msg["params"] = params
+    return msg
+
+
+def test_mcp_initialize(client):
+    r = client.post("/mcp", json=_rpc("initialize", {
+        "protocolVersion": "2025-06-18", "capabilities": {},
+        "clientInfo": {"name": "pytest", "version": "0"}}), headers=MCP_HEADERS)
+    assert r.status_code == 200
+    assert r.json()["result"]["serverInfo"]["name"] == "riskprism"
+
+
+def test_mcp_tools_list_and_call(client):
+    r = client.post("/mcp", json=_rpc("tools/list", {}, id=2), headers=MCP_HEADERS)
+    assert r.status_code == 200
+    tools = {t["name"] for t in r.json()["result"]["tools"]}
+    assert {"get_model_info", "get_portfolio_risk", "get_factor_exposures",
+            "stress_test", "check_coverage"} <= tools
+    r2 = client.post("/mcp", json=_rpc("tools/call", {
+        "name": "get_model_info", "arguments": {}}, id=3), headers=MCP_HEADERS)
+    assert r2.status_code == 200
+    assert "test-0.1" in str(r2.json()["result"])
