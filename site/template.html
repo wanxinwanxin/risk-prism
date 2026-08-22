@@ -70,6 +70,10 @@ section.view.active { display: block; }
 .g3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 44px; }
 .g57 { display: grid; grid-template-columns: 5fr 7fr; gap: 44px; }
 .g75 { display: grid; grid-template-columns: 7fr 5fr; gap: 44px; }
+/* grid items must be allowed to shrink below their content's min width,
+   or a long unbreakable line (a one-line curl command) blows the column
+   out past the page container instead of scrolling inside its code block */
+.g2 > *, .g3 > *, .g57 > *, .g75 > * { min-width: 0; }
 @media (max-width: 920px) { .g2, .g3, .g57, .g75 { grid-template-columns: 1fr; gap: 28px; } }
 .sect { padding: 0 0 56px; }
 .sub { font-size: 14.5px; line-height: 1.6; color: var(--ink-2); }
