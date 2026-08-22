@@ -12,3 +12,6 @@ artifacts/
 site/history/
 .DS_Store
 .env
+
+# local-only archive (design research, old exports)
+archive/
