@@ -1,0 +1,56 @@
+name: deploy
+
+# Keeps the Railway deployment current with main. The weekly build-model
+# workflow deploys its own fresh render directly; this workflow covers every
+# other change to the shipped surface (server code, site template, image
+# definition). It re-renders the site from the latest release artifacts
+# before packing, because site/history/ is gitignored but must ship.
+#
+# Pushes made by build-model's bot commit use GITHUB_TOKEN and therefore
+# do not trigger this workflow — no double deploy on Mondays.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "site/**"
+      - "pyproject.toml"
+      - "Dockerfile"
+      - ".railwayignore"
+      - "README.md"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: railway-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Fetch latest model artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download --pattern riskprism-artifacts.tar.gz --dir dl
+          mkdir -p artifacts && tar xzf dl/riskprism-artifacts.tar.gz -C artifacts
+      - name: Render site from the current template
+        run: riskprism-site --artifacts artifacts --out site
+      - name: Deploy to Railway
+        # RAILWAY_TOKEN is a Railway project token (repo secret).
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ]; then
+            echo "::warning::RAILWAY_TOKEN not set — deploy skipped"
+            exit 0
+          fi
+          npx -y @railway/cli up --service risk-prism --detach
