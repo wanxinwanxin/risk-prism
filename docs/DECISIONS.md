@@ -399,3 +399,76 @@ Cold rebuild, 713 daily regressions over the same 149 weeks, 121 scored:
 Leverage remains the weakest calibrated style (32% significant, bias
 1.50) — unchanged by this split, and now clearly the next QC target
 (v0.8, alongside growth and dividend yield candidates).
+
+## 13. v0.8 style work: growth ships, leverage becomes a composite, dividend yield is an honest negative (decided 2026-08-22)
+
+**Changes measured** (one cold rebuild at FF12 with all three, then gated
+per factor):
+
+- **Leverage rebuilt as a 3-descriptor composite** — book leverage
+  (TL/TA), debt-to-equity (TL/BE), market leverage (TL/(TL+ME)). The
+  single liabilities/assets descriptor was the weakest calibrated style
+  (32% of cross-sections significant, style-portfolio bias 1.50).
+  Measured: **47.2% significant (mean |t| 2.24), style bias 1.50 → 1.11,
+  exceedances 21.5% → 9.1%**, VIF 1.22. Ships.
+- **Growth** — normalized slope of up-to-five point-in-time annual
+  revenue filings (the v0.6 fundamentals ingestion already carried the
+  history; at least three fiscal years required, industry-median
+  imputed). Measured: **41.8% significant (mean |t| 1.93)**, VIF 1.08,
+  week-to-week stability 0.994, style bias 1.15 — mid-table from day one,
+  above quality's 1.6% starting point by thirty-fold. Ships.
+- **Dividend yield** — annual PaymentsOfDividends over market cap,
+  absence treated as a genuine zero. Measured: **significant in 0.0% of
+  daily cross-sections (mean |t| 0.27)** and correlated 0.56 with value,
+  dragging value's VIF from 1.02 to 1.51 for nothing in return. Daily
+  return cross-sections simply do not price a slow, mostly-constant
+  yield spread. **Rejected** — same honest-negative treatment as the
+  eigenfactor adjustment (§9). The `dividends_paid` EDGAR ingestion
+  stays (cheap, point-in-time, and a future value-descriptor candidate).
+
+Scoreboard on the all-three build: overall bias 1.010 → 0.984,
+|z|>1.96 5.7% → 4.9%, min-var opt 1.01 → 0.98, market 0.90 flat. The
+shipped v0.9 build carries growth + the leverage composite without
+dividend yield; §14 adds the industry axis.
+
+## 14. v0.9: FF12 → FF30 industries (decided 2026-08-22)
+
+**Change.** Industries move from the Fama-French 12 scheme to FF30,
+parsed from Ken French's published `Siccodes30` definitions (587 SIC
+ranges — public domain, auditable, no GICS license). K: 21 → 40
+(market + 9 styles + 30 industries). Cold rebuild (exposure definitions
+changed; shares the build with §13's style work).
+
+**The K=40 question.** The Shepard floor for portfolios optimized
+against the model rises with K (≈1.20 at 84d/K=40 vs 1.09 at K=21), and
+§9 documented the eigenfactor adjustment overcorrecting at K=20 — so the
+risk was that finer industries buy R² at the cost of optimized-portfolio
+calibration.
+
+### §14 result (measured 2026-08-22): gate passed, shipped
+
+- **Mean daily R² 0.181 → 0.212** — the largest explanatory gain of any
+  change shipped so far (daily cross-sections at FF12 left industry
+  co-movement on the table).
+- **Optimized portfolios did not degrade: min-var bias 0.98 → 0.99.**
+  Correlation blending plus ~730 effective daily observations absorb
+  K=40 comfortably; the measured bias sits far below the theoretical
+  floor because the blend suppresses exactly the noise directions
+  optimizers hunt. The `optimized=true` reporting correction now scales
+  with K=40 for callers who want the conservative number.
+- Scoreboard flat at ideal: overall bias 0.984 → 0.987, |z|>1.96
+  4.9% → 5.1% (5,786 portfolio-week scores — the industry panel grew
+  from 11 to 24 scoreable portfolios). Industry-portfolio pooled bias
+  0.92.
+- Industry significance: median 34% of daily cross-sections, range
+  2%–69%. The thin tail is tiny industries (Txtls 3 names, Smoke 6,
+  Coal 6) — noisy factor estimates but identification-neutral and
+  calibrated in aggregate; they'd merge away under FF48-style grouping
+  if they ever misbehave. Highest industry vols are sensible (Coal 43%,
+  Mines 38%, Oil 28%).
+- Watch items carried forward: growth style bias 1.20 (young factor,
+  same young-EWMA pattern value showed in §11), market portfolio 0.92
+  (mildly conservative). Eigenfactor A/B at K=40 still open.
+
+Coverage remains ~3,000 names; the raise toward the ~8,000 EDGAR
+candidates is the remaining half of the roadmap's v0.9 line.

@@ -1,9 +1,11 @@
 # PRISM-US-MH methodology
 
-Version `PRISM-US-MH-0.6`. Medium-horizon US equity fundamental factor
+Version `PRISM-US-MH-0.9`. Medium-horizon US equity fundamental factor
 model: **weekly formation, daily estimation** — exposures form on
 Fridays, cross-sectional regressions run on every trading day. All
-parameters live in `riskprism.config.ModelConfig`.
+parameters live in `riskprism.config.ModelConfig`. A short-horizon
+variant (`PRISM-US-SH`) derives from the same artifacts with halved
+risk half-lives (`riskprism-variant`).
 
 v0.3 added four pieces of the commercial-model recipe (Newey-West
 variance adjustment, Volatility Regime Adjustment, Bayesian specific-risk
@@ -19,8 +21,12 @@ unit, so v0.5 rebuilt history cold (`compatible_prior_versions` is empty;
 the weekly capture-forward history was entirely cold-start at the time,
 so nothing survivorship-free was lost). **v0.6 rebuilt value and quality
 as multi-descriptor composites** (DECISIONS.md §11) — an exposure-
-definition change, hence another cold rebuild. Validation is recomputed
-from history on every build regardless (see Validation below).
+definition change, hence another cold rebuild. **v0.7 split Market
+Sensitivity (beta) from beta-orthogonalized Residual Volatility** (§12).
+**v0.8 added growth, rebuilt leverage as a composite, and measured and
+rejected dividend yield** (§13). **v0.9 moved industries from FF12 to
+FF30** (§14), taking K to 40. Validation is recomputed from history on
+every build regardless (see Validation below).
 
 ## Two universes
 
@@ -51,7 +57,7 @@ the last traded price already reflects deal terms). History is capped at a
 trailing 156 weeks.
 
 Consequence: history recorded after launch is survivorship-free by
-construction, and because the EWMA half-lives are 13/26 weeks, the biased
+construction, and at the 84/252-trading-day EWMA half-lives the biased
 cold-start history decays out of the live model within ~18–24 months.
 Weeks recorded before launch remain biased; factor-return *means* are
 affected more than the covariances the model ships. A version bump that
@@ -85,12 +91,13 @@ cap-weighted mean 0 / equal-weighted std 1, missing → 0:
 |---|---|
 | size | ln(market cap) |
 | value | composite: book/price (book > 0), earnings/price, operating cash flow/price, sales/price |
+| growth | normalized slope of up-to-5 point-in-time annual revenue filings (≥3 fiscal years, industry-median imputed) |
 | momentum | 12-month return skipping the most recent month (252d window, 21d skip) |
 | beta | slope of daily returns on the cap-weighted market return (252d window, ≥126 obs) |
 | volatility | annualized residual std from the beta regression, orthogonalized to beta (252d window, ≥126 obs) |
 | liquidity | ln(63-day median dollar volume / market cap) |
 | quality | composite: ROE, ROA, operating cash flow/assets, gross margin |
-| leverage | total liabilities / total assets |
+| leverage | composite: book leverage (TL/TA), debt-to-equity (TL/BE), market leverage (TL/(TL+ME)) |
 
 Value and quality are multi-descriptor composites (v0.6): each
 descriptor is z-scored on the estimation universe, the composite is the
@@ -122,7 +129,9 @@ XBRL values.
 
 ## Industries
 
-Fama-French 12 groups mapped from EDGAR SIC codes. One-hot exposures.
+Fama-French 30 groups (v0.9; FF12 through v0.8) mapped from EDGAR SIC
+codes via Ken French's published Siccodes30 definitions. One-hot
+exposures.
 
 ## Cross-sectional regression
 

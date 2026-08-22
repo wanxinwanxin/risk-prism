@@ -5,7 +5,7 @@ the commercial systems (Barra, Axioma, Bloomberg), and which of those gaps
 can be closed with public, redistributable data?** Gaps that can't be closed
 that way are listed as explicit non-goals rather than quietly ignored.
 
-Status as of `PRISM-US-MH-0.7` (2026-08-22).
+Status as of `PRISM-US-MH-0.9` (2026-08-22).
 
 ## Where we stand
 
@@ -13,7 +13,7 @@ Status as of `PRISM-US-MH-0.7` (2026-08-22).
 |---|---|---|---|
 | Estimation universe | ~2,800 liquid names | Axioma AXUS4 ~2,900 | at parity |
 | Coverage universe | ~3,000 (self-imposed cap) | 8,000–9,000 US names | closable — EDGAR has ~8,000 candidates |
-| Factors | 21 (market + 8 styles + FF12) | 70–80 (a dozen styles + 60+ GICS industries) | partially closable (public schemes go to FF48) |
+| Factors | 40 (market + 9 styles + FF30) | 70–80 (a dozen styles + 60+ GICS industries) | near parity (public schemes go to FF48) |
 | Estimation frequency | daily cross-sections | daily | at parity (since v0.5) |
 | Live track record | ~3 years replayed, weeks live | 25–30 years | only time closes this |
 | Horizons | one (medium, weekly) | short / medium / long variants | closable — same engine, different half-lives |
@@ -27,19 +27,16 @@ Status as of `PRISM-US-MH-0.7` (2026-08-22).
   significant in 84% of daily cross-sections (second only to the market),
   mean R² 0.159 → 0.178, every scoreboard aggregate improved. Evidence:
   DECISIONS.md §12.
-- **v0.8 — leverage rework, growth & dividend yield.** Leverage is the
-  weakest calibrated style (32% significant, style-portfolio bias 1.50):
-  rework (debt/EV or a liabilities/assets + debt/equity composite) or
-  demote to a quality descriptor. The v0.6 fundamentals ingestion
-  (revenues, OCF, dividends-adjacent tags) already carries what growth and
-  yield need. Candidate midcap (size²) factor. Each addition gated on the
-  same QC battery: %-significant, VIF, exposure stability, style-portfolio
-  bias.
-- **v0.9 — industries & coverage.** FF12 → FF30 industries (public Ken
-  French SIC maps; K→~45), and raise the coverage universe toward the
-  ~8,000 EDGAR candidates. Estimation universe stays liquidity-screened at
-  ~2,800. Re-run the eigenfactor A/B at higher K (documented negative at
-  K=20; the trade may flip).
+- **v0.8 — styles (SHIPPED 2026-08-22, inside the v0.9 build).** Growth
+  ships (41.8% of cross-sections significant); leverage rebuilt as a
+  3-descriptor composite (bias 1.50 → 1.11); dividend yield measured and
+  rejected (0% significant — an honest negative). Evidence: DECISIONS §13.
+- **v0.9 — FF30 industries (SHIPPED 2026-08-22).** K = 40 (market + 9
+  styles + FF30 from Ken French's public SIC maps). Mean daily R² 0.212,
+  overall bias 0.99. Evidence: DECISIONS §14. Coverage raise toward the
+  ~8,000 EDGAR candidates is the remaining half — next build attempt.
+  Re-run the eigenfactor A/B at K=40 (documented negative at K=20; the
+  trade may flip) — still open.
 - **v1.0 — stability.** Frozen artifact schema, PyPI package, versioned
   model registry, and at least one year of uninterrupted live weekly
   out-of-sample record.
