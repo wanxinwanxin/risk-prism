@@ -86,7 +86,8 @@ cap-weighted mean 0 / equal-weighted std 1, missing → 0:
 | size | ln(market cap) |
 | value | composite: book/price (book > 0), earnings/price, operating cash flow/price, sales/price |
 | momentum | 12-month return skipping the most recent month (252d window, 21d skip) |
-| volatility | 252-day daily return std, annualized (≥126 obs) |
+| beta | slope of daily returns on the cap-weighted market return (252d window, ≥126 obs) |
+| volatility | annualized residual std from the beta regression, orthogonalized to beta (252d window, ≥126 obs) |
 | liquidity | ln(63-day median dollar volume / market cap) |
 | quality | composite: ROE, ROA, operating cash flow/assets, gross margin |
 | leverage | total liabilities / total assets |
@@ -101,6 +102,17 @@ the USE4/Axioma construction; the single-descriptor v0.5 versions
 measured significant in only 4% (value) and 1% (quality) of daily
 cross-sections — the composite's job is to make these axes carry real
 covariance information.
+
+Beta and volatility come from one time-series regression per name (v0.7):
+daily returns over the 252-day window on the cap-weighted market return,
+with weights fixed at as-of caps and the market defined on the estimation
+universe (coverage-only names cannot move their own benchmark). Beta is
+the slope — USE4's "Beta", Axioma's "Market Sensitivity". Volatility is
+the annualized std of the regression residuals, then cross-sectionally
+orthogonalized to beta and re-standardized (the USE4 HSIGMA treatment),
+so the two styles stay separate axes: measured exposure correlation 0.00,
+and the raw v0.6 total-volatility axis decomposes into them at 0.57
+(beta) and 0.78 (residual vol). Evidence in docs/DECISIONS.md §12.
 
 Fundamentals are point-in-time: values are used only after their EDGAR
 `filed` date. Flow concepts — net income, operating cash flow,

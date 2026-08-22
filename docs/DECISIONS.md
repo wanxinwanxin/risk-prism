@@ -348,3 +348,54 @@ descriptor (IBES-class, proprietary, deliberately skipped). Next levers
 if it stays weak: dividend yield as a separate factor (v0.7 candidate)
 and a longer history. Leverage (34% significant, bias 1.47) is now the
 weakest calibrated style and the next QC target.
+
+## 12. v0.7: beta split — Market Sensitivity separated from Residual Volatility (decided 2026-08-22)
+
+**Change.** v0.6's `volatility` style (raw 252-day total return std)
+conflated two dimensions every commercial model carries separately:
+how hard a name leans on the market (USE4 "Beta", Axioma "Market
+Sensitivity") and how much it moves on its own (USE4 "Residual
+Volatility"). v0.7 splits them with one time-series regression per name —
+daily returns over the 252-day window on the cap-weighted market return
+(weights fixed at as-of caps; the market is defined on the estimation
+universe, so coverage-only names can't move their own benchmark). Beta is
+the slope; volatility becomes the annualized residual std, then
+cross-sectionally orthogonalized to beta and re-standardized (USE4 does
+the same for its HSIGMA descriptor). K: 20 → 21.
+
+**Cost.** Exposure definitions changed → cold rebuild,
+`compatible_prior_versions = ()` — same never-cheaper-than-now economics
+as §10/§11.
+
+**Gate.** Ship if: beta lands materially significant; volatility stays
+significant; no style collapses; VIF stays bounded; validation scoreboard
+(bias, exceedances, MZ slope, opt rows, ETFs) does not degrade.
+
+### §12 result (measured 2026-08-22): gate passed, shipped
+
+Cold rebuild, 713 daily regressions over the same 149 weeks, 121 scored:
+
+- **beta: significant in 83.7% of daily cross-sections, mean |t| 8.2** —
+  instantly the second-strongest factor in the model, behind only the
+  market itself (87.0%). Its style portfolio scores bias 0.94 from day
+  one. Week-to-week exposure autocorrelation 0.995.
+- **volatility (now residual, beta-orthogonalized): 82.0% → 73.9%
+  significant** — the expected transfer: beta absorbed the market-lean
+  component, and what remains is still a top-five style. Its VIF
+  *improved* 1.47 → 1.23, exposure-level corr(beta, volatility) = 0.00
+  by construction, and its style-portfolio bias is fine (0.98 → 1.05).
+- The old axis genuinely decomposed: v0.6 total vol correlates 0.78 with
+  the new residual vol and 0.57 with the new beta.
+- **Mean daily R² 0.159 → 0.178** — the largest single-change R² gain
+  since daily estimation itself.
+- Scoreboard improved across the board: overall bias 1.05 → 1.01,
+  |z|>1.96 rate 6.4% → 5.7%, MZ slope 1.10 → 1.04, min-var opt
+  1.07 → 1.01, ETF pooled bias 0.97 → 0.97. Market-portfolio bias moved
+  1.02 → 0.90 (mildly conservative now; inside the acceptance band —
+  watch item). No other style moved materially (value 1.24 → 1.24,
+  leverage 1.47 → 1.50).
+- Max style VIF 1.82 (size–liquidity, pre-existing).
+
+Leverage remains the weakest calibrated style (32% significant, bias
+1.50) — unchanged by this split, and now clearly the next QC target
+(v0.8, alongside growth and dividend yield candidates).
