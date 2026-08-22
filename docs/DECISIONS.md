@@ -468,7 +468,14 @@ calibration.
   Mines 38%, Oil 28%).
 - Watch items carried forward: growth style bias 1.20 (young factor,
   same young-EWMA pattern value showed in §11), market portfolio 0.92
-  (mildly conservative). Eigenfactor A/B at K=40 still open.
+  (mildly conservative).
+- **Eigenfactor A/B re-run at K=40** (same-day, via config-replay on the
+  shipped artifacts — no rebuild needed since §12's variant machinery):
+  blend overall 0.99 / min-var 0.99; eigen overall **0.93** / min-var
+  **0.91** — the eigenfactor adjustment still overcorrects broad
+  portfolios and now overcorrects the min-var case past calibration too;
+  no-adjustment scores 0.99 / 1.02. §9's verdict stands at K=40:
+  **correlation blending ships**.
 
 Coverage remains ~3,000 names; the raise toward the ~8,000 EDGAR
 candidates is the remaining half of the roadmap's v0.9 line.
