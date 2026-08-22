@@ -9,8 +9,9 @@ An open-source, Barra-style fundamental factor risk model built to be
 **usable by AI agents out of the box**: a Python library, an MCP server, and
 weekly-published model artifacts covering most liquid US common stocks.
 
-- **7 style factors** (size, value, momentum, volatility, liquidity, quality,
-  leverage — value and quality are multi-descriptor composites) +
+- **8 style factors** (size, value, momentum, beta, volatility, liquidity,
+  quality, leverage — value and quality are multi-descriptor composites,
+  volatility is beta-orthogonalized residual volatility) +
   **12 industries** (Fama-French scheme) + a market factor
 - **Free, redistributable data chain**: fundamentals and SIC codes from SEC
   EDGAR (public domain), prices from pluggable providers
