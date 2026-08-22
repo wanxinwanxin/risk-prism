@@ -30,12 +30,13 @@ REPO_URL = "https://github.com/wanxinwanxin/risk-prism"
 STYLE_DEFS = {
     "size": "ln(market cap)",
     "value": "composite: book/price, earnings/price, cash flow/price, sales/price",
+    "growth": "normalized slope of up-to-5 point-in-time annual revenue filings",
     "momentum": "12-month return, skipping the most recent month",
     "beta": "slope of daily returns on the cap-weighted market return, 252-day window",
     "volatility": "annualized residual std from the beta regression, orthogonalized to beta",
     "liquidity": "ln(63-day median dollar volume / market cap)",
     "quality": "composite: ROE, ROA, operating cash flow/assets, gross margin",
-    "leverage": "total liabilities / total assets",
+    "leverage": "composite: liabilities/assets, debt/equity, liabilities/(liabilities+mktcap)",
 }
 
 

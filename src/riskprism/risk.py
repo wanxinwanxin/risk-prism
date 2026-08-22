@@ -82,7 +82,7 @@ class RiskModel:
         into the matrix, which stays unbiased for pre-specified portfolios."""
         cfg = self.meta.get("config", {}) or {}
         # N_eff from the VOL half-life — the binding noise source: with it,
-        # the analytic multiplier (1.09 at 84d/K=21) matches the min-var
+        # the analytic multiplier (1.20 at 84d/K=40) tracks the min-var
         # bias measured in the published validation almost exactly
         hl = float(cfg.get("vol_half_life", 84))
         lam = 0.5 ** (1.0 / hl)

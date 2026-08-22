@@ -7,6 +7,7 @@
 - [Model card, current build, and usage (markdown)](/model.md)
 - [JSON API — no key, no signup (OpenAPI spec)](/api/openapi.json)
 - [API docs](/api/docs)
+- Hosted MCP endpoint (streamable HTTP): /mcp
 - [Interactive explorer](/)
 - [Source and methodology](https://github.com/wanxinwanxin/risk-prism)
 

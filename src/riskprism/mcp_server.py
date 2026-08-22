@@ -18,7 +18,7 @@ from riskprism.risk import RiskModel
 mcp = FastMCP(
     "riskprism",
     instructions=(
-        "US equity factor risk model (Barra-style: 8 styles + 12 industries + market). "
+        "US equity factor risk model (Barra-style: 9 styles + 30 industries + market). "
         "Weights are portfolio weights; shorts are negative; they need not sum to 1. "
         "All volatilities are annualized decimals (0.20 = 20%/yr). "
         "Not investment advice."
