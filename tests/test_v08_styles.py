@@ -111,3 +111,31 @@ def test_sales_growth_needs_three_periods():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q"])
+
+
+def test_estimation_pool_caps_in_edgar_order():
+    from riskprism.data.universe import estimation_pool
+    from dataclasses import replace
+    tickers = [f"T{i:02d}" for i in range(20)]
+    cfg = replace(CFG, estimation_max_names=5)
+    # EDGAR order (~market cap) is preserved: the FIRST five, not a re-rank
+    assert estimation_pool(tickers, cfg) == tickers[:5]
+    assert estimation_pool(tickers, replace(CFG, estimation_max_names=0)) == tickers
+
+
+def test_structural_prior_clipped_to_fit_distribution():
+    from riskprism.model.specific import specific_risk
+    rng = np.random.default_rng(4)
+    n_fit, n_ext, t = 120, 5, 200
+    idx = pd.Index([f"F{i:03d}" for i in range(n_fit)] + [f"X{i}" for i in range(n_ext)])
+    dates = pd.bdate_range("2024-01-02", periods=t)
+    res = pd.DataFrame(rng.normal(0, 0.02, (t, n_fit)),
+                       index=dates, columns=idx[:n_fit])
+    X = pd.DataFrame(rng.normal(0, 1, (len(idx), 3)),
+                     index=idx, columns=["size", "volatility", "liquidity"])
+    # the extended names sit far outside the fit set on every feature
+    X.iloc[n_fit:] = 8.0
+    industries = pd.Series("BusEq", index=idx)
+    out = specific_risk(res, X, industries, CFG)
+    fit_hi = out.ts_vol.dropna().quantile(0.99) * 1.5
+    assert (out.structural.iloc[n_fit:] <= fit_hi + 1e-9).all()

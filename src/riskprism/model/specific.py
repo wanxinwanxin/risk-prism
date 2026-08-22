@@ -114,6 +114,12 @@ def specific_risk(
         # Duan smearing: correct exp() retransformation bias on the fit set
         smear = float((ts_vol[fit].to_numpy() / np.exp(pred_ln[fit_pos])).mean())
         structural = pd.Series(np.exp(pred_ln) * smear, index=idx)
+        # extrapolation guard: the exp() retransform can explode on names
+        # far outside the fit set (measured p95 of 1089% on the wide
+        # coverage tail — §15); clip predictions to the fit distribution
+        lo = float(ts_vol[fit].quantile(0.01))
+        hi = float(ts_vol[fit].quantile(0.99)) * 1.5
+        structural = structural.clip(lo, hi)
     else:
         structural = pd.Series(float(ts_vol[fit].mean()) if fit.any() else np.nan, index=idx)
 

@@ -53,6 +53,24 @@ def apply_liquidity_filters(
     return keep
 
 
+def estimation_pool(tickers: list[str], config: ModelConfig) -> list[str]:
+    """Candidate pool the estimation screens run on: the first
+    ``estimation_max_names`` tickers in EDGAR order (≈ market cap).
+
+    Decouples estimation from coverage: widening the candidate universe
+    to ~8,000 EDGAR names must not change which names estimate the
+    factors — measured on the 2026-08-22 coverage raise, letting the
+    wider pool into estimation blew style-portfolio calibration up
+    (ADV-rank capping: style bias 1.12 → 1.57; no cap: overall bias
+    0.99 → 1.22 — DECISIONS.md §15). Coverage names get risk through
+    the factor structure and the structural prior instead.
+    """
+    cap = getattr(config, "estimation_max_names", 0) or 0
+    if cap and len(tickers) > cap:
+        return list(tickers)[:cap]
+    return list(tickers)
+
+
 def coverage_universe(close: pd.DataFrame, config: ModelConfig) -> list[str]:
     """Coverage universe: every name alive and sane at the panel end.
 

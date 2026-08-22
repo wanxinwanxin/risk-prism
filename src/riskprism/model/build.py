@@ -21,7 +21,8 @@ from riskprism.artifacts import load_artifacts, save_artifacts
 from riskprism.config import MARKET_FACTOR, ModelConfig
 from riskprism.data.edgar import EdgarClient, Fundamentals, store_from_frame, store_to_frame
 from riskprism.data.prices import get_provider, load_price_panel
-from riskprism.data.universe import apply_liquidity_filters, candidate_tickers, coverage_universe
+from riskprism.data.universe import (apply_liquidity_filters, candidate_tickers,
+                                     coverage_universe, estimation_pool)
 from riskprism.factors.industry import industry_dummies, sic_to_industry
 from riskprism.factors.style import compute_style_exposures
 from riskprism.model.covariance import factor_covariance
@@ -121,7 +122,9 @@ def build_model(
     )
     close = close.where(close > 0)  # zero/negative closes are data errors, not prices
     volume = volume.where(volume >= 0)
-    estimation = apply_liquidity_filters(close, volume, config)
+    pool = estimation_pool(list(cik_by_ticker), config)
+    pool = [t for t in pool if t in close.columns]
+    estimation = apply_liquidity_filters(close[pool], volume[pool], config)
     coverage = coverage_universe(close, config)
     active = sorted(set(estimation) | set(coverage))
     close, volume = close[active], volume[active]

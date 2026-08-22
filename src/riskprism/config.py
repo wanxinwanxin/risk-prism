@@ -107,6 +107,12 @@ class ModelConfig:
     min_price: float = 2.0
     min_dollar_adv: float = 1e6
     min_weekly_obs: int = 26
+    # Cap the estimation candidate pool at the first N EDGAR-ordered
+    # names (≈ market cap), decoupling estimation from coverage: widening
+    # the candidate pool to ~8,000 EDGAR names must not change which
+    # names estimate the factors (measured on the 2026-08-22 coverage
+    # raise — DECISIONS.md §15).
+    estimation_max_names: int = 3000
 
     # Coverage universe (gets exposures + risk, via priors where needed)
     coverage_min_price: float = 1.0
