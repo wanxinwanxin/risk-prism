@@ -772,18 +772,18 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10})</pre>
       <pre class="code" id="api-snippet">curl -s -X POST https://risk-prism-production.up.railway.app/api/v1/portfolio-risk \
   -H 'content-type: application/json' \
   -d '{"weights": {"AAPL": 0.4, "MSFT": 0.4, "XOM": 0.2}}'</pre>
-      <p class="sub" style="font-size:13.5px;margin:12px 0 0">Interactive docs at <a href="api/docs">/api/docs</a>, OpenAPI spec at <a href="api/openapi.json">/api/openapi.json</a>.</p>
+      <p class="sub" style="font-size:13.5px;margin:12px 0 0">Interactive docs at <a href="api/docs">/api/docs</a>, OpenAPI spec at <a href="api/openapi.json">/api/openapi.json</a>. Every risk endpoint accepts <span class="mono">?horizon=medium|short</span> — the short variant halves the risk half-lives on the same regressions.</p>
     </section>
 
     <section>
       <span class="kick">04 · MCP for agents</span>
       <hr class="rule" style="margin-bottom:16px">
-      <div class="codehead"><h3>Local tool surface</h3><button class="copy" data-copy="mcp-snippet">Copy</button></div>
+      <div class="codehead"><h3>Hosted — no install</h3><button class="copy" data-copy="mcp-snippet">Copy</button></div>
       <pre class="code" id="mcp-snippet">{ "mcpServers": { "riskprism": {
-    "command": "riskprism-mcp",
-    "env": { "RISKPRISM_ARTIFACTS": "/path/to/artifacts" }
+    "type": "http",
+    "url": "https://risk-prism-production.up.railway.app/mcp"
 } } }</pre>
-      <p class="sub" style="font-size:13.5px;margin:12px 0 0">Requires the package (01) and a downloaded artifacts directory.</p>
+      <p class="sub" style="font-size:13.5px;margin:12px 0 0">Streamable HTTP, stateless, serving the newest weekly build — same five tools as the local server. For a local surface: <span class="mono">riskprism-mcp</span> with <span class="mono">RISKPRISM_ARTIFACTS</span> pointing at a downloaded artifacts directory (01).</p>
     </section>
 
   </div>

@@ -9,6 +9,32 @@ Conventions (same as the Python package and MCP server): weights are
 portfolio weights — shorts negative, no need to sum to 1; all volatilities
 are annualized decimals (`0.20` = 20%/yr). Not investment advice.
 
+## Horizons
+
+Every risk endpoint accepts `?horizon=medium|short` (default `medium`).
+The short-horizon variant shares the medium model's daily regressions and
+formation exposures but halves every risk-side half-life (vol 42d, corr
+126d, specific 42d, VRA 21d) — the commercial S/L model-pair pattern. It
+is derived from the same artifacts (`riskprism-variant`) and published as
+`riskprism-artifacts-sh.tar.gz` with each release.
+
+If the operator sets `RISKPRISM_PREMIUM_KEYS` (comma-separated tokens),
+the short-horizon surface requires `Authorization: Bearer <key>`; unset —
+the default — everything is free. The medium-horizon model and all
+artifacts are free either way.
+
+## Hosted MCP
+
+The same five tools as the local `riskprism-mcp` server are served over
+streamable HTTP (stateless) at `/mcp`:
+
+```json
+{ "mcpServers": { "riskprism": {
+    "type": "http",
+    "url": "https://risk-prism-production.up.railway.app/mcp"
+} } }
+```
+
 ## Endpoints
 
 ### `GET /api/v1/meta`

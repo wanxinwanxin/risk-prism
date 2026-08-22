@@ -20,7 +20,7 @@ import tarfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query, Request, Response
+from fastapi import FastAPI, Header, HTTPException, Query, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
@@ -33,15 +33,19 @@ DEFAULT_ARTIFACTS_URL = (
     "https://github.com/wanxinwanxin/risk-prism/releases/latest/download/"
     "riskprism-artifacts.tar.gz"
 )
+DEFAULT_ARTIFACTS_SH_URL = (
+    "https://github.com/wanxinwanxin/risk-prism/releases/latest/download/"
+    "riskprism-artifacts-sh.tar.gz"
+)
 
 
-def _ensure_artifacts(path: Path) -> None:
+def _ensure_artifacts(path: Path, url: str | None = None) -> None:
     """Download and unpack the latest release tarball if `path` is empty."""
     if (path / "meta.json").exists():
         return
     import requests
 
-    url = os.environ.get("RISKPRISM_ARTIFACTS_URL", DEFAULT_ARTIFACTS_URL)
+    url = url or os.environ.get("RISKPRISM_ARTIFACTS_URL", DEFAULT_ARTIFACTS_URL)
     resp = requests.get(url, timeout=120)
     resp.raise_for_status()
     path.mkdir(parents=True, exist_ok=True)
@@ -81,8 +85,16 @@ class StressRequest(BaseModel):
 
 
 def create_app(model: RiskModel | None = None,
-               site_dir: str | Path | None = None) -> FastAPI:
-    state: dict = {"model": model, "error": None}
+               site_dir: str | Path | None = None,
+               model_sh: RiskModel | None = None) -> FastAPI:
+    state: dict = {"model": model, "model_sh": model_sh,
+                   "error": None, "error_sh": None}
+    # Premium scaffold: when RISKPRISM_PREMIUM_KEYS is set (comma-separated
+    # tokens), the short-horizon surface requires one via
+    # `Authorization: Bearer <key>`. Unset (the default) = everything free.
+    premium_keys = {k.strip() for k in
+                    os.environ.get("RISKPRISM_PREMIUM_KEYS", "").split(",")
+                    if k.strip()}
 
     # Hosted MCP over streamable HTTP: a stateless session manager wrapped
     # around the same low-level server the stdio `riskprism-mcp` runs — one
@@ -101,10 +113,25 @@ def create_app(model: RiskModel | None = None,
                 state["model"] = RiskModel.load(artifacts)
             except Exception as exc:  # keep the site up even if artifacts fail
                 state["error"] = f"{type(exc).__name__}: {exc}"
+        sh_env = os.environ.get("RISKPRISM_ARTIFACTS_SH")
+        if state["model_sh"] is None and sh_env is None:
+            state["error_sh"] = ("short-horizon artifacts not configured "
+                                 "(set RISKPRISM_ARTIFACTS_SH)")
+        elif state["model_sh"] is None:
+            artifacts_sh = Path(sh_env)
+            try:
+                _ensure_artifacts(artifacts_sh,
+                                  url=os.environ.get("RISKPRISM_ARTIFACTS_SH_URL",
+                                                     DEFAULT_ARTIFACTS_SH_URL))
+                state["model_sh"] = RiskModel.load(artifacts_sh)
+            except Exception as exc:  # SH is optional; medium stays up
+                state["error_sh"] = f"{type(exc).__name__}: {exc}"
         if state["model"] is not None:
             # the MCP tools lazily load from $RISKPRISM_ARTIFACTS; hand them
-            # the already-loaded model instead of a second copy
+            # the already-loaded models instead of second copies
             _agent_tools._model = state["model"]
+        if state["model_sh"] is not None:
+            _agent_tools._model_sh = state["model_sh"]
         async with mcp_manager.run():
             yield
 
@@ -129,28 +156,47 @@ def create_app(model: RiskModel | None = None,
         allow_methods=["GET", "POST"], allow_headers=["*"],
     )
 
-    def m() -> RiskModel:
+    def m(horizon: str = "medium", auth: str | None = None) -> RiskModel:
+        if horizon == "short":
+            if premium_keys:
+                key = (auth or "").removeprefix("Bearer ").strip()
+                if key not in premium_keys:
+                    raise HTTPException(
+                        402, detail="The short-horizon model requires an API "
+                                    "key: Authorization: Bearer <key>")
+            if state["model_sh"] is None:
+                raise HTTPException(
+                    503, detail=state["error_sh"] or "short-horizon model not loaded")
+            return state["model_sh"]
         if state["model"] is None:
             raise HTTPException(503, detail=state["error"] or "model not loaded")
         return state["model"]
+
+    HorizonQ = Query("medium", pattern="^(medium|short)$",
+                     description="medium (default, free) or short — the "
+                                 "responsive variant with halved half-lives")
 
     @app.get("/api/v1/health", tags=["meta"])
     def health() -> dict:
         return {"status": "ok" if state["model"] is not None else "degraded",
                 "model_loaded": state["model"] is not None,
-                **({"error": state["error"]} if state["error"] else {})}
+                "short_horizon_loaded": state["model_sh"] is not None,
+                **({"error": state["error"]} if state["error"] else {}),
+                **({"error_sh": state["error_sh"]} if state["error_sh"] else {})}
 
     @app.get("/api/v1/meta", tags=["meta"],
              summary="Model version, as-of date, factors, coverage")
-    def meta() -> dict:
-        model = m()
+    def meta(horizon: str = HorizonQ,
+             authorization: str | None = Header(None)) -> dict:
+        model = m(horizon, authorization)
         return {**model.meta, "factors": model.factors,
                 "n_assets": int(len(model.exposures))}
 
     @app.get("/api/v1/factors", tags=["meta"],
              summary="Factor list, annualized vols, and covariance matrix")
-    def factors() -> dict:
-        model = m()
+    def factors(horizon: str = HorizonQ,
+                authorization: str | None = Header(None)) -> dict:
+        model = m(horizon, authorization)
         F = model.factor_covariance
         vols = {f: float(F.loc[f, f] ** 0.5) for f in model.factors}
         return {"factors": model.factors, "factor_vols": vols,
@@ -159,9 +205,10 @@ def create_app(model: RiskModel | None = None,
 
     @app.get("/api/v1/assets/{ticker}", tags=["assets"],
              summary="Per-asset exposures and vol decomposition")
-    def asset(ticker: str) -> dict:
+    def asset(ticker: str, horizon: str = HorizonQ,
+              authorization: str | None = Header(None)) -> dict:
         try:
-            return m().asset_risk(ticker)
+            return m(horizon, authorization).asset_risk(ticker)
         except KeyError:
             raise HTTPException(404, detail=f"{ticker.upper()} not covered "
                                             "by this model build") from None
@@ -175,14 +222,18 @@ def create_app(model: RiskModel | None = None,
 
     @app.post("/api/v1/portfolio-risk", tags=["portfolio"],
               summary="Full risk report: vol decomposition + contributions")
-    def portfolio_risk(req: PortfolioRequest) -> dict:
-        return m().portfolio_risk(req.weights, optimized=req.optimized)
+    def portfolio_risk(req: PortfolioRequest, horizon: str = HorizonQ,
+                       authorization: str | None = Header(None)) -> dict:
+        return m(horizon, authorization).portfolio_risk(
+            req.weights, optimized=req.optimized)
 
     @app.post("/api/v1/stress-test", tags=["portfolio"],
               summary="Linear P&L estimate under factor shocks")
-    def stress_test(req: StressRequest) -> dict:
+    def stress_test(req: StressRequest, horizon: str = HorizonQ,
+                    authorization: str | None = Header(None)) -> dict:
         try:
-            return m().stress_test(req.weights, req.factor_shocks)
+            return m(horizon, authorization).stress_test(
+                req.weights, req.factor_shocks)
         except ValueError as exc:
             raise HTTPException(400, detail=str(exc)) from None
 

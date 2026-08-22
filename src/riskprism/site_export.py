@@ -215,6 +215,17 @@ def build_model_md(artifacts_dir: str | Path) -> str:
         "",
         "### As an AI agent (MCP server)",
         "",
+        "Hosted (no install, streamable HTTP):",
+        "",
+        "```json",
+        json.dumps({"mcpServers": {"riskprism": {
+            "type": "http",
+            "url": "https://risk-prism-production.up.railway.app/mcp"}}},
+            indent=2),
+        "```",
+        "",
+        "Or local, from the installed package and downloaded artifacts:",
+        "",
         "```json",
         json.dumps({"mcpServers": {"riskprism": {
             "command": "riskprism-mcp",
@@ -419,6 +430,7 @@ LLMS_TXT = f"""# riskprism
 - [Model card, current build, and usage (markdown)](/model.md)
 - [JSON API — no key, no signup (OpenAPI spec)](/api/openapi.json)
 - [API docs](/api/docs)
+- Hosted MCP endpoint (streamable HTTP): /mcp
 - [Interactive explorer](/)
 - [Source and methodology]({REPO_URL})
 

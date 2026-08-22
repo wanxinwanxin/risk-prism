@@ -54,6 +54,13 @@ jobs:
             --title "Model build ${{ steps.tag.outputs.tag }}" \
             --notes "Weekly PRISM-US-MH artifacts. See docs/METHODOLOGY.md. Not investment advice." \
             || gh release upload "${{ steps.tag.outputs.tag }}" riskprism-artifacts.tar.gz --clobber
+      - name: Derive and publish the short-horizon variant
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          riskprism-variant --artifacts artifacts --horizon short --out artifacts_sh
+          tar czf riskprism-artifacts-sh.tar.gz -C artifacts_sh .
+          gh release upload "${{ steps.tag.outputs.tag }}" riskprism-artifacts-sh.tar.gz --clobber
       - name: Render explorer site
         run: |
           riskprism-site --artifacts artifacts --out site

@@ -141,3 +141,57 @@ def test_mcp_tools_list_and_call(client):
         "name": "get_model_info", "arguments": {}}, id=3), headers=MCP_HEADERS)
     assert r2.status_code == 200
     assert "test-0.1" in str(r2.json()["result"])
+
+# ---- horizons & premium scaffold ----
+
+
+def _tiny_model(version):
+    tickers = ["AAPL", "XOM"]
+    factors = ["market", "size"]
+    X = pd.DataFrame([[1.0, 0.5], [1.0, -0.5]], index=tickers, columns=factors)
+    F = pd.DataFrame(np.eye(2) * 0.02, index=factors, columns=factors)
+    spec = pd.Series([0.2, 0.25], index=tickers)
+    return RiskModel(X, F, spec, meta={"model_version": version})
+
+
+@pytest.fixture
+def client_two_horizons(tmp_path):
+    app = create_app(model=_tiny_model("mh-test"), site_dir=tmp_path,
+                     model_sh=_tiny_model("sh-test"))
+    with TestClient(app) as c:
+        yield c
+
+
+def test_horizon_selects_model(client_two_horizons):
+    c = client_two_horizons
+    assert c.get("/api/v1/meta").json()["model_version"] == "mh-test"
+    assert c.get("/api/v1/meta", params={"horizon": "short"}).json()[
+        "model_version"] == "sh-test"
+    assert c.get("/api/v1/meta", params={"horizon": "nope"}).status_code == 422
+
+
+def test_short_horizon_missing_is_503(tmp_path, monkeypatch):
+    # block the boot-time download so model_sh stays absent
+    monkeypatch.setenv("RISKPRISM_ARTIFACTS_SH", str(tmp_path / "nope"))
+    monkeypatch.setenv("RISKPRISM_ARTIFACTS_SH_URL", "http://127.0.0.1:1/x.tar.gz")
+    app = create_app(model=_tiny_model("mh-test"), site_dir=tmp_path)
+    with TestClient(app) as c:
+        assert c.get("/api/v1/meta", params={"horizon": "short"}).status_code == 503
+        assert c.get("/api/v1/health").json()["short_horizon_loaded"] is False
+
+
+def test_premium_keys_gate_short_horizon_only(tmp_path, monkeypatch):
+    monkeypatch.setenv("RISKPRISM_PREMIUM_KEYS", "sekret1, sekret2")
+    app = create_app(model=_tiny_model("mh-test"), site_dir=tmp_path,
+                     model_sh=_tiny_model("sh-test"))
+    with TestClient(app) as c:
+        # medium stays free
+        assert c.get("/api/v1/meta").status_code == 200
+        # short requires a key
+        assert c.get("/api/v1/meta", params={"horizon": "short"}).status_code == 402
+        r = c.get("/api/v1/meta", params={"horizon": "short"},
+                  headers={"Authorization": "Bearer sekret2"})
+        assert r.status_code == 200 and r.json()["model_version"] == "sh-test"
+        # wrong key rejected
+        assert c.get("/api/v1/meta", params={"horizon": "short"},
+                     headers={"Authorization": "Bearer wrong"}).status_code == 402

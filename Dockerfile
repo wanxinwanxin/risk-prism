@@ -10,5 +10,5 @@ COPY src ./src
 RUN pip install --no-cache-dir ".[api]"
 COPY site ./site
 RUN rm -f site/template.html
-ENV RISKPRISM_SITE=/app/site RISKPRISM_ARTIFACTS=/app/artifacts
+ENV RISKPRISM_SITE=/app/site RISKPRISM_ARTIFACTS=/app/artifacts RISKPRISM_ARTIFACTS_SH=/app/artifacts_sh
 CMD ["sh", "-c", "uvicorn riskprism.api_server:app --host 0.0.0.0 --port ${PORT:-8080}"]

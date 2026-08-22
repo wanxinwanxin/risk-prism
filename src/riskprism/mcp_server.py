@@ -26,38 +26,53 @@ mcp = FastMCP(
 )
 
 _model: RiskModel | None = None
+_model_sh: RiskModel | None = None
 
 
-def _get_model() -> RiskModel:
-    global _model
+def _get_model(horizon: str = "medium") -> RiskModel:
+    global _model, _model_sh
+    if horizon == "short":
+        if _model_sh is None:
+            sh_dir = os.environ.get("RISKPRISM_ARTIFACTS_SH")
+            if not sh_dir:
+                raise ValueError(
+                    "short-horizon model not loaded — derive it with "
+                    "`riskprism-variant --artifacts artifacts --out artifacts_sh` "
+                    "and set RISKPRISM_ARTIFACTS_SH, or use horizon='medium'")
+            _model_sh = RiskModel.load(sh_dir)
+        return _model_sh
     if _model is None:
         _model = RiskModel.load(os.environ.get("RISKPRISM_ARTIFACTS", "artifacts"))
     return _model
 
 
 @mcp.tool()
-def get_model_info() -> dict:
-    """Model version, as-of date, factor list, and asset coverage count."""
-    m = _get_model()
+def get_model_info(horizon: str = "medium") -> dict:
+    """Model version, as-of date, factor list, and asset coverage count.
+    `horizon`: "medium" (default) or "short" — the responsive variant with
+    halved risk half-lives, when available."""
+    m = _get_model(horizon)
     return {**m.meta, "factors": m.factors, "n_assets": int(len(m.exposures))}
 
 
 @mcp.tool()
-def get_portfolio_risk(weights: dict[str, float], optimized: bool = False) -> dict:
+def get_portfolio_risk(weights: dict[str, float], optimized: bool = False,
+                       horizon: str = "medium") -> dict:
     """Full risk report for a portfolio: total/factor/specific vol, factor
     exposures, top factor variance contributions, and top asset risk
     contributions. `weights` maps ticker -> portfolio weight. Set
     `optimized=true` if the weights came from optimizing against this
     model: reported vols then include the Shepard second-order correction
     (optimizers exploit covariance estimation noise, so raw forecasts
-    understate an optimized portfolio's risk)."""
-    return _get_model().portfolio_risk(weights, optimized=optimized)
+    understate an optimized portfolio's risk). `horizon`: "medium" or
+    "short" (responsive variant, when available)."""
+    return _get_model(horizon).portfolio_risk(weights, optimized=optimized)
 
 
 @mcp.tool()
-def get_factor_exposures(tickers: list[str]) -> dict:
+def get_factor_exposures(tickers: list[str], horizon: str = "medium") -> dict:
     """Per-asset factor exposures and total/factor/specific vol for each ticker."""
-    m = _get_model()
+    m = _get_model(horizon)
     out, missing = {}, []
     for t in tickers:
         try:
@@ -68,11 +83,12 @@ def get_factor_exposures(tickers: list[str]) -> dict:
 
 
 @mcp.tool()
-def stress_test(weights: dict[str, float], factor_shocks: dict[str, float]) -> dict:
+def stress_test(weights: dict[str, float], factor_shocks: dict[str, float],
+                horizon: str = "medium") -> dict:
     """Estimate portfolio P&L under factor shocks (return units: -0.10 = -10%).
     Example: {"market": -0.10, "momentum": -0.05}. Use get_model_info for
     valid factor names."""
-    return _get_model().stress_test(weights, factor_shocks)
+    return _get_model(horizon).stress_test(weights, factor_shocks)
 
 
 @mcp.tool()

@@ -24,6 +24,7 @@ dev = ["pytest>=8", "mcp>=1.2,<2", "fastapi>=0.110", "uvicorn>=0.27", "httpx>=0.
 riskprism-build = "riskprism.build_cli:main"
 riskprism-mcp = "riskprism.mcp_server:main"
 riskprism-site = "riskprism.site_export:main"
+riskprism-variant = "riskprism.model.variant:main"
 riskprism-api = "riskprism.api_server:main"
 
 [build-system]

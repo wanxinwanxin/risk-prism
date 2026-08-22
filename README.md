@@ -43,6 +43,21 @@ as the MCP server; self-host it with `pip install ".[api]" && riskprism-api`
 
 ## For AI agents (MCP)
 
+Hosted — no install, serving the newest weekly build:
+
+```json
+{
+  "mcpServers": {
+    "riskprism": {
+      "type": "http",
+      "url": "https://risk-prism-production.up.railway.app/mcp"
+    }
+  }
+}
+```
+
+Or local, from the installed package and downloaded artifacts:
+
 ```json
 {
   "mcpServers": {
