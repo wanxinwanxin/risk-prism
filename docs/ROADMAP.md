@@ -16,7 +16,7 @@ Status as of `PRISM-US-MH-0.9` (2026-08-22).
 | Factors | 40 (market + 9 styles + FF30) | 70–80 (a dozen styles + 60+ GICS industries) | near parity (public schemes go to FF48) |
 | Estimation frequency | daily cross-sections | daily | at parity (since v0.5) |
 | Live track record | ~3 years replayed, weeks live | 25–30 years | only time closes this |
-| Horizons | one (medium, weekly) | short / medium / long variants | closable — same engine, different half-lives |
+| Horizons | short + medium (`?horizon=` on API/MCP) | short / medium / long variants | long variant closable — same engine, longer half-lives |
 | Descriptor data | prices + SEC EDGAR | + analyst estimates, GICS, specialist feeds | partially a non-goal (see below) |
 | Validation | public, reproducible, re-scored weekly | whitepaper snapshots | our advantage — keep extending it |
 
@@ -43,14 +43,16 @@ Status as of `PRISM-US-MH-0.9` (2026-08-22).
 
 ## Later
 
-- **Short-horizon variant** — same daily engine, faster half-lives, for
-  users forecasting days rather than weeks.
+- **Short-horizon variant (SHIPPED 2026-08-22).** Same daily engine,
+  faster half-lives — derived from each weekly build via
+  `riskprism-variant` and served at `?horizon=short` on the API and MCP.
+- **Hosted API (SHIPPED 2026-08-21).** JSON API over the newest weekly
+  build at `/api/v1`, plus a hosted MCP endpoint at `/mcp` (2026-08-22);
+  historical builds stay free to download regardless.
 - **Second validation family** — Fama-French portfolio panels alongside the
   ETF and optimized-portfolio panels.
 - **Longer archive** — extend the price history capture so the replayed
   record grows beyond the provider lookback window.
-- **Hosted API** — portfolio risk over HTTPS without downloading artifacts;
-  historical builds stay free to download regardless.
 - **Liquidity & crowding metrics** — days-to-liquidate from volume data;
   factor-crowding indicators from the model's own exposures.
 
