@@ -2,7 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from riskprism.artifacts import load_artifacts, save_artifacts
+import json
+
+from riskprism.artifacts import SCHEMA_VERSION, load_artifacts, save_artifacts
 from riskprism.risk import RiskModel
 
 
@@ -34,6 +36,29 @@ def test_artifact_roundtrip(model, tmp_path):
     a = load_artifacts(tmp_path)
     assert a["meta"]["model_version"] == "test-0.1"
     assert list(a["exposures"].index) == ["AAPL", "MSFT", "XOM", "JPM"]
+
+
+def test_schema_version_stamped_on_save(model, tmp_path):
+    a = load_artifacts(tmp_path)
+    assert a["meta"]["artifact_schema_version"] == SCHEMA_VERSION
+
+
+def test_unstamped_artifacts_read_as_schema_1(model, tmp_path):
+    meta_path = tmp_path / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    del meta["artifact_schema_version"]  # pre-freeze directory
+    meta_path.write_text(json.dumps(meta))
+    a = load_artifacts(tmp_path)
+    assert "artifact_schema_version" not in a["meta"]  # loads fine
+
+
+def test_newer_schema_is_refused(model, tmp_path):
+    meta_path = tmp_path / "meta.json"
+    meta = json.loads(meta_path.read_text())
+    meta["artifact_schema_version"] = SCHEMA_VERSION + 1
+    meta_path.write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="upgrade the package"):
+        load_artifacts(tmp_path)
 
 
 def test_decomposition_sums_to_total(model):
