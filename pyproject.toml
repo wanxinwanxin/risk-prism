@@ -1,12 +1,25 @@
 [project]
 name = "riskprism"
-version = "0.1.0"
+# Tracks the model version line (PRISM-US-MH-0.x -> package 0.x.y);
+# becomes 1.0.0 when the v1.0 milestone is declared. See docs/RELEASING.md.
+version = "0.9.0"
 description = "Open-source US equity factor risk model, built for AI agents"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "riskprism contributors" }]
 keywords = ["equity", "risk-model", "factor-model", "quant", "mcp", "agents"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
 dependencies = [
     "numpy>=1.26",
     "pandas>=2.1",
@@ -14,6 +27,13 @@ dependencies = [
     "requests>=2.31",
     "mcp>=1.2,<2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/wanxinwanxin/risk-prism"
+Explorer = "https://risk-prism-production.up.railway.app"
+"API docs" = "https://risk-prism-production.up.railway.app/api/docs"
+"Decision log" = "https://github.com/wanxinwanxin/risk-prism/blob/main/docs/DECISIONS.md"
+"Model releases" = "https://github.com/wanxinwanxin/risk-prism/releases"
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.2,<2"]
@@ -33,6 +53,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/riskprism"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "docs", "README.md", "LICENSE"]
+exclude = ["**/__pycache__"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
