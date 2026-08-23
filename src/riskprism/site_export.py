@@ -21,7 +21,7 @@ from riskprism.artifacts import load_artifacts
 from riskprism.config import MARKET_FACTOR, STYLE_FACTORS
 from riskprism.factors.industry import INDUSTRY_PREFIX, industry_dummies
 from riskprism.config import STYLE_FACTORS as _STYLES, ModelConfig
-from riskprism.model.baselines import comparison_payload
+from riskprism.model.baselines import comparison_payload, ols_line
 from riskprism.model.validation import FULL_FACTORS, RunningRiskState, validation_summary
 
 PLACEHOLDER = "__RISKPRISM_DATA__"
@@ -157,7 +157,7 @@ def _validation_payload(val: pd.DataFrame | None) -> dict | None:
         if len(ok) >= 30:
             fv2 = (ok["forecast_vol_ann"] ** 2).to_numpy()
             rv2 = (ok["realized_vol_ann"] ** 2).to_numpy()
-            slope, intercept = np.polyfit(fv2, rv2, 1)
+            slope, intercept = ols_line(fv2, rv2)
             r2 = float(np.corrcoef(fv2, rv2)[0, 1] ** 2)
             sample = ok.sample(min(1200, len(ok)), random_state=0)
             payload["rv"] = {

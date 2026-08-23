@@ -171,11 +171,22 @@ def baseline_forecasts(validation: pd.DataFrame,
 # same-harness comparison stats
 # ---------------------------------------------------------------------------
 
+def ols_line(x: np.ndarray, y: np.ndarray) -> tuple[float, float]:
+    """Simple OLS fit y = slope*x + intercept, in closed form on centered
+    data — same result as np.polyfit(x, y, 1) without its RankWarning on
+    the near-constant regressors variance panels produce."""
+    xm, ym = float(x.mean()), float(y.mean())
+    xc = x - xm
+    denom = float((xc ** 2).sum())
+    slope = float((xc * y).sum() / denom) if denom > 0 else float("nan")
+    return slope, ym - slope * xm
+
+
 def _model_stats(fc_ann: np.ndarray, ret: np.ndarray, rv_ann: np.ndarray) -> dict:
     fv_w = fc_ann / np.sqrt(_ANN)
     z = ret / fv_w
     fv2, rv2 = fc_ann ** 2, rv_ann ** 2
-    slope, _ = np.polyfit(fv2, rv2, 1)
+    slope, _ = ols_line(fv2, rv2)
     r2 = float(np.corrcoef(fv2, rv2)[0, 1] ** 2)
     return {
         "bias": round(float(np.std(z, ddof=1)), 3),
