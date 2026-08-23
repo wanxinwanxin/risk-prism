@@ -1,6 +1,6 @@
 # Grading an open-source risk model in public
 
-*2026-08-21 · [riskprism](https://risk-prism-production.up.railway.app) · draft*
+*2026-08-23 · [riskprism](https://risk-prism-production.up.railway.app) · draft*
 
 Commercial factor risk models — Barra, Axioma, Bloomberg — are validated in
 whitepapers: a snapshot of bias statistics on a sample the vendor chose,
@@ -13,8 +13,9 @@ that grading found, including the parts that were embarrassing.
 
 ## The setup
 
-The model covers ~3,000 US stocks with 20 factors (market + 7 styles + 12
-Fama-French industries). Exposures form every Friday; a cross-sectional
+The model covers ~6,300 US stocks — risk is estimated on the ~2,800 most
+liquid — with 40 factors (market + 9 styles + 30 Fama-French industries).
+Exposures form every Friday; a cross-sectional
 regression runs every trading day against those frozen exposures; factor
 and specific covariances are EWMA estimates with the standard commercial
 adjustments (Newey-West, volatility regime adjustment, Bayesian shrinkage,
@@ -31,14 +32,14 @@ standard normal: its standard deviation (the **bias statistic**) should be
 re-scores the *entire* history under the current methodology, so there is
 nowhere to hide a regression.
 
-Current scoreboard, 121 weeks, 3,992 graded forecasts:
+Current scoreboard, 135 weeks, 6,458 graded forecasts:
 
 | statistic | value | ideal |
 |---|---|---|
-| overall bias statistic | 1.05 | 1.00 |
-| weeks with \|z\| > 1.96 | ~6% | ~5% |
-| Mincer–Zarnowitz slope (realized on forecast variance) | ~1.0–1.1 | 1.00 |
-| traded-ETF bias range | 0.87–1.16 | ≈1 |
+| overall bias statistic | 0.99 | 1.00 |
+| weeks with \|z\| > 1.96 | 5.2% | ~5% |
+| Mincer–Zarnowitz slope (realized on forecast variance) | ~1.0 | 1.00 |
+| traded-ETF bias range | 0.88–1.08 | ≈1 |
 
 ## The interesting failure: portfolios that fight back
 
@@ -71,9 +72,18 @@ grade them like everything else.
   residual is now applied as an explicit reporting correction — pass
   `optimized=true` to the API and reported vols scale by that factor.
 
-That arc — 1.36 → 1.29 → 1.09, ending on the theory line — is the most
-useful thing the public grading produced. It found the bug, ranked the
-cures, and told us when to stop.
+The arc got one more test after that. v0.9 doubled the factor count to 40
+(finer industries), and Shepard's floor rises with K — at our parameters
+it moves to ~1.20, so the risk was paying for explanatory power with
+optimized-portfolio calibration. Measured min-variance bias on the raw,
+uncorrected forecasts: **1.00**. Correlation blending suppresses exactly
+the noise directions optimizers hunt, so the floor never bound; the
+`optimized=true` reporting correction now scales with K = 40 for callers
+who want the conservative number anyway.
+
+That arc — 1.36 → 1.29 → 1.09 on the theory line, then holding at 1.00
+with twice the factors — is the most useful thing the public grading
+produced. It found the bug, ranked the cures, and told us when to stop.
 
 ## The embarrassing finding: two factors were dead
 
@@ -95,10 +105,34 @@ have always done it: value = book/earnings/cash-flow/sales yields; quality
 EDGAR XBRL (operating cash flow is filed by ~98% of companies; nobody
 seems to use it). Result: **quality went from 1.6% significant to 49%**;
 value tripled to 12%. And, in the spirit of grading in public: the new
-value factor's own style portfolio is now *underforecast* (bias 1.24)
-precisely because the axis finally carries variance the young EWMA history
-is still learning. A dead factor is perfectly calibrated the way a stopped
-clock is right twice a day. We shipped the live one.
+value factor's own style portfolio is now *underforecast* (bias 1.24 at
+ship, 1.21 three versions later) precisely because the axis finally
+carries variance the young EWMA history is still learning. A dead factor
+is perfectly calibrated the way a stopped clock is right twice a day. We
+shipped the live one.
+
+## The loop kept running
+
+The same grade-and-fix cycle produced three more versions in the week
+after this draft was first written:
+
+- **v0.7** split beta out of the volatility factor (every commercial
+  model carries them separately; ours conflated them). Beta measured
+  significant in 84% of daily cross-sections — instantly the
+  second-strongest factor behind the market — and mean R² jumped
+  0.159 → 0.178, the largest single-change gain since daily estimation.
+- **v0.8** shipped growth (42% significant from day one) and rebuilt
+  leverage — the weakest calibrated style — as a three-descriptor
+  composite (style bias 1.50 → 1.11). It also *measured and rejected*
+  dividend yield: significant in 0.0% of daily cross-sections while
+  dragging value's VIF from 1.02 to 1.51. Another negative published
+  instead of shipped.
+- **v0.9** moved industries from the Fama-French 12 scheme to FF30
+  (K = 40, mean R² 0.212) and raised coverage from ~3,000 to 6,307
+  names — with the estimation universe deliberately pinned to the
+  liquid top ~2,800. The first two attempts at raising coverage broke
+  calibration in instructive ways; both failures are in the decision
+  log next to the one that worked.
 
 ## Could something simpler have done as well?
 
