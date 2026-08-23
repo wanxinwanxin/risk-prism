@@ -195,3 +195,31 @@ def test_premium_keys_gate_short_horizon_only(tmp_path, monkeypatch):
         # wrong key rejected
         assert c.get("/api/v1/meta", params={"horizon": "short"},
                      headers={"Authorization": "Bearer wrong"}).status_code == 402
+
+
+def test_registry_endpoint(client, monkeypatch):
+    from riskprism import registry
+    builds = [
+        {"tag": "model-2026-08-22b", "title": "Model build 2026-08-22b",
+         "published_at": "2026-08-22T03:24:10Z",
+         "model_version": "PRISM-US-MH-0.9", "prerelease": False,
+         "horizons": ["medium", "short"], "assets": {}},
+        {"tag": "model-2026-08-20-demo", "title": "demo",
+         "published_at": "2026-08-20T15:47:08Z", "model_version": None,
+         "prerelease": True, "horizons": ["medium"], "assets": {}},
+    ]
+    monkeypatch.setattr(registry, "list_models", lambda refresh=False: builds)
+    body = client.get("/api/v1/registry").json()
+    assert body["latest"] == "model-2026-08-22b"
+    assert len(body["builds"]) == 2
+    assert client.get("/api/v1/registry", params={"limit": 1}).json()["builds"] == builds[:1]
+
+
+def test_registry_endpoint_unavailable(client, monkeypatch):
+    from riskprism import registry
+
+    def boom(refresh=False):
+        raise RuntimeError("rate limited")
+
+    monkeypatch.setattr(registry, "list_models", boom)
+    assert client.get("/api/v1/registry").status_code == 503

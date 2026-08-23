@@ -783,7 +783,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10})</pre>
     "type": "http",
     "url": "https://risk-prism-production.up.railway.app/mcp"
 } } }</pre>
-      <p class="sub" style="font-size:13.5px;margin:12px 0 0">Streamable HTTP, stateless, serving the newest weekly build — same five tools as the local server. For a local surface: <span class="mono">riskprism-mcp</span> with <span class="mono">RISKPRISM_ARTIFACTS</span> pointing at a downloaded artifacts directory (01).</p>
+      <p class="sub" style="font-size:13.5px;margin:12px 0 0">Streamable HTTP, stateless, serving the newest weekly build — same six tools as the local server. For a local surface: <span class="mono">riskprism-mcp</span> with <span class="mono">RISKPRISM_ARTIFACTS</span> pointing at a downloaded artifacts directory (01).</p>
     </section>
 
   </div>
@@ -800,6 +800,7 @@ model.stress_test({"AAPL": 1.0}, {"market": -0.10})</pre>
         <tr><td class="mono" style="font-size:12px">POST /api/v1/stress-test</td><td class="mono" style="font-size:12px">stress_test</td><td>First-order P&amp;L under factor shocks</td></tr>
         <tr><td class="mono" style="font-size:12px">GET /api/v1/coverage</td><td class="mono" style="font-size:12px">check_coverage</td><td>Which tickers the current build covers</td></tr>
         <tr><td class="mono" style="font-size:12px">GET /api/v1/factors</td><td>—</td><td>Factor vols and the full K×K covariance matrix</td></tr>
+        <tr><td class="mono" style="font-size:12px">GET /api/v1/registry</td><td class="mono" style="font-size:12px">list_model_versions</td><td>Catalog of published model builds, artifact URLs</td></tr>
       </tbody>
     </table></div>
   </section>

@@ -97,6 +97,17 @@ def check_coverage(tickers: list[str]) -> dict:
     return _get_model().coverage([t.upper() for t in tickers])
 
 
+@mcp.tool()
+def list_model_versions(limit: int = 12) -> dict:
+    """Catalog of published model builds (the versioned registry): release
+    tag, model version, publish date, available horizons, and artifact
+    download URLs. The hosted server always serves the latest build; any
+    historical build can be downloaded by its tag's asset URL."""
+    from riskprism import registry
+    builds = registry.list_models()
+    return {"latest": registry.latest_tag(), "builds": builds[:limit]}
+
+
 def main() -> None:
     mcp.run()
 

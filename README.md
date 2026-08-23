@@ -36,7 +36,8 @@ curl -s -X POST https://risk-prism-production.up.railway.app/api/v1/portfolio-ri
 
 Endpoints: `GET /api/v1/meta` · `GET /api/v1/factors` ·
 `GET /api/v1/assets/{ticker}` · `GET /api/v1/coverage?tickers=…` ·
-`POST /api/v1/portfolio-risk` · `POST /api/v1/stress-test`. Same surface
+`POST /api/v1/portfolio-risk` · `POST /api/v1/stress-test` ·
+`GET /api/v1/registry` (catalog of published builds). Same surface
 as the MCP server; self-host it with `pip install ".[api]" && riskprism-api`
 (artifacts auto-download from the latest release at boot). Details in
 [docs/API.md](docs/API.md).
@@ -70,8 +71,8 @@ Or local, from the installed package and downloaded artifacts:
 ```
 
 Tools exposed: `get_model_info`, `get_portfolio_risk`, `get_factor_exposures`,
-`stress_test`, `check_coverage`. Weights are portfolio weights (shorts
-negative); volatilities are annualized decimals.
+`stress_test`, `check_coverage`, `list_model_versions`. Weights are
+portfolio weights (shorts negative); volatilities are annualized decimals.
 
 ## Get the latest model (no key, no signup)
 

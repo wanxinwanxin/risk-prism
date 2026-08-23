@@ -4,7 +4,7 @@ Run with `riskprism-api` (or `uvicorn riskprism.api_server:app`). Serves:
     /api/v1/*      JSON risk endpoints (same surface as the MCP server)
     /api/docs      interactive OpenAPI docs
     /mcp           hosted MCP endpoint (streamable HTTP, stateless) — the
-                   same five tools as the local `riskprism-mcp` server,
+                   same six tools as the local `riskprism-mcp` server,
                    with no install and no artifact download
     /              the rendered explorer site ($RISKPRISM_SITE, default ./site)
 
@@ -14,9 +14,7 @@ $RISKPRISM_ARTIFACTS_URL, so a deployed image always serves the newest
 published build without rebuilding. All volatilities are annualized decimals.
 """
 
-import io
 import os
-import tarfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,18 +43,12 @@ def _ensure_artifacts(path: Path, url: str | None = None) -> None:
         return
     import requests
 
+    from riskprism.registry import unpack_tarball
+
     url = url or os.environ.get("RISKPRISM_ARTIFACTS_URL", DEFAULT_ARTIFACTS_URL)
     resp = requests.get(url, timeout=120)
     resp.raise_for_status()
-    path.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(fileobj=io.BytesIO(resp.content), mode="r:gz") as tar:
-        for member in tar.getmembers():
-            name = Path(member.name).name  # flatten; refuse traversal
-            if not member.isfile() or name.startswith("."):
-                continue
-            src = tar.extractfile(member)
-            if src is not None:
-                (path / name).write_bytes(src.read())
+    unpack_tarball(resp.content, path)
 
 
 class PortfolioRequest(BaseModel):
@@ -191,6 +183,20 @@ def create_app(model: RiskModel | None = None,
         model = m(horizon, authorization)
         return {**model.meta, "factors": model.factors,
                 "n_assets": int(len(model.exposures))}
+
+    @app.get("/api/v1/registry", tags=["meta"],
+             summary="Catalog of published model builds (versioned registry)")
+    def registry(limit: int = Query(25, ge=1, le=100)) -> dict:
+        from riskprism import registry as _registry
+        try:
+            builds = _registry.list_models()
+        except Exception as exc:  # GitHub API unreachable or rate-limited
+            raise HTTPException(
+                503, detail=f"registry unavailable: {type(exc).__name__}: {exc}")
+        return {"latest": next((b["tag"] for b in builds
+                                if not b["prerelease"]), None),
+                "artifact_assets": _registry.ASSETS,
+                "builds": builds[:limit]}
 
     @app.get("/api/v1/factors", tags=["meta"],
              summary="Factor list, annualized vols, and covariance matrix")

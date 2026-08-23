@@ -25,7 +25,7 @@ artifacts are free either way.
 
 ## Hosted MCP
 
-The same five tools as the local `riskprism-mcp` server are served over
+The same six tools as the local `riskprism-mcp` server are served over
 streamable HTTP (stateless) at `/mcp`:
 
 ```json
@@ -79,6 +79,15 @@ optimized portfolio's risk — see the validation page's TEST 3).
 First-order P&L estimate: exposure × shock per factor. `400` on unknown
 factor names (valid names come from `/api/v1/meta`).
 
+### `GET /api/v1/registry?limit=25`
+
+The versioned model registry: every published model build, newest first —
+release tag, model version, publish date, available horizons, and artifact
+download URLs. Backed by the GitHub releases page (the source of truth),
+cached server-side. `riskprism.registry.download_artifacts(tag)` fetches
+any historical build from Python; artifact file formats are frozen and
+documented in [ARTIFACTS.md](ARTIFACTS.md).
+
 ### `GET /api/v1/health`
 
 Liveness + whether artifacts loaded.
@@ -102,4 +111,7 @@ GitHub release assets — that's a published promise, not a temporary state.
 The path prefix `/api/v1` is the API contract; the model itself is versioned
 independently (`model_version` in every meta payload, `PRISM-US-MH-x.y`).
 Breaking response-shape changes would bump the path prefix; new fields may
-appear without notice.
+appear without notice. Artifact files carry their own frozen schema version
+(`artifact_schema_version` in `meta.json` — see
+[ARTIFACTS.md](ARTIFACTS.md)), and `/api/v1/registry` catalogs every
+published build.
