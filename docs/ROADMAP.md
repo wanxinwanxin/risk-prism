@@ -37,9 +37,14 @@ Status as of `PRISM-US-MH-0.9` (2026-08-22).
   day: 2,987 → 6,307 names with estimation pinned at the EDGAR-ordered
   top 3,000 (two failed attempts documented — §15). The eigenfactor A/B
   re-ran at K=40: blend stands (§14).
-- **v1.0 — stability.** Frozen artifact schema, PyPI package, versioned
-  model registry, and at least one year of uninterrupted live weekly
-  out-of-sample record.
+- **v1.0 — stability.** The infrastructure half shipped 2026-08-23
+  (DECISIONS §16): artifact schema frozen at version 1 with a documented
+  contract (ARTIFACTS.md), the package readied for PyPI with automated
+  trusted publishing on `v*` tags (RELEASING.md), and a versioned model
+  registry over the release history (`/api/v1/registry`, the
+  `list_model_versions` MCP tool, `riskprism.registry.download_artifacts`).
+  What remains is the part only time delivers: at least one year of
+  uninterrupted live weekly out-of-sample record before v1.0 is declared.
 
 ## Later
 

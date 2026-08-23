@@ -521,3 +521,35 @@ The lesson worth keeping: **coverage and estimation are different
 products.** Coverage is a reach claim; estimation is a quality claim.
 Every commercial model pins the estimation universe by construction —
 now so do we, explicitly.
+
+## 16. v1.0 stability track: schema freeze, PyPI packaging, model registry (decided 2026-08-23)
+
+Not a methodology change — the infrastructure half of the roadmap's v1.0
+milestone. No rebuild; the model stays PRISM-US-MH-0.9.
+
+- **Artifact schema frozen at version 1.** `save_artifacts` stamps
+  `artifact_schema_version` into every `meta.json` (derived variants
+  inherit it through the shared writer); `load_artifacts` reads
+  unstamped pre-freeze directories as schema 1 and refuses anything
+  newer than it understands. The freeze promise — required files and
+  columns never change within a schema version; optional additions
+  stay allowed — is documented file-by-file in ARTIFACTS.md, verified
+  against the shipped `model-2026-08-22b` release.
+- **PyPI packaging.** Package version moves 0.1.0 → 0.9.0 and tracks
+  the model version line (1.0.0 at the v1.0 declaration). Publishing
+  is automated via trusted publishing on `v*` release tags
+  (`publish.yml`, with a tag/version match guard); weekly `model-*`
+  releases never trigger it. The name `riskprism` was unclaimed on
+  PyPI as of 2026-08-23. Two release tracks documented in RELEASING.md.
+- **Versioned model registry.** The `model-*` release history *is* the
+  registry — `riskprism.registry` turns it into a machine-readable
+  catalog (tag, parsed model version, horizons, artifact URLs) rather
+  than maintaining a second database that could drift. Served as
+  `GET /api/v1/registry` and the `list_model_versions` MCP tool;
+  `download_artifacts(tag)` fetches any historical build. Verified
+  live: the v0.6 build downloads by tag and loads as schema 1.
+
+What v1.0 still requires: the actual first PyPI publish (a one-time
+trusted-publisher setup on pypi.org — RELEASING.md) and **at least one
+year of uninterrupted live weekly out-of-sample record**, which only
+time delivers. The weekly builds have run since 2026-08-20.
