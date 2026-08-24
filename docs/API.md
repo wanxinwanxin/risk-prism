@@ -95,7 +95,7 @@ Liveness + whether artifacts loaded.
 ## Self-hosting
 
 ```bash
-pip install "riskprism[api] @ git+https://github.com/wanxinwanxin/risk-prism"
+pip install "riskprism[api]"
 riskprism-api
 ```
 

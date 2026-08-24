@@ -58,7 +58,7 @@ annualized decimals.
 ### In Python
 
 ```python
-# pip install git+https://github.com/wanxinwanxin/risk-prism
+# pip install riskprism
 from riskprism import RiskModel
 model = RiskModel.load("artifacts")
 model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})

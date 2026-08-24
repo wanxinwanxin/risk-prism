@@ -77,7 +77,7 @@ portfolio weights (shorts negative); volatilities are annualized decimals.
 ## Get the latest model (no key, no signup)
 
 ```bash
-pip install git+https://github.com/wanxinwanxin/risk-prism
+pip install riskprism
 mkdir -p artifacts && curl -L https://github.com/wanxinwanxin/risk-prism/releases/latest/download/riskprism-artifacts.tar.gz | tar xz -C artifacts
 ```
 
