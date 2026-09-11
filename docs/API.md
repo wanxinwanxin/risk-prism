@@ -25,7 +25,7 @@ artifacts are free either way.
 
 ## Hosted MCP
 
-The same six tools as the local `riskprism-mcp` server are served over
+The same seven tools as the local `riskprism-mcp` server are served over
 streamable HTTP (stateless) at `/mcp`:
 
 ```json
@@ -60,15 +60,33 @@ Splits a comma-separated ticker list into `covered` / `uncovered`.
 ### `POST /api/v1/portfolio-risk`
 
 ```json
-{ "weights": { "AAPL": 0.4, "MSFT": 0.4, "XOM": 0.2 }, "optimized": false }
+{ "weights": { "AAPL": 0.4, "VTI": 0.4, "XOM": 0.2 }, "optimized": false }
 ```
 
 Returns total/factor/specific vol, factor exposures, top factor variance
-contributions, top asset risk contributions, and coverage info. Set
-`optimized: true` if the weights came from optimizing against this model:
-reported vols then include the Shepard second-order correction (optimizers
-exploit covariance estimation noise, so raw forecasts understate an
-optimized portfolio's risk — see the validation page's TEST 3).
+contributions, top asset risk contributions, and coverage info. ETF and
+mutual fund tickers expand into their filed N-PORT holdings before the
+math runs (`"lookthrough": false` disables this); per-fund holdings
+dates and coverage land in `lookthrough.funds`, and a fund the model
+cannot estimate keeps its ticker as-is with the reason in
+`lookthrough.notes`. Set `optimized: true` if the weights came from
+optimizing against this model: reported vols then include the Shepard
+second-order correction (optimizers exploit covariance estimation
+noise, so raw forecasts understate an optimized portfolio's risk — see
+the validation page's TEST 3).
+
+### `GET /api/v1/funds/{ticker}`
+
+Look-through risk report for one ETF or mutual fund: the latest SEC
+N-PORT holdings resolve to model tickers (CUSIP map from the SEC
+fails-to-deliver files, plus a name match against the EDGAR registry),
+and the portfolio math runs on those weights. The `fund` block reports
+the holdings date, the coverage ratio, and the renormalization applied.
+Cash sleeves count as covered at zero risk. `404` when the ticker
+locates no fund filing. `422` when the model covers less than half of
+the holdings (bond and international funds) — by policy no estimate is
+given for a fund that is majorly outside the model's US equity
+universe. Methodology and measured accuracy: DECISIONS.md §17.
 
 ### `POST /api/v1/stress-test`
 
@@ -103,7 +121,10 @@ On boot the server loads artifacts from `$RISKPRISM_ARTIFACTS` (default
 `./artifacts`); if empty, it downloads the latest release tarball
 (`$RISKPRISM_ARTIFACTS_URL` to override) — so a bare container serves the
 newest build with zero setup. `$RISKPRISM_SITE` (default `./site`) is served
-statically at `/` when present. Historical builds stay freely available as
+statically at `/` when present. The look-through endpoints fetch N-PORT
+filings from SEC EDGAR, whose fair-access policy requires an identifying
+User-Agent: set `RISKPRISM_EDGAR_UA` (for example `"my-project
+you@example.com"`), or those endpoints answer `503`. Historical builds stay freely available as
 GitHub release assets — that's a published promise, not a temporary state.
 
 ## Versioning

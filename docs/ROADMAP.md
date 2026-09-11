@@ -48,6 +48,12 @@ Status as of `PRISM-US-MH-0.9` (2026-08-22).
 
 ## Later
 
+- **ETF and fund look-through (SHIPPED 2026-09-11).** Fund tickers
+  resolve to their latest N-PORT holdings (SEC, public domain) and the
+  portfolio math runs on the covered constituents; below 50% model
+  coverage no estimate is given. `GET /api/v1/funds/{ticker}`, the
+  `get_etf_risk` MCP tool, and look-through by default in
+  `portfolio-risk`. Evidence: DECISIONS.md §17.
 - **Short-horizon variant (SHIPPED 2026-08-22).** Same daily engine,
   faster half-lives — derived from each weekly build via
   `riskprism-variant` and served at `?horizon=short` on the API and MCP.

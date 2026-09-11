@@ -553,3 +553,53 @@ What v1.0 still requires: the actual first PyPI publish (a one-time
 trusted-publisher setup on pypi.org — RELEASING.md) and **at least one
 year of uninterrupted live weekly out-of-sample record**, which only
 time delivers. The weekly builds have run since 2026-08-20.
+
+## 17. ETF and fund look-through from N-PORT holdings (decided 2026-09-11)
+
+Personal portfolios hold ETFs, and agents ask about them. The model
+already scored real ETFs in validation through returns-based style
+analysis, but the user-facing surface covered single stocks only — and
+the coverage universe's own "estimates" for fund tickers were wrong
+(SPY carried a structural-prior specific vol of 15% and a quality
+exposure of -1.3, because a trust has no fundamentals).
+
+**Decision: holdings-based look-through, from public SEC data only.**
+A fund ticker resolves to its latest N-PORT filing, the constituents
+map to model tickers, and the normal portfolio math runs on those
+weights. The data chain stays public domain, consistent with §1:
+
+- **Fund location.** `company_tickers_mf.json` maps a fund symbol to
+  its series id; `browse-edgar` lists the series' NPORT-P filings.
+  Unit investment trusts (SPY, QQQ, DIA) file under their own CIK and
+  resolve through `company_tickers.json` with a fund-like title check.
+- **CUSIP → ticker.** N-PORT identifies holdings by CUSIP, not ticker.
+  The SEC fails-to-deliver files (public, twice monthly) carry
+  CUSIP/symbol pairs; eight months aggregated map 97.0% of IVV NAV.
+  A normalized-name match against the EDGAR registry adds 2.6%, and
+  same-issuer share-class aliasing (GOOG → GOOGL, FOX → FOXA) closes
+  most of the rest: IVV resolves at 98.6% of NAV.
+- **Coverage policy.** Cash-like sleeves (STIV, repos) count as covered
+  at zero risk. Covered constituent weights scale up pro rata so the
+  covered sleeve represents the whole risky sleeve — small uncovered
+  residuals are assumed to behave like the rest of the fund. Below 50%
+  model coverage the fund gets **no estimate**: a bond or international
+  fund is majorly outside the model's US equity universe, and scaling
+  US equity risk over it would be an invented number. Every report
+  carries the holdings date, the coverage ratio, and the scale applied.
+- **Funds of funds** expand recursively (depth 2, cycle-guarded); a
+  sub-fund that fails its own coverage gate counts as uncovered at the
+  parent.
+
+Verified live against the `model-2026-08-24` build: SPY and IVV — the
+same index through two different filers and filings — land within 2bp
+of each other (16.08% vs 16.06% total vol); VTI resolves 3,207
+constituents at 98.3% of NAV; AGG refuses at 3% coverage; AOR refuses
+at 39% with its US equity sub-funds correctly expanded (IVV/IJH/IJR at
+~99%) and its bond and international sleeves correctly uncovered.
+
+**Known limits, taken knowingly.** N-PORT holdings lag one to five
+months (60-day filing deadline per fiscal quarter) — acceptable for
+low-turnover funds, and the `as_of` date is always reported. The
+look-through vol is a forecast for the *filed* portfolio, not today's.
+Non-US constituents don't map (no US CUSIP) and land in the uncovered
+weight, which is exactly what the coverage gate measures.

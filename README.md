@@ -35,7 +35,8 @@ curl -s -X POST https://risk-prism-production.up.railway.app/api/v1/portfolio-ri
 ```
 
 Endpoints: `GET /api/v1/meta` · `GET /api/v1/factors` ·
-`GET /api/v1/assets/{ticker}` · `GET /api/v1/coverage?tickers=…` ·
+`GET /api/v1/assets/{ticker}` · `GET /api/v1/funds/{ticker}` (ETF
+look-through) · `GET /api/v1/coverage?tickers=…` ·
 `POST /api/v1/portfolio-risk` · `POST /api/v1/stress-test` ·
 `GET /api/v1/registry` (catalog of published builds). Same surface
 as the MCP server; self-host it with `pip install ".[api]" && riskprism-api`
@@ -70,9 +71,16 @@ Or local, from the installed package and downloaded artifacts:
 }
 ```
 
-Tools exposed: `get_model_info`, `get_portfolio_risk`, `get_factor_exposures`,
-`stress_test`, `check_coverage`, `list_model_versions`. Weights are
-portfolio weights (shorts negative); volatilities are annualized decimals.
+Tools exposed: `get_model_info`, `get_portfolio_risk`, `get_etf_risk`,
+`get_factor_exposures`, `stress_test`, `check_coverage`,
+`list_model_versions`. Weights are portfolio weights (shorts negative);
+volatilities are annualized decimals.
+
+ETFs and mutual funds work through holdings look-through: a fund ticker
+resolves to its latest SEC N-PORT filing, and the risk math runs on the
+constituents the model covers (docs/DECISIONS.md §17). When the model
+covers less than half of a fund's holdings — bond funds, international
+funds — no estimate is given, by policy.
 
 ## Get the latest model (no key, no signup)
 
@@ -91,6 +99,13 @@ report = model.portfolio_risk({"AAPL": 0.4, "MSFT": 0.3, "XOM": 0.3})
 print(report["total_vol"], report["factor_var_contributions"])
 
 model.stress_test({"AAPL": 1.0}, {"market": -0.10, "momentum": -0.05})
+
+# ETF look-through (fetches N-PORT holdings from SEC EDGAR):
+# export RISKPRISM_EDGAR_UA="your-project (you@example.com)"
+from riskprism import fund_risk, portfolio_risk_lookthrough
+
+fund_risk(model, "IVV")                                   # one fund
+portfolio_risk_lookthrough(model, {"VTI": 0.7, "AAPL": 0.3})  # mixed
 ```
 
 ## Build the model yourself
