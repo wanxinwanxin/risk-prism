@@ -220,6 +220,12 @@ def test_horizon_selects_model(client_two_horizons):
 
 def test_short_horizon_missing_is_503(tmp_path, monkeypatch):
     # block the boot-time download so model_sh stays absent
+    from riskprism import registry
+
+    def boom(tag="latest", dest=None, horizon="medium"):
+        raise RuntimeError("registry blocked in tests")
+
+    monkeypatch.setattr(registry, "download_artifacts", boom)
     monkeypatch.setenv("RISKPRISM_ARTIFACTS_SH", str(tmp_path / "nope"))
     monkeypatch.setenv("RISKPRISM_ARTIFACTS_SH_URL", "http://127.0.0.1:1/x.tar.gz")
     app = create_app(model=_tiny_model("mh-test"), site_dir=tmp_path)
@@ -243,6 +249,24 @@ def test_premium_keys_gate_short_horizon_only(tmp_path, monkeypatch):
         # wrong key rejected
         assert c.get("/api/v1/meta", params={"horizon": "short"},
                      headers={"Authorization": "Bearer wrong"}).status_code == 402
+
+
+def test_ensure_artifacts_falls_back_to_registry(tmp_path, monkeypatch):
+    # the fixed releases/latest URL 404s when the newest release is a
+    # package release; the registry must resolve the newest model build
+    from riskprism import registry
+    from riskprism.api_server import _ensure_artifacts
+
+    calls = {}
+
+    def fake_download(tag="latest", dest=None, horizon="medium"):
+        calls["tag"], calls["horizon"] = tag, horizon
+        (tmp_path / "meta.json").write_text("{}")
+
+    monkeypatch.setattr(registry, "download_artifacts", fake_download)
+    _ensure_artifacts(tmp_path, url="http://127.0.0.1:1/x.tar.gz",
+                      horizon="short")
+    assert calls == {"tag": "latest", "horizon": "short"}
 
 
 def test_registry_endpoint(client, monkeypatch):

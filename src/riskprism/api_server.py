@@ -37,18 +37,30 @@ DEFAULT_ARTIFACTS_SH_URL = (
 )
 
 
-def _ensure_artifacts(path: Path, url: str | None = None) -> None:
-    """Download and unpack the latest release tarball if `path` is empty."""
+def _ensure_artifacts(path: Path, url: str | None = None,
+                      horizon: str = "medium") -> None:
+    """Download and unpack the latest release tarball if `path` is empty.
+
+    The fixed `releases/latest` URL breaks whenever the repository's
+    newest release is a package release (`v*` tag, no artifact assets),
+    so any failure falls back to the registry, which resolves the newest
+    `model-*` build that carries this horizon's artifacts.
+    """
     if (path / "meta.json").exists():
         return
+    import tarfile
+
     import requests
 
-    from riskprism.registry import unpack_tarball
+    from riskprism import registry
 
     url = url or os.environ.get("RISKPRISM_ARTIFACTS_URL", DEFAULT_ARTIFACTS_URL)
-    resp = requests.get(url, timeout=120)
-    resp.raise_for_status()
-    unpack_tarball(resp.content, path)
+    try:
+        resp = requests.get(url, timeout=120)
+        resp.raise_for_status()
+        registry.unpack_tarball(resp.content, path)
+    except (requests.RequestException, tarfile.TarError):
+        registry.download_artifacts("latest", path, horizon=horizon)
 
 
 class PortfolioRequest(BaseModel):
@@ -120,7 +132,8 @@ def create_app(model: RiskModel | None = None,
             try:
                 _ensure_artifacts(artifacts_sh,
                                   url=os.environ.get("RISKPRISM_ARTIFACTS_SH_URL",
-                                                     DEFAULT_ARTIFACTS_SH_URL))
+                                                     DEFAULT_ARTIFACTS_SH_URL),
+                                  horizon="short")
                 state["model_sh"] = RiskModel.load(artifacts_sh)
             except Exception as exc:  # SH is optional; medium stays up
                 state["error_sh"] = f"{type(exc).__name__}: {exc}"

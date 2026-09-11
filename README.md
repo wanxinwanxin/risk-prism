@@ -86,8 +86,11 @@ funds — no estimate is given, by policy.
 
 ```bash
 pip install riskprism
-mkdir -p artifacts && curl -L https://github.com/wanxinwanxin/risk-prism/releases/latest/download/riskprism-artifacts.tar.gz | tar xz -C artifacts
+python -c "from riskprism.registry import download_artifacts; download_artifacts()"
 ```
+
+This resolves the newest `model-*` release and unpacks its artifacts
+into `./artifacts` (any historical build downloads by tag the same way).
 
 ## For humans (Python)
 
