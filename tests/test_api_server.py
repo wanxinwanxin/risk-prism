@@ -5,12 +5,15 @@ import pytest
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 
+from test_lookthrough import FakeClient, _fund  # noqa: E402
+
+import riskprism.lookthrough as lookthrough  # noqa: E402
 from riskprism.api_server import create_app  # noqa: E402
 from riskprism.risk import RiskModel  # noqa: E402
 
 
 @pytest.fixture
-def client(tmp_path):
+def client(tmp_path, monkeypatch):
     rng = np.random.default_rng(0)
     tickers = ["AAPL", "MSFT", "XOM", "JPM"]
     factors = ["market", "size", "value", "ind_BusEq", "ind_Enrgy", "ind_Money"]
@@ -28,6 +31,11 @@ def client(tmp_path):
     F = pd.DataFrame(A @ A.T + np.eye(6) * 1e-4, index=factors, columns=factors)
     spec = pd.Series([0.20, 0.18, 0.25, 0.22], index=tickers)
     model = RiskModel(X, F, spec, meta={"model_version": "test-0.1"})
+    # look-through resolves against an in-memory client: no EDGAR traffic
+    monkeypatch.setattr(lookthrough, "_client", FakeClient({
+        "DEMOX": _fund("DEMOX", {"MSFT": 0.97}, cash=0.03),
+        "BONDX": _fund("BONDX", {"MSFT": 0.05}, other=0.95),
+    }))
     site = tmp_path / "site"
     site.mkdir()
     (site / "index.html").write_text("<title>riskprism</title>")
@@ -82,6 +90,46 @@ def test_portfolio_risk_decomposition(client):
 def test_portfolio_risk_rejects_empty_weights(client):
     r = client.post("/api/v1/portfolio-risk", json={"weights": {}})
     assert r.status_code == 422
+
+
+def test_portfolio_risk_lookthrough_expands_funds(client):
+    r = client.post(
+        "/api/v1/portfolio-risk",
+        json={"weights": {"AAPL": 0.5, "DEMOX": 0.5}},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["coverage_ratio"] == 1.0
+    assert body["lookthrough"]["funds"]["DEMOX"]["holdings_coverage"] == 1.0
+
+
+def test_portfolio_risk_lookthrough_disabled(client):
+    r = client.post(
+        "/api/v1/portfolio-risk",
+        json={"weights": {"AAPL": 0.5, "DEMOX": 0.5}, "lookthrough": False},
+    )
+    body = r.json()
+    assert "lookthrough" not in body
+    assert body["uncovered_tickers"] == ["DEMOX"]
+
+
+def test_fund_endpoint(client):
+    r = client.get("/api/v1/funds/demox")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ticker"] == "DEMOX"
+    assert body["fund"]["holdings_coverage"] == 1.0
+    assert body["total_vol"] > 0
+
+
+def test_fund_endpoint_refuses_majorly_uncovered(client):
+    r = client.get("/api/v1/funds/BONDX")
+    assert r.status_code == 422
+    assert "covers only" in r.json()["detail"]["message"]
+
+
+def test_fund_endpoint_unknown_is_404(client):
+    assert client.get("/api/v1/funds/ZZZZ").status_code == 404
 
 
 def test_stress_test_bad_factor_is_400(client):

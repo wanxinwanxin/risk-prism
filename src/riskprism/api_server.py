@@ -4,7 +4,7 @@ Run with `riskprism-api` (or `uvicorn riskprism.api_server:app`). Serves:
     /api/v1/*      JSON risk endpoints (same surface as the MCP server)
     /api/docs      interactive OpenAPI docs
     /mcp           hosted MCP endpoint (streamable HTTP, stateless) — the
-                   same six tools as the local `riskprism-mcp` server,
+                   same seven tools as the local `riskprism-mcp` server,
                    with no install and no artifact download
     /              the rendered explorer site ($RISKPRISM_SITE, default ./site)
 
@@ -63,6 +63,12 @@ class PortfolioRequest(BaseModel):
         description="Set true if the weights came from optimizing against "
                     "this model; reported vols then include the Shepard "
                     "second-order correction.",
+    )
+    lookthrough: bool = Field(
+        True,
+        description="Expand ETF/fund tickers into their filed N-PORT "
+                    "holdings before the portfolio math runs. Funds the "
+                    "model cannot cover are reported in lookthrough.notes.",
     )
 
 
@@ -230,8 +236,37 @@ def create_app(model: RiskModel | None = None,
               summary="Full risk report: vol decomposition + contributions")
     def portfolio_risk(req: PortfolioRequest, horizon: str = HorizonQ,
                        authorization: str | None = Header(None)) -> dict:
-        return m(horizon, authorization).portfolio_risk(
-            req.weights, optimized=req.optimized)
+        model = m(horizon, authorization)
+        if req.lookthrough:
+            from riskprism.lookthrough import portfolio_risk_lookthrough
+            return portfolio_risk_lookthrough(model, req.weights,
+                                              optimized=req.optimized)
+        return model.portfolio_risk(req.weights, optimized=req.optimized)
+
+    @app.get("/api/v1/funds/{ticker}", tags=["portfolio"],
+             summary="ETF/fund look-through risk from filed N-PORT holdings")
+    def fund(ticker: str, horizon: str = HorizonQ,
+             authorization: str | None = Header(None)) -> dict:
+        """Resolves the fund's latest SEC N-PORT holdings to model tickers
+        and runs the portfolio math on those weights. `404` when the
+        ticker locates no fund filing; `422` when the model covers less
+        than half of the holdings (bond and international funds)."""
+        import requests as _requests
+
+        from riskprism.lookthrough import FundCoverageError, fund_risk
+        model = m(horizon, authorization)
+        try:
+            return fund_risk(model, ticker)
+        except FundCoverageError as exc:
+            raise HTTPException(
+                422, detail={"message": str(exc), **exc.detail}) from None
+        except KeyError as exc:
+            raise HTTPException(404, detail=str(exc).strip("'\"")) from None
+        except ValueError as exc:  # EDGAR User-Agent not configured
+            raise HTTPException(503, detail=str(exc)) from None
+        except _requests.RequestException as exc:
+            raise HTTPException(
+                502, detail=f"EDGAR unreachable: {type(exc).__name__}") from None
 
     @app.post("/api/v1/stress-test", tags=["portfolio"],
               summary="Linear P&L estimate under factor shocks")

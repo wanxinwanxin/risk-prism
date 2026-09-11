@@ -57,16 +57,44 @@ def get_model_info(horizon: str = "medium") -> dict:
 
 @mcp.tool()
 def get_portfolio_risk(weights: dict[str, float], optimized: bool = False,
-                       horizon: str = "medium") -> dict:
+                       horizon: str = "medium", lookthrough: bool = True) -> dict:
     """Full risk report for a portfolio: total/factor/specific vol, factor
     exposures, top factor variance contributions, and top asset risk
-    contributions. `weights` maps ticker -> portfolio weight. Set
-    `optimized=true` if the weights came from optimizing against this
-    model: reported vols then include the Shepard second-order correction
-    (optimizers exploit covariance estimation noise, so raw forecasts
-    understate an optimized portfolio's risk). `horizon`: "medium" or
-    "short" (responsive variant, when available)."""
-    return _get_model(horizon).portfolio_risk(weights, optimized=optimized)
+    contributions. `weights` maps ticker -> portfolio weight. ETF and
+    mutual fund tickers expand into their filed holdings before the math
+    runs (set `lookthrough=false` to disable); funds the model cannot
+    cover are reported in `lookthrough.notes`. Set `optimized=true` if
+    the weights came from optimizing against this model: reported vols
+    then include the Shepard second-order correction (optimizers exploit
+    covariance estimation noise, so raw forecasts understate an optimized
+    portfolio's risk). `horizon`: "medium" or "short" (responsive
+    variant, when available)."""
+    model = _get_model(horizon)
+    if lookthrough:
+        from riskprism.lookthrough import portfolio_risk_lookthrough
+
+        return portfolio_risk_lookthrough(model, weights, optimized=optimized)
+    return model.portfolio_risk(weights, optimized=optimized)
+
+
+@mcp.tool()
+def get_etf_risk(ticker: str, horizon: str = "medium") -> dict:
+    """Look-through risk report for one ETF or mutual fund: the latest
+    SEC N-PORT holdings resolve to model tickers and the portfolio math
+    runs on those weights. Reports total/factor/specific vol, factor
+    exposures, top contributions, and the `fund` block with the holdings
+    date and coverage. Returns an error dict when the ticker locates no
+    fund, or when the model covers less than half of the holdings (bond
+    and international funds). Needs RISKPRISM_EDGAR_UA (an identifying
+    User-Agent, per SEC fair-access policy) for the EDGAR fetches."""
+    from riskprism.lookthrough import FundCoverageError, fund_risk
+
+    try:
+        return fund_risk(_get_model(horizon), ticker)
+    except FundCoverageError as exc:
+        return {"error": str(exc), "fund": exc.detail}
+    except (KeyError, ValueError) as exc:
+        return {"error": str(exc).strip("'\"")}
 
 
 @mcp.tool()
