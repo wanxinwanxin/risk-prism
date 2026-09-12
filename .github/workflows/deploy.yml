@@ -40,7 +40,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download --pattern riskprism-artifacts.tar.gz --dir dl
+          # Resolve the newest model-* release explicitly: the repo's
+          # "latest" release can be a package release (v* tag) with no
+          # artifact assets (every deploy 2026-08-24 to 2026-09-11 failed
+          # on that).
+          tag=$(gh release list --limit 100 --json tagName \
+                --jq '[.[].tagName | select(startswith("model-"))][0]')
+          gh release download "$tag" --pattern riskprism-artifacts.tar.gz --dir dl
           mkdir -p artifacts && tar xzf dl/riskprism-artifacts.tar.gz -C artifacts
       - name: Render site from the current template
         run: riskprism-site --artifacts artifacts --out site

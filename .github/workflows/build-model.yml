@@ -26,12 +26,19 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release download --pattern riskprism-artifacts.tar.gz --dir prev 2>/dev/null; then
+          # Resolve the newest model-* release explicitly: the repo's
+          # "latest" release can be a package release (v* tag) with no
+          # artifact assets, which silently forced doomed cold builds
+          # (2026-08-31 and 2026-09-07 failed this way).
+          tag=$(gh release list --limit 100 --json tagName \
+                --jq '[.[].tagName | select(startswith("model-"))][0]')
+          if [ -n "$tag" ]; then
+            gh release download "$tag" --pattern riskprism-artifacts.tar.gz --dir prev
             mkdir -p artifacts_prev && tar xzf prev/riskprism-artifacts.tar.gz -C artifacts_prev
             echo "PRIOR_FLAG=--prior artifacts_prev" >> "$GITHUB_ENV"
-            echo "prior build found; appending new weeks to its history"
+            echo "prior build $tag found; appending new weeks to its history"
           else
-            echo "no prior release; cold build"
+            echo "no prior model release; cold build"
           fi
       - name: Build model
         env:
